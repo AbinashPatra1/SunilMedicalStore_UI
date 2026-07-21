@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "26516054189",
+    "project_id": "sunil-medical-store",
+    "storage_bucket": "sunil-medical-store.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:26516054189:android:a7d21ee77e428d9e55e624",
+        "android_client_info": {
+          "package_name": "com.example.sunil_medical_store"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBCCKPbGyGOvraXbBvMw9zvdJCD8EH4LNw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:26516054189:android:d82da75d7b9e3a3255e624",
+        "android_client_info": {
+          "package_name": "com.sunilmedical.store"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBCCKPbGyGOvraXbBvMw9zvdJCD8EH4LNw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
