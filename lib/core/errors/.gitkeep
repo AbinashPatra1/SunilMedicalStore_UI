@@ -1,0 +1,2 @@
+This folder will hold shared Failure/Exception types and error-mapping
+utilities used by repositories across features.

@@ -1,0 +1,2 @@
+This folder will hold cross-feature helpers (validators, formatters, etc.)
+that don't belong to a single feature.
