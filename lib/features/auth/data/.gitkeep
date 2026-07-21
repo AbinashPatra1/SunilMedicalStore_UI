@@ -1,3 +1,0 @@
-Auth repositories (Firebase Authentication) and DTOs live here. Widgets must
-not call Firebase directly — they go through a repository defined in this
-layer.
