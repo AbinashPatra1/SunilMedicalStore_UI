@@ -15,4 +15,15 @@ abstract final class AppRoutes {
 
   // Nested under the Pharmacy tab so the bottom bar stays visible.
   static const medicines = '/pharmacy/medicines';
+
+  // Profile sub-sections (nested under the Profile tab).
+  static const profileAccount = '/profile/account';
+  static const profileAppointments = '/profile/appointments';
+  static const profileOrders = '/profile/orders';
+  static const profileOrderDetail = '/profile/orders/detail';
+  static const profileLabTests = '/profile/lab-tests';
+  static const profileLabTestDetail = '/profile/lab-tests/detail';
+  static const profileAddresses = '/profile/addresses';
+  static const profileAddAddress = '/profile/addresses/add';
+  static const profilePayments = '/profile/payments';
 }

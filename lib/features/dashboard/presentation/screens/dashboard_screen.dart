@@ -6,14 +6,16 @@ import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/auth/presentation/providers/auth_controller.dart';
 import 'package:sunil_medical_store/features/dashboard/presentation/providers/dashboard_providers.dart';
 import 'package:sunil_medical_store/features/dashboard/presentation/widgets/category_grid.dart';
-import 'package:sunil_medical_store/features/dashboard/presentation/widgets/dashboard_nav_card.dart';
 import 'package:sunil_medical_store/features/dashboard/presentation/widgets/home_search_bar.dart';
+import 'package:sunil_medical_store/features/dashboard/presentation/widgets/pharmacy_action_buttons.dart';
 import 'package:sunil_medical_store/features/dashboard/presentation/widgets/promo_banner.dart';
+import 'package:sunil_medical_store/features/dashboard/presentation/widgets/suggested_products.dart';
 
-/// Customer landing page shown after a non-admin signs in.
+/// Customer landing page (Pharmacy tab) shown after a non-admin signs in.
 ///
-/// Dummy content for now — categories come from [homeCategoriesProvider] and
-/// the search/promo actions are placeholders until those features are built.
+/// Dummy content for now — categories come from [homeCategoriesProvider],
+/// products from the medicines providers, and the image-search / prescription
+/// actions are placeholders until those features are built.
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
@@ -22,6 +24,10 @@ class DashboardScreen extends ConsumerWidget {
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text('$label coming soon')));
   }
+
+  /// Route to the medicines list filtered by [category].
+  String _categoryRoute(String category) =>
+      '${AppRoutes.medicines}?category=${Uri.encodeComponent(category)}';
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -52,6 +58,11 @@ class DashboardScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: AppConstants.spacingLg),
+          PharmacyActionButtons(
+            onSearchByImage: () => _comingSoon(context, 'Image search'),
+            onUploadPrescription: () => _comingSoon(context, 'Prescription upload'),
+          ),
+          const SizedBox(height: AppConstants.spacingMd),
           HomeSearchBar(onTap: () => _comingSoon(context, 'Search')),
           const SizedBox(height: AppConstants.spacingLg),
           PromoBanner(onTap: () => context.go(AppRoutes.medicines)),
@@ -60,21 +71,11 @@ class DashboardScreen extends ConsumerWidget {
           const SizedBox(height: AppConstants.spacingMd),
           CategoryGrid(
             categories: categories,
-            onTap: (_) => context.go(AppRoutes.medicines),
+            onTap: (category) => context.go(_categoryRoute(category.label)),
           ),
           const SizedBox(height: AppConstants.spacingLg),
-          Text('Quick actions', style: theme.textTheme.titleMedium),
-          const SizedBox(height: AppConstants.spacingMd),
-          DashboardNavCard(
-            icon: Icons.medication_outlined,
-            label: 'Browse Medicines',
-            onTap: () => context.go(AppRoutes.medicines),
-          ),
-          const SizedBox(height: AppConstants.spacingMd),
-          DashboardNavCard(
-            icon: Icons.shopping_cart_outlined,
-            label: 'My Cart',
-            onTap: () => context.go(AppRoutes.cart),
+          SuggestedProducts(
+            onAdd: (name) => _comingSoon(context, '$name — add to cart'),
           ),
         ],
       ),

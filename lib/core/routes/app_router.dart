@@ -11,6 +11,17 @@ import 'package:sunil_medical_store/features/auth/presentation/screens/login_scr
 import 'package:sunil_medical_store/features/cart/presentation/screens/cart_screen.dart';
 import 'package:sunil_medical_store/features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:sunil_medical_store/features/medicines/presentation/screens/medicines_screen.dart';
+import 'package:sunil_medical_store/features/profile/domain/lab_test.dart';
+import 'package:sunil_medical_store/features/profile/domain/order.dart';
+import 'package:sunil_medical_store/features/profile/presentation/screens/account_screen.dart';
+import 'package:sunil_medical_store/features/profile/presentation/screens/add_address_screen.dart';
+import 'package:sunil_medical_store/features/profile/presentation/screens/addresses_screen.dart';
+import 'package:sunil_medical_store/features/profile/presentation/screens/lab_test_detail_screen.dart';
+import 'package:sunil_medical_store/features/profile/presentation/screens/lab_tests_screen.dart';
+import 'package:sunil_medical_store/features/profile/presentation/screens/order_detail_screen.dart';
+import 'package:sunil_medical_store/features/profile/presentation/screens/orders_screen.dart';
+import 'package:sunil_medical_store/features/profile/presentation/screens/payment_methods_screen.dart';
+import 'package:sunil_medical_store/features/profile/presentation/screens/profile_appointments_screen.dart';
 import 'package:sunil_medical_store/features/profile/presentation/screens/profile_screen.dart';
 import 'package:sunil_medical_store/features/splash/presentation/screens/splash_screen.dart';
 
@@ -93,9 +104,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                 builder: (context, state) => const DashboardScreen(),
                 routes: [
                   // Nested -> /pharmacy/medicines (bottom bar stays visible).
+                  // Optional ?category= filters the list.
                   GoRoute(
                     path: 'medicines',
-                    builder: (context, state) => const MedicinesScreen(),
+                    builder: (context, state) => MedicinesScreen(
+                      category: state.uri.queryParameters['category'],
+                    ),
                   ),
                 ],
               ),
@@ -122,6 +136,38 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.profile,
                 builder: (context, state) => const ProfileScreen(),
+                routes: [
+                  GoRoute(path: 'account', builder: (context, state) => const AccountScreen()),
+                  GoRoute(path: 'appointments', builder: (context, state) => const ProfileAppointmentsScreen()),
+                  GoRoute(
+                    path: 'orders',
+                    builder: (context, state) => const OrdersScreen(),
+                    routes: [
+                      GoRoute(
+                        path: 'detail',
+                        builder: (context, state) => OrderDetailScreen(order: state.extra as Order?),
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'lab-tests',
+                    builder: (context, state) => const LabTestsScreen(),
+                    routes: [
+                      GoRoute(
+                        path: 'detail',
+                        builder: (context, state) => LabTestDetailScreen(labTest: state.extra as LabTest?),
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'addresses',
+                    builder: (context, state) => const AddressesScreen(),
+                    routes: [
+                      GoRoute(path: 'add', builder: (context, state) => const AddAddressScreen()),
+                    ],
+                  ),
+                  GoRoute(path: 'payments', builder: (context, state) => const PaymentMethodsScreen()),
+                ],
               ),
             ],
           ),
