@@ -1,4 +1,4 @@
-package com.example.sunil_medical_store
+package com.sunilmedical.store
 
 import io.flutter.embedding.android.FlutterActivity
 
