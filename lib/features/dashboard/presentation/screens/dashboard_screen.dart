@@ -39,13 +39,6 @@ class DashboardScreen extends ConsumerWidget {
             const Text(AppConstants.appName),
           ],
         ),
-        actions: [
-          IconButton(
-            tooltip: 'Sign out',
-            icon: const Icon(Icons.logout),
-            onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
-          ),
-        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(AppConstants.spacingLg),

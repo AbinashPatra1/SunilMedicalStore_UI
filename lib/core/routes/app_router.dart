@@ -2,13 +2,16 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sunil_medical_store/core/routes/app_routes.dart';
+import 'package:sunil_medical_store/core/widgets/scaffold_with_nav_bar.dart';
 import 'package:sunil_medical_store/features/admin/presentation/screens/admin_dashboard_screen.dart';
+import 'package:sunil_medical_store/features/appointments/presentation/screens/appointments_screen.dart';
 import 'package:sunil_medical_store/features/auth/presentation/providers/auth_controller.dart';
 import 'package:sunil_medical_store/features/auth/presentation/providers/auth_state.dart';
 import 'package:sunil_medical_store/features/auth/presentation/screens/login_screen.dart';
 import 'package:sunil_medical_store/features/cart/presentation/screens/cart_screen.dart';
 import 'package:sunil_medical_store/features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:sunil_medical_store/features/medicines/presentation/screens/medicines_screen.dart';
+import 'package:sunil_medical_store/features/profile/presentation/screens/profile_screen.dart';
 import 'package:sunil_medical_store/features/splash/presentation/screens/splash_screen.dart';
 
 /// App-wide [GoRouter] instance.
@@ -17,8 +20,12 @@ import 'package:sunil_medical_store/features/splash/presentation/screens/splash_
 /// the whole navigation policy in one place:
 /// * `unknown`  -> stay on the splash screen while the session resolves.
 /// * signed out -> force the login screen.
-/// * signed in  -> land on the role's home (admin vs. customer) and keep
-///   non-admins out of the admin area.
+/// * signed in  -> land on the role's home (admin console vs. customer tabs)
+///   and keep each role out of the other's area.
+///
+/// The four customer tabs live in a [StatefulShellRoute.indexedStack] so each
+/// keeps its own navigation stack and state; the admin console is a separate
+/// top-level route with no bottom navigation.
 ///
 /// A [ValueNotifier] bumped on every auth change is wired to
 /// [GoRouter.refreshListenable] so the redirect re-runs when auth state moves.
@@ -47,18 +54,17 @@ final routerProvider = Provider<GoRouter>((ref) {
         return isLoggingIn ? null : AppRoutes.login;
       }
 
-      // Signed in from here on. Resolve the role's home screen.
-      final home = auth.user!.role.isAdmin
-          ? AppRoutes.admin
-          : AppRoutes.dashboard;
+      // Signed in from here on. Resolve the role's home.
+      final isAdmin = auth.user!.role.isAdmin;
+      final home = isAdmin ? AppRoutes.admin : AppRoutes.pharmacy;
 
       // Leaving splash/login after auth -> go home.
       if (location == AppRoutes.splash || isLoggingIn) return home;
 
-      // Keep non-admins out of the admin area.
-      if (location == AppRoutes.admin && !auth.user!.role.isAdmin) {
-        return AppRoutes.dashboard;
-      }
+      // Keep each role inside its own area.
+      final inAdminArea = location == AppRoutes.admin;
+      if (isAdmin && !inAdminArea) return AppRoutes.admin;
+      if (!isAdmin && inAdminArea) return AppRoutes.pharmacy;
 
       return null;
     },
@@ -72,20 +78,54 @@ final routerProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const LoginScreen(),
       ),
       GoRoute(
-        path: AppRoutes.dashboard,
-        builder: (context, state) => const DashboardScreen(),
-      ),
-      GoRoute(
         path: AppRoutes.admin,
         builder: (context, state) => const AdminDashboardScreen(),
       ),
-      GoRoute(
-        path: AppRoutes.medicines,
-        builder: (context, state) => const MedicinesScreen(),
-      ),
-      GoRoute(
-        path: AppRoutes.cart,
-        builder: (context, state) => const CartScreen(),
+      // Customer tab shell.
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) =>
+            ScaffoldWithNavBar(navigationShell: navigationShell),
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.pharmacy,
+                builder: (context, state) => const DashboardScreen(),
+                routes: [
+                  // Nested -> /pharmacy/medicines (bottom bar stays visible).
+                  GoRoute(
+                    path: 'medicines',
+                    builder: (context, state) => const MedicinesScreen(),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.appointments,
+                builder: (context, state) => const AppointmentsScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.cart,
+                builder: (context, state) => const CartScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.profile,
+                builder: (context, state) => const ProfileScreen(),
+              ),
+            ],
+          ),
+        ],
       ),
     ],
   );

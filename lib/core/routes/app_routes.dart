@@ -3,8 +3,16 @@
 abstract final class AppRoutes {
   static const splash = '/';
   static const login = '/login';
-  static const dashboard = '/dashboard';
+
+  // Admin area (separate from the customer tab shell).
   static const admin = '/admin';
-  static const medicines = '/medicines';
+
+  // Customer bottom-navigation tabs.
+  static const pharmacy = '/pharmacy';
+  static const appointments = '/appointments';
   static const cart = '/cart';
+  static const profile = '/profile';
+
+  // Nested under the Pharmacy tab so the bottom bar stays visible.
+  static const medicines = '/pharmacy/medicines';
 }
