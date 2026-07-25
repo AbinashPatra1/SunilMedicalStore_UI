@@ -2,13 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/auth/presentation/providers/auth_controller.dart';
+import 'package:sunil_medical_store/features/auth/presentation/widgets/otp_step.dart';
+import 'package:sunil_medical_store/features/auth/presentation/widgets/phone_step.dart';
 
-/// Mock email/password sign-in.
+/// Phone-number + OTP sign-in.
 ///
-/// A [ConsumerStatefulWidget] because the form owns [TextEditingController]s;
-/// all auth logic still lives in [AuthController], so UI and business logic
-/// stay separated. Navigation on success is handled by the router's redirect,
-/// not here.
+/// A [ConsumerStatefulWidget] because the two steps own their
+/// [TextEditingController]s and the current step is local UI state. All auth
+/// logic lives in [AuthController]; navigation on success is handled by the
+/// router's redirect, not here.
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -16,25 +18,42 @@ class LoginScreen extends ConsumerStatefulWidget {
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
+enum _Step { phone, otp }
+
 class _LoginScreenState extends ConsumerState<LoginScreen> {
-  final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+  final _phoneFormKey = GlobalKey<FormState>();
+  final _otpFormKey = GlobalKey<FormState>();
+  final _phoneController = TextEditingController();
+  final _otpController = TextEditingController();
+
+  _Step _step = _Step.phone;
 
   @override
   void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
+    _phoneController.dispose();
+    _otpController.dispose();
     super.dispose();
   }
 
-  Future<void> _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+  Future<void> _sendOtp() async {
+    if (!_phoneFormKey.currentState!.validate()) return;
     FocusScope.of(context).unfocus();
-    await ref.read(authControllerProvider.notifier).signIn(
-      email: _emailController.text,
-      password: _passwordController.text,
+    final sent = await ref.read(authControllerProvider.notifier).sendOtp(
+      _phoneController.text,
     );
+    if (sent && mounted) setState(() => _step = _Step.otp);
+  }
+
+  Future<void> _verifyOtp() async {
+    if (!_otpFormKey.currentState!.validate()) return;
+    FocusScope.of(context).unfocus();
+    await ref.read(authControllerProvider.notifier).verifyOtp(_otpController.text);
+  }
+
+  void _changeNumber() {
+    _otpController.clear();
+    ref.read(authControllerProvider.notifier).resetOtp();
+    setState(() => _step = _Step.phone);
   }
 
   @override
@@ -47,93 +66,51 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         child: Center(
           child: SingleChildScrollView(
             padding: const EdgeInsets.all(AppConstants.spacingLg),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Icon(
-                    Icons.local_pharmacy_rounded,
-                    size: 64,
-                    color: theme.colorScheme.primary,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Icon(
+                  Icons.local_pharmacy_rounded,
+                  size: 64,
+                  color: theme.colorScheme.primary,
+                ),
+                const SizedBox(height: AppConstants.spacingMd),
+                Text(
+                  AppConstants.appName,
+                  style: theme.textTheme.headlineSmall,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppConstants.spacingXs),
+                Text(
+                  _step == _Step.phone
+                      ? 'Sign in with your mobile number'
+                      : 'Verify your number',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
-                  const SizedBox(height: AppConstants.spacingMd),
-                  Text(
-                    AppConstants.appName,
-                    style: theme.textTheme.headlineSmall,
-                    textAlign: TextAlign.center,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppConstants.spacingXl),
+                if (_step == _Step.phone)
+                  PhoneStep(
+                    formKey: _phoneFormKey,
+                    controller: _phoneController,
+                    isSubmitting: auth.isSubmitting,
+                    errorMessage: auth.errorMessage,
+                    onSubmit: _sendOtp,
+                  )
+                else
+                  OtpStep(
+                    formKey: _otpFormKey,
+                    controller: _otpController,
+                    phoneNumber: _phoneController.text.trim(),
+                    isSubmitting: auth.isSubmitting,
+                    errorMessage: auth.errorMessage,
+                    onVerify: _verifyOtp,
+                    onChangeNumber: _changeNumber,
                   ),
-                  const SizedBox(height: AppConstants.spacingXs),
-                  Text(
-                    'Sign in to continue',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: AppConstants.spacingXl),
-                  TextFormField(
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    textInputAction: TextInputAction.next,
-                    enabled: !auth.isSubmitting,
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                      prefixIcon: Icon(Icons.email_outlined),
-                    ),
-                    validator: (value) =>
-                        (value == null || !value.contains('@'))
-                        ? 'Enter a valid email'
-                        : null,
-                  ),
-                  const SizedBox(height: AppConstants.spacingMd),
-                  TextFormField(
-                    controller: _passwordController,
-                    obscureText: true,
-                    textInputAction: TextInputAction.done,
-                    enabled: !auth.isSubmitting,
-                    onFieldSubmitted: (_) => _submit(),
-                    decoration: const InputDecoration(
-                      labelText: 'Password',
-                      prefixIcon: Icon(Icons.lock_outline),
-                    ),
-                    validator: (value) => (value == null || value.length < 6)
-                        ? 'Minimum 6 characters'
-                        : null,
-                  ),
-                  if (auth.errorMessage != null) ...[
-                    const SizedBox(height: AppConstants.spacingMd),
-                    Text(
-                      auth.errorMessage!,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.error,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ],
-                  const SizedBox(height: AppConstants.spacingLg),
-                  ElevatedButton(
-                    onPressed: auth.isSubmitting ? null : _submit,
-                    child: auth.isSubmitting
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                        : const Text('Sign In'),
-                  ),
-                  const SizedBox(height: AppConstants.spacingMd),
-                  Text(
-                    'Demo: any 6+ character password works. Use an email that '
-                    'starts with "admin" to open the admin view.',
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
+              ],
             ),
           ),
         ),

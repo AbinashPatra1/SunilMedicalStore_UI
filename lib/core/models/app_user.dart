@@ -9,14 +9,22 @@ class AppUser {
   const AppUser({
     required this.id,
     required this.name,
-    required this.email,
+    required this.phoneNumber,
     required this.role,
   });
 
   final String id;
   final String name;
-  final String email;
+
+  /// 10-digit Indian mobile number the user signed in with (no country code).
+  final String phoneNumber;
   final UserRole role;
+
+  /// Number formatted for display, e.g. `+91 98765 43210`.
+  String get displayPhone {
+    if (phoneNumber.length != 10) return phoneNumber;
+    return '+91 ${phoneNumber.substring(0, 5)} ${phoneNumber.substring(5)}';
+  }
 
   /// Up-to-two-letter initials for avatar placeholders.
   String get initials {
@@ -31,9 +39,9 @@ class AppUser {
       other is AppUser &&
       other.id == id &&
       other.name == name &&
-      other.email == email &&
+      other.phoneNumber == phoneNumber &&
       other.role == role;
 
   @override
-  int get hashCode => Object.hash(id, name, email, role);
+  int get hashCode => Object.hash(id, name, phoneNumber, role);
 }
