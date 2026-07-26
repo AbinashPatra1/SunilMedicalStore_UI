@@ -74,9 +74,7 @@ class DashboardScreen extends ConsumerWidget {
             onTap: (category) => context.go(_categoryRoute(category.label)),
           ),
           const SizedBox(height: AppConstants.spacingLg),
-          SuggestedProducts(
-            onAdd: (name) => _comingSoon(context, '$name — add to cart'),
-          ),
+          const SuggestedProducts(),
         ],
       ),
     );

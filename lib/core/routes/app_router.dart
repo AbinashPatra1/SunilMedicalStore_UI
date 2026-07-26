@@ -10,7 +10,10 @@ import 'package:sunil_medical_store/features/auth/presentation/providers/auth_st
 import 'package:sunil_medical_store/features/auth/presentation/screens/login_screen.dart';
 import 'package:sunil_medical_store/features/auth/presentation/screens/onboarding_screen.dart';
 import 'package:sunil_medical_store/features/cart/presentation/screens/cart_screen.dart';
+import 'package:sunil_medical_store/features/cart/presentation/screens/checkout_screen.dart';
 import 'package:sunil_medical_store/features/dashboard/presentation/screens/dashboard_screen.dart';
+import 'package:sunil_medical_store/features/lab_tests/presentation/screens/lab_test_catalog_detail_screen.dart';
+import 'package:sunil_medical_store/features/lab_tests/presentation/screens/lab_tests_catalog_screen.dart';
 import 'package:sunil_medical_store/features/medicines/presentation/screens/medicines_screen.dart';
 import 'package:sunil_medical_store/features/profile/domain/lab_test.dart';
 import 'package:sunil_medical_store/features/profile/domain/order.dart';
@@ -132,6 +135,22 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [
               GoRoute(
+                path: AppRoutes.labTests,
+                builder: (context, state) => const LabTestsCatalogScreen(),
+                routes: [
+                  GoRoute(
+                    path: ':testId',
+                    builder: (context, state) => LabTestCatalogDetailScreen(
+                      testId: state.pathParameters['testId']!,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
                 path: AppRoutes.appointments,
                 builder: (context, state) => const AppointmentsScreen(),
               ),
@@ -142,6 +161,12 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.cart,
                 builder: (context, state) => const CartScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'checkout',
+                    builder: (context, state) => const CheckoutScreen(),
+                  ),
+                ],
               ),
             ],
           ),

@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
+import 'package:sunil_medical_store/features/cart/presentation/providers/cart_providers.dart';
 import 'package:sunil_medical_store/features/medicines/presentation/providers/medicine_providers.dart';
 import 'package:sunil_medical_store/features/medicines/presentation/widgets/suggested_product_card.dart';
 
 /// Horizontal "Suggested for you" row on the dashboard.
 class SuggestedProducts extends ConsumerWidget {
-  const SuggestedProducts({super.key, required this.onAdd});
-
-  /// Called with the product name when its Add button is tapped.
-  final ValueChanged<String> onAdd;
+  const SuggestedProducts({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -40,7 +38,14 @@ class SuggestedProducts extends ConsumerWidget {
                 final product = products[index];
                 return SuggestedProductCard(
                   product: product,
-                  onAdd: () => onAdd(product.name),
+                  onAdd: () {
+                    ref.read(cartProvider.notifier).addProduct(product);
+                    ScaffoldMessenger.of(context)
+                      ..hideCurrentSnackBar()
+                      ..showSnackBar(
+                        SnackBar(content: Text('${product.name} added to cart')),
+                      );
+                  },
                 );
               },
             ),

@@ -10,8 +10,10 @@ abstract final class AppRoutes {
 
   // Customer bottom-navigation tabs.
   static const pharmacy = '/pharmacy';
+  static const labTests = '/lab-tests';
   static const appointments = '/appointments';
   static const cart = '/cart';
+  static const cartCheckout = '/cart/checkout';
   static const profile = '/profile';
 
   // Nested under the Pharmacy tab so the bottom bar stays visible.

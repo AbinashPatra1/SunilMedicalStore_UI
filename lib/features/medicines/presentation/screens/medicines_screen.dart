@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
+import 'package:sunil_medical_store/features/cart/presentation/providers/cart_providers.dart';
 import 'package:sunil_medical_store/features/medicines/presentation/providers/medicine_providers.dart';
 import 'package:sunil_medical_store/features/medicines/presentation/widgets/product_card.dart';
 
@@ -37,10 +38,11 @@ class MedicinesScreen extends ConsumerWidget {
               return ProductCard(
                 product: product,
                 onAdd: () {
+                  ref.read(cartProvider.notifier).addProduct(product);
                   ScaffoldMessenger.of(context)
                     ..hideCurrentSnackBar()
                     ..showSnackBar(
-                      SnackBar(content: Text('${product.name} added to cart (coming soon)')),
+                      SnackBar(content: Text('${product.name} added to cart')),
                     );
                 },
               );
