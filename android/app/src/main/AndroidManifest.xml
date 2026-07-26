@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required for Firebase Authentication (and any network access) in
+         release builds; the Flutter tool only injects this for debug/profile. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="sunil_medical_store"
         android:name="${applicationName}"

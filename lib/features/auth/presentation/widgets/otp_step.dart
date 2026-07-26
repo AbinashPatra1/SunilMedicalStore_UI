@@ -81,13 +81,6 @@ class OtpStep extends StatelessWidget {
             onPressed: isSubmitting ? null : onChangeNumber,
             child: const Text('Change number'),
           ),
-          Text(
-            'Demo: use OTP 123456.',
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-            textAlign: TextAlign.center,
-          ),
         ],
       ),
     );

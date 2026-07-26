@@ -3,6 +3,7 @@
 abstract final class AppRoutes {
   static const splash = '/';
   static const login = '/login';
+  static const onboarding = '/onboarding';
 
   // Admin area (separate from the customer tab shell).
   static const admin = '/admin';

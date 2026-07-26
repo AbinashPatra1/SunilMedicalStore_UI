@@ -8,6 +8,7 @@ import 'package:sunil_medical_store/features/appointments/presentation/screens/a
 import 'package:sunil_medical_store/features/auth/presentation/providers/auth_controller.dart';
 import 'package:sunil_medical_store/features/auth/presentation/providers/auth_state.dart';
 import 'package:sunil_medical_store/features/auth/presentation/screens/login_screen.dart';
+import 'package:sunil_medical_store/features/auth/presentation/screens/onboarding_screen.dart';
 import 'package:sunil_medical_store/features/cart/presentation/screens/cart_screen.dart';
 import 'package:sunil_medical_store/features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:sunil_medical_store/features/medicines/presentation/screens/medicines_screen.dart';
@@ -65,12 +66,21 @@ final routerProvider = Provider<GoRouter>((ref) {
         return isLoggingIn ? null : AppRoutes.login;
       }
 
+      // Verified but no profile yet: force the onboarding screen.
+      if (auth.status == AuthStatus.onboarding) {
+        return location == AppRoutes.onboarding ? null : AppRoutes.onboarding;
+      }
+
       // Signed in from here on. Resolve the role's home.
       final isAdmin = auth.user!.role.isAdmin;
       final home = isAdmin ? AppRoutes.admin : AppRoutes.pharmacy;
 
-      // Leaving splash/login after auth -> go home.
-      if (location == AppRoutes.splash || isLoggingIn) return home;
+      // Leaving splash/login/onboarding after auth -> go home.
+      if (location == AppRoutes.splash ||
+          isLoggingIn ||
+          location == AppRoutes.onboarding) {
+        return home;
+      }
 
       // Keep each role inside its own area.
       final inAdminArea = location == AppRoutes.admin;
@@ -87,6 +97,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.login,
         builder: (context, state) => const LoginScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.onboarding,
+        builder: (context, state) => const OnboardingScreen(),
       ),
       GoRoute(
         path: AppRoutes.admin,

@@ -1,51 +1,62 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:sunil_medical_store/features/auth/data/mock_auth_repository.dart';
+import 'package:sunil_medical_store/core/models/app_user.dart';
+import 'package:sunil_medical_store/features/auth/data/firebase_auth_repository.dart';
+import 'package:sunil_medical_store/features/auth/domain/auth_account.dart';
 import 'package:sunil_medical_store/features/auth/domain/auth_repository.dart';
 import 'package:sunil_medical_store/features/auth/presentation/providers/auth_state.dart';
 
-/// Provides the [AuthRepository] implementation.
-///
-/// Swap [MockAuthRepository] for a Firebase-backed repository here when the
-/// real phone-auth flow lands — nothing else needs to change.
+/// Provides the [AuthRepository] implementation (Firebase Phone Auth).
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  return MockAuthRepository();
+  return FirebaseAuthRepository();
 });
 
-/// Holds and mutates the app's [AuthState] across the phone + OTP flow.
+/// Holds and mutates the app's [AuthState] across the phone + OTP + onboarding
+/// flow. The Firebase session stream is the source of truth.
 final authControllerProvider = NotifierProvider<AuthController, AuthState>(
   AuthController.new,
 );
 
 class AuthController extends Notifier<AuthState> {
-  /// Verification id returned by [sendOtp], consumed by [verifyOtp].
+  /// Verification id from [sendOtp], consumed by [verifyOtp].
   String? _verificationId;
 
   @override
   AuthState build() {
-    // Kick off session restore; the router keeps the user on the splash
-    // screen while status is `unknown`.
-    _restoreSession();
+    final subscription = ref
+        .watch(authRepositoryProvider)
+        .authStateChanges()
+        .listen(_onAccountChanged);
+    ref.onDispose(subscription.cancel);
     return const AuthState.unknown();
   }
 
   AuthRepository get _repository => ref.read(authRepositoryProvider);
 
-  Future<void> _restoreSession() async {
-    // Simulate checking a persisted session on startup.
-    await Future<void>.delayed(const Duration(milliseconds: 1200));
-    final user = _repository.currentUser;
-    state = user == null
-        ? const AuthState.unauthenticated()
-        : AuthState.authenticated(user);
+  void _onAccountChanged(AuthAccount? account) {
+    if (account == null) {
+      state = const AuthState.unauthenticated();
+    } else if (account.needsProfile) {
+      state = const AuthState.onboarding();
+    } else {
+      state = AuthState.authenticated(_toAppUser(account));
+    }
   }
 
-  /// Requests an OTP for [phoneNumber]. Returns `true` when the request
-  /// succeeds so the UI can advance to the OTP step; errors surface via
-  /// [AuthState.errorMessage].
+  AppUser _toAppUser(AuthAccount account) => AppUser(
+    id: account.uid,
+    name: account.displayName!.trim(),
+    phoneNumber: account.phoneNumber,
+    role: account.role,
+  );
+
+  /// Requests an OTP for a 10-digit Indian number. Returns `true` on success so
+  /// the UI can advance to the OTP step.
   Future<bool> sendOtp(String phoneNumber) async {
-    state = const AuthState.submitting();
+    state = const AuthState.unauthenticated(isSubmitting: true);
     try {
-      _verificationId = await _repository.sendOtp(phoneNumber: phoneNumber.trim());
+      _verificationId = await _repository.sendOtp(
+        phoneNumber: '+91${phoneNumber.trim()}',
+      );
       state = const AuthState.unauthenticated();
       return true;
     } on AuthException catch (e) {
@@ -54,27 +65,32 @@ class AuthController extends Notifier<AuthState> {
     }
   }
 
-  /// Verifies [smsCode] against the pending OTP request. On success the user
-  /// becomes authenticated and the router redirects to their home.
+  /// Verifies the OTP. On success the session flows through
+  /// [AuthRepository.authStateChanges] and drives the next state.
   Future<void> verifyOtp(String smsCode) async {
     final verificationId = _verificationId;
     if (verificationId == null) {
-      state = const AuthState.unauthenticated(
-        errorMessage: 'Please request an OTP first.',
-      );
+      state = const AuthState.unauthenticated(errorMessage: 'Please request an OTP first.');
       return;
     }
-
-    state = const AuthState.submitting();
+    state = const AuthState.unauthenticated(isSubmitting: true);
     try {
-      final user = await _repository.verifyOtp(
-        verificationId: verificationId,
-        smsCode: smsCode.trim(),
-      );
+      await _repository.verifyOtp(verificationId: verificationId, smsCode: smsCode.trim());
       _verificationId = null;
-      state = AuthState.authenticated(user);
+      // authStateChanges emits the new session -> authenticated or onboarding.
     } on AuthException catch (e) {
       state = AuthState.unauthenticated(errorMessage: e.message);
+    }
+  }
+
+  /// Saves the new user's name to finish onboarding.
+  Future<void> completeOnboarding(String fullName) async {
+    state = const AuthState.onboarding(isSubmitting: true);
+    try {
+      final account = await _repository.completeProfile(fullName: fullName.trim());
+      state = AuthState.authenticated(_toAppUser(account));
+    } on AuthException catch (e) {
+      state = AuthState.onboarding(errorMessage: e.message);
     }
   }
 
@@ -85,8 +101,8 @@ class AuthController extends Notifier<AuthState> {
   }
 
   Future<void> signOut() async {
-    await _repository.signOut();
     _verificationId = null;
-    state = const AuthState.unauthenticated();
+    await _repository.signOut();
+    // authStateChanges emits null -> unauthenticated.
   }
 }

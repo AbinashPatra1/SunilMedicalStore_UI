@@ -5,8 +5,11 @@ enum AuthStatus {
   /// Still resolving whether a session exists (splash is shown).
   unknown,
 
-  /// A user is signed in.
+  /// A user is signed in and has a completed profile.
   authenticated,
+
+  /// Signed in to Firebase but has no name yet — show onboarding.
+  onboarding,
 
   /// No user is signed in.
   unauthenticated,
@@ -14,8 +17,8 @@ enum AuthStatus {
 
 /// Immutable auth state exposed by `authControllerProvider`.
 ///
-/// [isSubmitting] is separate from [status] so the login button can show a
-/// spinner without the router treating the user as signed in mid-request.
+/// [isSubmitting] is separate from [status] so a button can show a spinner
+/// without the router treating the user as signed in mid-request.
 class AuthState {
   const AuthState({
     this.status = AuthStatus.unknown,
@@ -26,12 +29,14 @@ class AuthState {
 
   const AuthState.unknown() : this();
 
-  const AuthState.submitting() : this(status: AuthStatus.unauthenticated, isSubmitting: true);
+  const AuthState.authenticated(AppUser user)
+    : this(status: AuthStatus.authenticated, user: user);
 
-  const AuthState.authenticated(AppUser user) : this(status: AuthStatus.authenticated, user: user);
+  const AuthState.onboarding({bool isSubmitting = false, String? errorMessage})
+    : this(status: AuthStatus.onboarding, isSubmitting: isSubmitting, errorMessage: errorMessage);
 
-  const AuthState.unauthenticated({String? errorMessage})
-    : this(status: AuthStatus.unauthenticated, errorMessage: errorMessage);
+  const AuthState.unauthenticated({bool isSubmitting = false, String? errorMessage})
+    : this(status: AuthStatus.unauthenticated, isSubmitting: isSubmitting, errorMessage: errorMessage);
 
   final AuthStatus status;
   final AppUser? user;

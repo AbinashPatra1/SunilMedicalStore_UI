@@ -69,8 +69,7 @@ class PhoneStep extends StatelessWidget {
           ),
           const SizedBox(height: AppConstants.spacingMd),
           Text(
-            'Demo: number 9999999999 signs in as admin; any other valid '
-            'number is a customer.',
+            "We'll send a one-time password to this number.",
             style: theme.textTheme.bodySmall?.copyWith(
               color: theme.colorScheme.onSurfaceVariant,
             ),

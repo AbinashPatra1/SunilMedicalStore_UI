@@ -1,31 +1,28 @@
-import 'package:sunil_medical_store/core/models/app_user.dart';
+import 'package:sunil_medical_store/features/auth/domain/auth_account.dart';
 
 /// Contract for phone-number + OTP authentication, implemented by the data
-/// layer.
+/// layer (Firebase).
 ///
-/// The two-step shape ([sendOtp] then [verifyOtp]) mirrors Firebase Phone
-/// Authentication, so the mock implementation can later be replaced by a real
-/// Firebase-backed one without changing providers or widgets.
+/// The two-step [sendOtp] / [verifyOtp] shape mirrors Firebase Phone Auth.
+/// [authStateChanges] is the source of truth for the current session, so the
+/// app restores logins across restarts automatically.
 abstract interface class AuthRepository {
-  /// The currently signed-in user, or `null` if there is no active session.
-  AppUser? get currentUser;
+  /// Emits the current [AuthAccount] whenever the session changes; `null` when
+  /// signed out. Emits the persisted session on startup.
+  Stream<AuthAccount?> authStateChanges();
 
-  /// Requests an OTP for [phoneNumber] (a 10-digit Indian mobile number).
-  ///
-  /// Returns an opaque verification id that must be passed back to
-  /// [verifyOtp]. Throws [AuthException] if the number is invalid.
+  /// Requests an OTP for [phoneNumber] (E.164, e.g. `+919812345678`). Returns
+  /// an opaque verification id to pass to [verifyOtp]. Throws [AuthException].
   Future<String> sendOtp({required String phoneNumber});
 
-  /// Verifies [smsCode] against the challenge identified by [verificationId]
-  /// and, on success, returns the signed-in [AppUser].
-  ///
-  /// Throws [AuthException] if the code is wrong or the challenge is unknown.
-  Future<AppUser> verifyOtp({
-    required String verificationId,
-    required String smsCode,
-  });
+  /// Signs the user in with [smsCode] for the given [verificationId]. The new
+  /// session then flows through [authStateChanges]. Throws [AuthException].
+  Future<void> verifyOtp({required String verificationId, required String smsCode});
 
-  /// Clears the active session.
+  /// Persists [fullName] on the signed-in user and returns the refreshed
+  /// account. Used to finish onboarding for a new user.
+  Future<AuthAccount> completeProfile({required String fullName});
+
   Future<void> signOut();
 }
 
