@@ -8,10 +8,12 @@ class SuggestedProductCard extends StatelessWidget {
     super.key,
     required this.product,
     required this.onAdd,
+    required this.onTap,
   });
 
   final Product product;
   final VoidCallback onAdd;
+  final VoidCallback onTap;
 
   static const double width = 156;
 
@@ -23,7 +25,10 @@ class SuggestedProductCard extends StatelessWidget {
       width: width,
       child: Card(
         margin: EdgeInsets.zero,
-        child: Padding(
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+          onTap: onTap,
+          child: Padding(
           padding: const EdgeInsets.all(AppConstants.spacingSm),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -78,6 +83,7 @@ class SuggestedProductCard extends StatelessWidget {
                 ),
               ),
             ],
+          ),
           ),
         ),
       ),

@@ -4,19 +4,28 @@ import 'package:sunil_medical_store/features/medicines/domain/product.dart';
 
 /// Full-width list item for a product in the category / catalog list.
 class ProductCard extends StatelessWidget {
-  const ProductCard({super.key, required this.product, required this.onAdd});
+  const ProductCard({
+    super.key,
+    required this.product,
+    required this.onAdd,
+    required this.onTap,
+  });
 
   final Product product;
   final VoidCallback onAdd;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppConstants.spacingMd),
-        child: Row(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(AppConstants.spacingMd),
+          child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _ProductThumb(size: 56, iconSize: 28),
@@ -42,6 +51,7 @@ class ProductCard extends StatelessWidget {
             const SizedBox(width: AppConstants.spacingSm),
             FilledButton.tonal(onPressed: onAdd, child: const Text('Add')),
           ],
+          ),
         ),
       ),
     );

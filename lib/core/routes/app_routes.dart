@@ -18,6 +18,7 @@ abstract final class AppRoutes {
 
   // Nested under the Pharmacy tab so the bottom bar stays visible.
   static const medicines = '/pharmacy/medicines';
+  static const medicineDetail = '/pharmacy/medicine'; // + /<productId>
 
   // Profile sub-sections (nested under the Profile tab).
   static const profileAccount = '/profile/account';

@@ -1,6 +1,8 @@
 /// A sellable product in the pharmacy catalog.
 ///
 /// Plain domain model; the data layer maps its own DTOs into this type.
+/// [composition], [dosage] and [ingredients] are optional because they don't
+/// apply to every category (e.g. devices have none).
 class Product {
   const Product({
     required this.id,
@@ -10,6 +12,10 @@ class Product {
     required this.price,
     this.mrp,
     this.requiresPrescription = false,
+    this.description = '',
+    this.composition,
+    this.dosage,
+    this.ingredients = const [],
   });
 
   final String id;
@@ -27,6 +33,18 @@ class Product {
 
   /// Whether a valid prescription is required to buy this product.
   final bool requiresPrescription;
+
+  /// One-line marketing/usage description.
+  final String description;
+
+  /// Active composition, e.g. `Paracetamol 500mg` (`null` for non-medicines).
+  final String? composition;
+
+  /// How to take it, e.g. `1 tablet twice a day` (`null` when not applicable).
+  final String? dosage;
+
+  /// Key ingredients (empty when not applicable).
+  final List<String> ingredients;
 
   /// Discount percentage vs. [mrp], or `null` when there's no discount.
   int? get discountPercent {

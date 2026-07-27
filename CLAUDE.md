@@ -61,8 +61,8 @@ enforces the whole policy, driven by `authControllerProvider` via a
   `/lab-tests`, **Appointments** `/appointments`, **Cart** `/cart`, **Profile**
   `/profile`. (Nav destination order must match branch order in the router.)
 - Sub-pages nest under their tab so the bottom bar stays visible, e.g.
-  `/pharmacy/medicines?category=<label>`, `/lab-tests/<testId>`,
-  `/cart/checkout`, `/profile/account`, `/profile/orders`,
+  `/pharmacy/medicines?category=<label>`, `/pharmacy/medicine/<productId>`,
+  `/lab-tests/<testId>`, `/cart/checkout`, `/profile/account`, `/profile/orders`,
   `/profile/orders/detail` (order passed via `extra`), `/profile/addresses/add`, etc.
 - The Cart tab icon shows a live item-count `Badge` (`ScaffoldWithNavBar` is a
   `ConsumerWidget` watching `cartItemCountProvider`).
@@ -112,6 +112,13 @@ that are the designated swap points.
   you** horizontal products.
 - **Medicines** — category-filtered product list from `?category=`; `Product`
   model + `MockProductRepository` + `medicine_providers`. "Add" → adds to cart.
+  Tapping a product name/card (list, suggested row, or similar-products row)
+  opens **medicine detail** (`/pharmacy/medicine/<productId>`): image
+  placeholder, price/discount, description, composition, dosage, ingredients
+  (chips), a **Similar products** row (same category, recursively tappable),
+  and a sticky **Add to cart**. `Product` carries the extra fields
+  (`description`/`composition`/`dosage`/`ingredients`), all optional since
+  non-medicine categories (e.g. Devices) don't populate them.
 - **Lab Tests** (tab) — bookable-test catalog like medicines
   (`features/lab_tests`, `LabTest` model + `MockLabTestRepository` +
   `labTestCatalogProvider`). List → detail (`/lab-tests/<testId>`) with sample

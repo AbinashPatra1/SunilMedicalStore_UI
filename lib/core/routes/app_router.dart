@@ -14,6 +14,7 @@ import 'package:sunil_medical_store/features/cart/presentation/screens/checkout_
 import 'package:sunil_medical_store/features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:sunil_medical_store/features/lab_tests/presentation/screens/lab_test_catalog_detail_screen.dart';
 import 'package:sunil_medical_store/features/lab_tests/presentation/screens/lab_tests_catalog_screen.dart';
+import 'package:sunil_medical_store/features/medicines/presentation/screens/medicine_detail_screen.dart';
 import 'package:sunil_medical_store/features/medicines/presentation/screens/medicines_screen.dart';
 import 'package:sunil_medical_store/features/profile/domain/lab_test.dart';
 import 'package:sunil_medical_store/features/profile/domain/order.dart';
@@ -126,6 +127,14 @@ final routerProvider = Provider<GoRouter>((ref) {
                     path: 'medicines',
                     builder: (context, state) => MedicinesScreen(
                       category: state.uri.queryParameters['category'],
+                    ),
+                  ),
+                  // Product detail (sibling of the list so it pushes cleanly
+                  // from both the list and the dashboard).
+                  GoRoute(
+                    path: 'medicine/:productId',
+                    builder: (context, state) => MedicineDetailScreen(
+                      productId: state.pathParameters['productId']!,
                     ),
                   ),
                 ],

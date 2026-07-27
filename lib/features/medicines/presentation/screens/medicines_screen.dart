@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:sunil_medical_store/core/routes/app_routes.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/cart/presentation/providers/cart_providers.dart';
 import 'package:sunil_medical_store/features/medicines/presentation/providers/medicine_providers.dart';
@@ -37,6 +39,7 @@ class MedicinesScreen extends ConsumerWidget {
               final product = products[index];
               return ProductCard(
                 product: product,
+                onTap: () => context.push('${AppRoutes.medicineDetail}/${product.id}'),
                 onAdd: () {
                   ref.read(cartProvider.notifier).addProduct(product);
                   ScaffoldMessenger.of(context)
