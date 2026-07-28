@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
-import 'package:sunil_medical_store/features/profile/domain/order.dart';
+import 'package:sunil_medical_store/core/models/order.dart';
 import 'package:sunil_medical_store/features/profile/presentation/widgets/status_chip.dart';
 
 /// Detail of a single order, with a (placeholder) download-invoice action.

@@ -10,10 +10,11 @@ import 'package:sunil_medical_store/features/profile/presentation/providers/prof
 class AccountScreen extends ConsumerWidget {
   const AccountScreen({super.key});
 
-  IconData _genderIcon(Gender gender) => switch (gender) {
+  IconData _genderIcon(Gender? gender) => switch (gender) {
     Gender.male => Icons.man,
     Gender.female => Icons.woman,
     Gender.other => Icons.person,
+    null => Icons.person_outline,
   };
 
   @override
@@ -49,10 +50,15 @@ class AccountScreen extends ConsumerWidget {
               child: Column(
                 children: [
                   _DetailRow(label: 'Full Name', value: profile.fullName),
-                  _DetailRow(label: 'Gender', value: profile.gender.label),
-                  _DetailRow(label: 'Date of birth', value: DateFormat('d MMM yyyy').format(profile.dateOfBirth)),
+                  _DetailRow(label: 'Gender', value: profile.gender?.label ?? 'Not set'),
+                  _DetailRow(
+                    label: 'Date of birth',
+                    value: profile.dateOfBirth == null
+                        ? 'Not set'
+                        : DateFormat('d MMM yyyy').format(profile.dateOfBirth!),
+                  ),
                   _DetailRow(label: 'Phone number', value: profile.phoneNumber),
-                  _DetailRow(label: 'Email ID', value: profile.email, isLast: true),
+                  _DetailRow(label: 'Email ID', value: profile.email ?? 'Not set', isLast: true),
                 ],
               ),
             ),

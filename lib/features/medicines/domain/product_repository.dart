@@ -13,4 +13,11 @@ abstract interface class ProductRepository {
 
   /// Products belonging to [category] (a category label).
   Future<List<Product>> productsByCategory(String category);
+
+  /// A single product by id, for the detail screen.
+  Future<Product> productById(String id);
+
+  /// Products in the same category as [id], excluding it — for the detail
+  /// screen's "Similar products" row.
+  Future<List<Product>> similarProducts(String id);
 }

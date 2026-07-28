@@ -15,27 +15,27 @@ class LabTestCatalogDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final catalogAsync = ref.watch(labTestCatalogProvider);
+    final testAsync = ref.watch(labTestByIdProvider(testId));
 
-    return catalogAsync.when(
+    return testAsync.when(
       loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (_, _) => Scaffold(
         appBar: AppBar(title: const Text('Lab Test')),
-        body: const Center(child: Text('Could not load the test.')),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Could not load the test.'),
+              const SizedBox(height: AppConstants.spacingSm),
+              TextButton(
+                onPressed: () => ref.invalidate(labTestByIdProvider(testId)),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
       ),
-      data: (tests) {
-        LabTest? test;
-        for (final t in tests) {
-          if (t.id == testId) test = t;
-        }
-        if (test == null) {
-          return Scaffold(
-            appBar: AppBar(title: const Text('Lab Test')),
-            body: const Center(child: Text('Test not found.')),
-          );
-        }
-        return _Detail(test: test);
-      },
+      data: (test) => _Detail(test: test),
     );
   }
 }

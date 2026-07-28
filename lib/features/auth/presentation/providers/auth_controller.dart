@@ -1,9 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sunil_medical_store/core/models/app_user.dart';
 import 'package:sunil_medical_store/features/auth/data/firebase_auth_repository.dart';
 import 'package:sunil_medical_store/features/auth/domain/auth_account.dart';
 import 'package:sunil_medical_store/features/auth/domain/auth_repository.dart';
 import 'package:sunil_medical_store/features/auth/presentation/providers/auth_state.dart';
+import 'package:sunil_medical_store/features/profile/presentation/providers/profile_repository_provider.dart';
 
 /// Provides the [AuthRepository] implementation (Firebase Phone Auth).
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
@@ -20,6 +23,10 @@ class AuthController extends Notifier<AuthState> {
   /// Verification id from [sendOtp], consumed by [verifyOtp].
   String? _verificationId;
 
+  /// Guards the backend bootstrap call (see [_bootstrapProfile]) to once per
+  /// session, reset on sign-out.
+  bool _bootstrapped = false;
+
   @override
   AuthState build() {
     final subscription = ref
@@ -34,11 +41,13 @@ class AuthController extends Notifier<AuthState> {
 
   void _onAccountChanged(AuthAccount? account) {
     if (account == null) {
+      _bootstrapped = false;
       state = const AuthState.unauthenticated();
     } else if (account.needsProfile) {
       state = const AuthState.onboarding();
     } else {
       state = AuthState.authenticated(_toAppUser(account));
+      unawaited(_bootstrapProfile(account.displayName));
     }
   }
 
@@ -89,8 +98,23 @@ class AuthController extends Notifier<AuthState> {
     try {
       final account = await _repository.completeProfile(fullName: fullName.trim());
       state = AuthState.authenticated(_toAppUser(account));
+      unawaited(_bootstrapProfile(account.displayName));
     } on AuthException catch (e) {
       state = AuthState.onboarding(errorMessage: e.message);
+    }
+  }
+
+  /// Best-effort, once-per-session upsert so the backend's MySQL user row
+  /// exists before any other authed endpoint is called (they assume it does).
+  /// Not fatal if it fails here — [ApiProfileRepository.customerProfile]
+  /// self-heals on a 404 by retrying this same call.
+  Future<void> _bootstrapProfile(String? fullName) async {
+    if (_bootstrapped) return;
+    _bootstrapped = true;
+    try {
+      await ref.read(profileRepositoryProvider).upsertProfile(fullName: fullName);
+    } catch (_) {
+      _bootstrapped = false;
     }
   }
 

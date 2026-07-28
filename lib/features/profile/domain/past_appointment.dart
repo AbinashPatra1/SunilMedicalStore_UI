@@ -1,15 +1,17 @@
-/// Outcome of a past appointment.
+/// Outcome of an appointment.
 enum AppointmentStatus {
   completed,
-  cancelled;
+  cancelled,
+  upcoming;
 
   String get label => switch (this) {
     AppointmentStatus.completed => 'Completed',
     AppointmentStatus.cancelled => 'Cancelled',
+    AppointmentStatus.upcoming => 'Upcoming',
   };
 }
 
-/// An appointment the customer booked in the past.
+/// An appointment the customer booked (past, or upcoming).
 class PastAppointment {
   const PastAppointment({
     required this.id,

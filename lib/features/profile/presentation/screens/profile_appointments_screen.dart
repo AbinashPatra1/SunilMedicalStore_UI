@@ -95,7 +95,7 @@ class _AppointmentCard extends StatelessWidget {
             ),
             StatusChip(
               label: appointment.status.label,
-              positive: appointment.status == AppointmentStatus.completed,
+              positive: appointment.status != AppointmentStatus.cancelled,
             ),
           ],
         ),

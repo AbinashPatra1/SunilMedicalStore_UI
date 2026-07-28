@@ -13,6 +13,7 @@ class Doctor {
     required this.consultationFee,
     required this.availableWeekdays,
     required this.availableTime,
+    this.photoUrl,
   });
 
   final String id;
@@ -30,6 +31,9 @@ class Doctor {
 
   /// Human-readable consulting hours, e.g. `10:00 AM – 1:00 PM`.
   final String availableTime;
+
+  /// Photo URL, when the catalog has one (`null` falls back to initials).
+  final String? photoUrl;
 
   /// Up-to-two-letter initials for the avatar placeholder.
   String get initials {

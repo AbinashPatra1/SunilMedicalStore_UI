@@ -1,38 +1,37 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sunil_medical_store/core/network/api_client.dart';
+import 'package:sunil_medical_store/features/profile/data/api_payment_method_repository.dart';
 import 'package:sunil_medical_store/features/profile/domain/payment_method.dart';
+import 'package:sunil_medical_store/features/profile/domain/payment_method_repository.dart';
 
-/// Holds the customer's saved payment methods in memory. Only UPI is supported
-/// for now.
+final paymentMethodRepositoryProvider = Provider<PaymentMethodRepository>((ref) {
+  return ApiPaymentMethodRepository(ref.watch(dioProvider));
+});
+
+/// The customer's saved UPI payment methods. Only UPI is supported.
 final paymentMethodsProvider =
-    NotifierProvider<PaymentMethodController, List<PaymentMethod>>(
+    AsyncNotifierProvider<PaymentMethodController, List<PaymentMethod>>(
   PaymentMethodController.new,
 );
 
-class PaymentMethodController extends Notifier<List<PaymentMethod>> {
-  var _seq = 0;
+class PaymentMethodController extends AsyncNotifier<List<PaymentMethod>> {
+  PaymentMethodRepository get _repository => ref.read(paymentMethodRepositoryProvider);
 
   @override
-  List<PaymentMethod> build() => const [];
+  Future<List<PaymentMethod>> build() => _repository.list();
 
-  /// Adds a UPI id. The first method added becomes the default.
-  void addUpi(String upiId) {
-    final becomesDefault = state.isEmpty;
-    final method = PaymentMethod(
-      id: 'pm-${_seq++}',
-      upiId: upiId,
-      isDefault: becomesDefault,
-    );
-    final base = becomesDefault
-        ? state.map((m) => m.copyWith(isDefault: false)).toList()
-        : List<PaymentMethod>.from(state);
-    state = [...base, method];
+  Future<void> addUpi(String upiId) async {
+    await _repository.addUpi(upiId);
+    state = await AsyncValue.guard(() => _repository.list());
   }
 
-  void setDefault(String id) {
-    state = [for (final m in state) m.copyWith(isDefault: m.id == id)];
+  Future<void> setDefault(String id) async {
+    await _repository.setDefault(id);
+    state = await AsyncValue.guard(() => _repository.list());
   }
 
-  void remove(String id) {
-    state = state.where((m) => m.id != id).toList();
+  Future<void> remove(String id) async {
+    await _repository.remove(id);
+    state = await AsyncValue.guard(() => _repository.list());
   }
 }

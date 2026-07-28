@@ -1,6 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:sunil_medical_store/features/cart/data/mock_promo_repository.dart';
+import 'package:sunil_medical_store/core/network/api_client.dart';
+import 'package:sunil_medical_store/features/cart/data/api_order_repository.dart';
+import 'package:sunil_medical_store/features/cart/data/api_promo_repository.dart';
 import 'package:sunil_medical_store/features/cart/domain/cart_item.dart';
+import 'package:sunil_medical_store/features/cart/domain/order_repository.dart';
 import 'package:sunil_medical_store/features/cart/domain/promo_code.dart';
 import 'package:sunil_medical_store/features/cart/domain/promo_repository.dart';
 import 'package:sunil_medical_store/features/lab_tests/domain/lab_test.dart';
@@ -22,6 +25,7 @@ class CartController extends Notifier<List<CartItem>> {
   /// Adds one unit of a medicine.
   void addProduct(Product product) => _add(
     id: 'medicine-${product.id}',
+    catalogId: product.id,
     title: product.name,
     subtitle: product.brand,
     price: product.price,
@@ -31,6 +35,7 @@ class CartController extends Notifier<List<CartItem>> {
   /// Adds one unit of a lab test.
   void addLabTest(LabTest test) => _add(
     id: 'labtest-${test.id}',
+    catalogId: test.id,
     title: test.name,
     subtitle: test.labName,
     price: test.price,
@@ -39,6 +44,7 @@ class CartController extends Notifier<List<CartItem>> {
 
   void _add({
     required String id,
+    required String catalogId,
     required String title,
     required String subtitle,
     required int price,
@@ -50,7 +56,15 @@ class CartController extends Notifier<List<CartItem>> {
     } else {
       state = [
         ...state,
-        CartItem(id: id, title: title, subtitle: subtitle, price: price, kind: kind, quantity: 1),
+        CartItem(
+          id: id,
+          catalogId: catalogId,
+          title: title,
+          subtitle: subtitle,
+          price: price,
+          kind: kind,
+          quantity: 1,
+        ),
       ];
     }
   }
@@ -87,7 +101,11 @@ class CartController extends Notifier<List<CartItem>> {
 }
 
 final promoRepositoryProvider = Provider<PromoRepository>((ref) {
-  return MockPromoRepository();
+  return ApiPromoRepository(ref.watch(dioProvider));
+});
+
+final orderRepositoryProvider = Provider<OrderRepository>((ref) {
+  return ApiOrderRepository(ref.watch(dioProvider));
 });
 
 /// The promo code currently applied to the cart (`null` if none).

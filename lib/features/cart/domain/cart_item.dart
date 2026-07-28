@@ -7,6 +7,7 @@ enum CartItemKind { medicine, labTest }
 class CartItem {
   const CartItem({
     required this.id,
+    required this.catalogId,
     required this.title,
     required this.subtitle,
     required this.price,
@@ -16,6 +17,11 @@ class CartItem {
 
   /// Unique within the cart (kind-prefixed, e.g. `medicine-p1`, `labtest-lt2`).
   final String id;
+
+  /// The raw catalog id (`p1`, `lt2`) — what the orders API expects as
+  /// `productId`/`testId`, as opposed to [id] which is cart-local.
+  final String catalogId;
+
   final String title;
 
   /// Brand (medicine) or lab name (lab test).
@@ -30,6 +36,7 @@ class CartItem {
 
   CartItem copyWith({int? quantity}) => CartItem(
     id: id,
+    catalogId: catalogId,
     title: title,
     subtitle: subtitle,
     price: price,

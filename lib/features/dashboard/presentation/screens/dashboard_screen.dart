@@ -33,7 +33,7 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final user = ref.watch(authControllerProvider).user;
-    final categories = ref.watch(homeCategoriesProvider);
+    final categoriesAsync = ref.watch(homeCategoriesProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -69,9 +69,19 @@ class DashboardScreen extends ConsumerWidget {
           const SizedBox(height: AppConstants.spacingLg),
           Text('Shop by category', style: theme.textTheme.titleMedium),
           const SizedBox(height: AppConstants.spacingMd),
-          CategoryGrid(
-            categories: categories,
-            onTap: (category) => context.go(_categoryRoute(category.label)),
+          categoriesAsync.when(
+            loading: () => const Padding(
+              padding: EdgeInsets.symmetric(vertical: AppConstants.spacingLg),
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (_, _) => Text(
+              'Could not load categories.',
+              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+            data: (categories) => CategoryGrid(
+              categories: categories,
+              onTap: (category) => context.go(_categoryRoute(category.label)),
+            ),
           ),
           const SizedBox(height: AppConstants.spacingLg),
           const SuggestedProducts(),

@@ -13,8 +13,9 @@ enum Gender {
 
 /// A single entry in the customer's medical history.
 class MedicalRecord {
-  const MedicalRecord({required this.title, required this.type, required this.date});
+  const MedicalRecord({required this.id, required this.title, required this.type, required this.date});
 
+  final String id;
   final String title;
 
   /// e.g. `Allergy`, `Condition`, `Report`.
@@ -23,31 +24,24 @@ class MedicalRecord {
 }
 
 /// The customer's account details shown on the Account screen.
+///
+/// [gender], [dateOfBirth] and [email] are nullable — the backend doesn't
+/// require them at signup; they're only set once a user fills them in via
+/// [ProfileRepository.upsertProfile].
 class CustomerProfile {
   const CustomerProfile({
     required this.fullName,
-    required this.gender,
-    required this.dateOfBirth,
+    this.gender,
+    this.dateOfBirth,
     required this.phoneNumber,
-    required this.email,
+    this.email,
     required this.medicalRecords,
   });
 
   final String fullName;
-  final Gender gender;
-  final DateTime dateOfBirth;
+  final Gender? gender;
+  final DateTime? dateOfBirth;
   final String phoneNumber;
-  final String email;
+  final String? email;
   final List<MedicalRecord> medicalRecords;
-
-  CustomerProfile copyWith({String? fullName, String? phoneNumber, String? email}) {
-    return CustomerProfile(
-      fullName: fullName ?? this.fullName,
-      gender: gender,
-      dateOfBirth: dateOfBirth,
-      phoneNumber: phoneNumber ?? this.phoneNumber,
-      email: email ?? this.email,
-      medicalRecords: medicalRecords,
-    );
-  }
 }

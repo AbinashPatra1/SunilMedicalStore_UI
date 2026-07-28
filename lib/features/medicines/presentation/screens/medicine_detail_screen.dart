@@ -17,39 +17,35 @@ class MedicineDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final catalogAsync = ref.watch(allProductsProvider);
+    final productAsync = ref.watch(productByIdProvider(productId));
 
-    return catalogAsync.when(
+    return productAsync.when(
       loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (_, _) => Scaffold(
         appBar: AppBar(title: const Text('Medicine')),
-        body: const Center(child: Text('Could not load the product.')),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('Could not load the product.'),
+              const SizedBox(height: AppConstants.spacingSm),
+              TextButton(
+                onPressed: () => ref.invalidate(productByIdProvider(productId)),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
       ),
-      data: (products) {
-        Product? product;
-        for (final p in products) {
-          if (p.id == productId) product = p;
-        }
-        if (product == null) {
-          return Scaffold(
-            appBar: AppBar(title: const Text('Medicine')),
-            body: const Center(child: Text('Product not found.')),
-          );
-        }
-        final similar = products
-            .where((p) => p.category == product!.category && p.id != product.id)
-            .toList();
-        return _Detail(product: product, similar: similar);
-      },
+      data: (product) => _Detail(product: product),
     );
   }
 }
 
 class _Detail extends ConsumerWidget {
-  const _Detail({required this.product, required this.similar});
+  const _Detail({required this.product});
 
   final Product product;
-  final List<Product> similar;
 
   void _added(BuildContext context, WidgetRef ref, Product p) {
     ref.read(cartProvider.notifier).addProduct(p);
@@ -67,6 +63,7 @@ class _Detail extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final discount = product.discountPercent;
+    final similarAsync = ref.watch(similarProductsProvider(product.id));
 
     return Scaffold(
       appBar: AppBar(title: Text(product.name)),
@@ -132,27 +129,40 @@ class _Detail extends ConsumerWidget {
                       children: [for (final i in product.ingredients) Chip(label: Text(i))],
                     ),
                   ),
-                if (similar.isNotEmpty) ...[
-                  const SizedBox(height: AppConstants.spacingLg),
-                  Text('Similar products', style: theme.textTheme.titleMedium),
-                  const SizedBox(height: AppConstants.spacingMd),
-                  SizedBox(
-                    height: 250,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: similar.length,
-                      separatorBuilder: (_, _) => const SizedBox(width: AppConstants.spacingMd),
-                      itemBuilder: (context, index) {
-                        final p = similar[index];
-                        return SuggestedProductCard(
-                          product: p,
-                          onAdd: () => _added(context, ref, p),
-                          onTap: () => context.push('${AppRoutes.medicineDetail}/${p.id}'),
-                        );
-                      },
-                    ),
+                similarAsync.when(
+                  loading: () => const Padding(
+                    padding: EdgeInsets.only(top: AppConstants.spacingLg),
+                    child: Center(child: CircularProgressIndicator()),
                   ),
-                ],
+                  error: (_, _) => const SizedBox.shrink(),
+                  data: (similar) {
+                    if (similar.isEmpty) return const SizedBox.shrink();
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: AppConstants.spacingLg),
+                        Text('Similar products', style: theme.textTheme.titleMedium),
+                        const SizedBox(height: AppConstants.spacingMd),
+                        SizedBox(
+                          height: 250,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: similar.length,
+                            separatorBuilder: (_, _) => const SizedBox(width: AppConstants.spacingMd),
+                            itemBuilder: (context, index) {
+                              final p = similar[index];
+                              return SuggestedProductCard(
+                                product: p,
+                                onAdd: () => _added(context, ref, p),
+                                onTap: () => context.push('${AppRoutes.medicineDetail}/${p.id}'),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
               ],
             ),
           ),

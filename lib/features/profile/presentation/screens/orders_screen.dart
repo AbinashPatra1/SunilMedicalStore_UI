@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:sunil_medical_store/core/routes/app_routes.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
-import 'package:sunil_medical_store/features/profile/domain/order.dart';
+import 'package:sunil_medical_store/core/models/order.dart';
 import 'package:sunil_medical_store/features/profile/presentation/providers/profile_providers.dart';
 import 'package:sunil_medical_store/features/profile/presentation/widgets/status_chip.dart';
 

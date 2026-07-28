@@ -1,5 +1,8 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sunil_medical_store/core/network/api_client.dart';
+import 'package:sunil_medical_store/core/network/api_exception.dart';
 
 /// A storefront category shown on the dashboard landing page.
 class HomeCategory {
@@ -9,18 +12,32 @@ class HomeCategory {
   final IconData icon;
 }
 
-/// Dummy category list for the landing page.
-///
-/// This provider stands in for a repository. When the real catalog exists,
-/// replace the hard-coded list here with a fetch from the backend — the
-/// dashboard UI reading this provider won't need to change.
-final homeCategoriesProvider = Provider<List<HomeCategory>>((ref) {
-  return const [
-    HomeCategory(label: 'Medicines', icon: Icons.medication_outlined),
-    HomeCategory(label: 'Wellness', icon: Icons.spa_outlined),
-    HomeCategory(label: 'Personal Care', icon: Icons.face_retouching_natural),
-    HomeCategory(label: 'Devices', icon: Icons.monitor_heart_outlined),
-    HomeCategory(label: 'Baby Care', icon: Icons.child_friendly_outlined),
-    HomeCategory(label: 'Ayurveda', icon: Icons.eco_outlined),
-  ];
+/// Local icon lookup for category labels — the API's `icon` field is a
+/// string name (e.g. `medication_outlined`), and Flutter's `IconData` can't
+/// be constructed dynamically from a string at runtime, so the mapping stays
+/// client-side, keyed by [label] (per the API doc's own suggestion).
+const _categoryIcons = <String, IconData>{
+  'Medicines': Icons.medication_outlined,
+  'Wellness': Icons.spa_outlined,
+  'Personal Care': Icons.face_retouching_natural,
+  'Devices': Icons.monitor_heart_outlined,
+  'Baby Care': Icons.child_friendly_outlined,
+  'Ayurveda': Icons.eco_outlined,
+};
+
+/// Home categories, fetched from the (public) catalog API.
+final homeCategoriesProvider = FutureProvider<List<HomeCategory>>((ref) async {
+  final dio = ref.watch(dioProvider);
+  try {
+    final response = await dio.get<List<dynamic>>('/catalog/categories');
+    return (response.data ?? const [])
+        .cast<Map<String, dynamic>>()
+        .map((json) {
+          final label = json['label'] as String;
+          return HomeCategory(label: label, icon: _categoryIcons[label] ?? Icons.category_outlined);
+        })
+        .toList();
+  } on DioException catch (e) {
+    throw ApiException.fromDioException(e);
+  }
 });

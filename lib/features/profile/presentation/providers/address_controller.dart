@@ -1,26 +1,28 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sunil_medical_store/core/network/api_client.dart';
+import 'package:sunil_medical_store/features/profile/data/api_address_repository.dart';
 import 'package:sunil_medical_store/features/profile/domain/address.dart';
+import 'package:sunil_medical_store/features/profile/domain/address_repository.dart';
 
-/// Holds the customer's saved addresses in memory (seeded with dummy data).
-///
-/// Replace the seed and wire [add]/[setDefault]/[remove] to a backend when the
-/// API lands — the UI reading `addressesProvider` won't change.
-final addressesProvider = NotifierProvider<AddressController, List<Address>>(
+final addressRepositoryProvider = Provider<AddressRepository>((ref) {
+  return ApiAddressRepository(ref.watch(dioProvider));
+});
+
+/// The customer's saved addresses. Mutation methods (`add`/`setDefault`/
+/// `remove`) call the API then refresh [state] — errors from the mutation
+/// call itself propagate to the caller (so a screen can show "why did this
+/// fail"), while a refresh failure surfaces as the usual `AsyncError` state.
+final addressesProvider = AsyncNotifierProvider<AddressController, List<Address>>(
   AddressController.new,
 );
 
-class AddressController extends Notifier<List<Address>> {
-  var _seq = 0;
+class AddressController extends AsyncNotifier<List<Address>> {
+  AddressRepository get _repository => ref.read(addressRepositoryProvider);
 
   @override
-  List<Address> build() => const [
-    Address(id: 'addr-0', type: AddressType.home, line1: '12, Green Park Colony', line2: 'Near City Hospital', city: 'Bhubaneswar', state: 'Odisha', pincode: '751001', isDefault: true),
-    Address(id: 'addr-1', type: AddressType.work, line1: 'Tower B, Tech Park', city: 'Bhubaneswar', state: 'Odisha', pincode: '751024'),
-  ];
+  Future<List<Address>> build() => _repository.list();
 
-  /// Adds a new address. It becomes the default if requested or if it's the
-  /// first address saved.
-  void add({
+  Future<void> add({
     required AddressType type,
     required String line1,
     String? line2,
@@ -28,29 +30,26 @@ class AddressController extends Notifier<List<Address>> {
     required String stateName,
     required String pincode,
     bool makeDefault = false,
-  }) {
-    final becomesDefault = makeDefault || state.isEmpty;
-    final address = Address(
-      id: 'addr-new-${_seq++}',
+  }) async {
+    await _repository.add(
       type: type,
       line1: line1,
       line2: line2,
       city: city,
       state: stateName,
       pincode: pincode,
-      isDefault: becomesDefault,
+      makeDefault: makeDefault,
     );
-    final base = becomesDefault
-        ? state.map((a) => a.copyWith(isDefault: false)).toList()
-        : List<Address>.from(state);
-    state = [...base, address];
+    state = await AsyncValue.guard(() => _repository.list());
   }
 
-  void setDefault(String id) {
-    state = [for (final a in state) a.copyWith(isDefault: a.id == id)];
+  Future<void> setDefault(String id) async {
+    await _repository.setDefault(id);
+    state = await AsyncValue.guard(() => _repository.list());
   }
 
-  void remove(String id) {
-    state = state.where((a) => a.id != id).toList();
+  Future<void> remove(String id) async {
+    await _repository.remove(id);
+    state = await AsyncValue.guard(() => _repository.list());
   }
 }

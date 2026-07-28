@@ -17,7 +17,7 @@ import 'package:sunil_medical_store/features/lab_tests/presentation/screens/lab_
 import 'package:sunil_medical_store/features/medicines/presentation/screens/medicine_detail_screen.dart';
 import 'package:sunil_medical_store/features/medicines/presentation/screens/medicines_screen.dart';
 import 'package:sunil_medical_store/features/profile/domain/lab_test.dart';
-import 'package:sunil_medical_store/features/profile/domain/order.dart';
+import 'package:sunil_medical_store/core/models/order.dart';
 import 'package:sunil_medical_store/features/profile/presentation/screens/account_screen.dart';
 import 'package:sunil_medical_store/features/profile/presentation/screens/add_address_screen.dart';
 import 'package:sunil_medical_store/features/profile/presentation/screens/addresses_screen.dart';

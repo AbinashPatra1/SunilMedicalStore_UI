@@ -16,6 +16,7 @@ class Product {
     this.composition,
     this.dosage,
     this.ingredients = const [],
+    this.imageUrl,
   });
 
   final String id;
@@ -45,6 +46,10 @@ class Product {
 
   /// Key ingredients (empty when not applicable).
   final List<String> ingredients;
+
+  /// Product photo URL, when the catalog has one (`null` falls back to a
+  /// placeholder icon in the UI — no real product images exist yet).
+  final String? imageUrl;
 
   /// Discount percentage vs. [mrp], or `null` when there's no discount.
   int? get discountPercent {
