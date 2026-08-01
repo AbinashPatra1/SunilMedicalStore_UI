@@ -70,6 +70,17 @@ brief see [`API_SPEC.md`](API_SPEC.md); for backend internals see [`claude.md`](
 | 27 | POST | `/v1/payment-methods` | ✔ | Add UPI method → 201 |
 | 28 | PUT | `/v1/payment-methods/{id}/default` | ✔ | Make default |
 | 29 | DELETE | `/v1/payment-methods/{id}` | ✔ | Remove → 204 |
+| 30 | GET | `/v1/admin/products?category={label}` | ✔ admin | Full inventory list (includes out-of-stock) |
+| 31 | GET | `/v1/admin/products/{id}` | ✔ admin | Single product for edit |
+| 32 | POST | `/v1/admin/products` | ✔ admin | Create product → 201 |
+| 33 | PUT | `/v1/admin/products/{id}` | ✔ admin | Update product → 200 |
+| 34 | DELETE | `/v1/admin/products/{id}` | ✔ admin | Delete product → 204 |
+
+**Admin endpoints (30–34)**: require the caller's role to be `admin` — either
+via the `role=admin` custom claim on the Firebase ID token, or (for
+early-development convenience) via a hard-coded phone-number allowlist enforced
+client-side. Non-admins hitting these should get **403** with
+`code: "forbidden_admin_only"`.
 
 ---
 
@@ -139,12 +150,17 @@ Request (all fields optional; `fullName` required on first-ever create):
   "composition": "Paracetamol 500mg",
   "dosage": "1 tablet every 6 hours, as needed (max 4/day)",
   "ingredients": ["Paracetamol", "Starch", "Povidone", "Magnesium stearate"],
-  "imageUrl": null
+  "imageUrl": null,
+  "stock": 42
 }
 ```
 - `mrp`, `composition`, `dosage`, `imageUrl` may be `null`; `ingredients` may be `[]`
   (e.g. Devices). Client computes discount% from `mrp`/`price`; `imageUrl` falls back
   to a placeholder icon when `null`.
+- `stock` (integer, ≥ 0). When `0`, the client greys the card out, shows an
+  "Out of stock" badge, and disables Add-to-cart. The customer catalog
+  endpoints (5–8) return out-of-stock products so users can still discover
+  them; only the admin `/admin/products` endpoints allow mutation.
 
 #### 6. `GET /v1/catalog/products/suggested` → `200` — `Product[]` (6 items)
 #### 7. `GET /v1/catalog/products/{id}` → `200` — `Product` — `404 not_found` if missing
@@ -348,6 +364,60 @@ Request: `{ "upiId": "rahul@okaxis" }`
 
 ---
 
+### Admin — Inventory (products)
+
+Full CRUD over the product catalog, admin-only. The customer catalog
+endpoints (5–8) are the read-only public surface; these are the admin
+mutation surface. Wire values for `category` match the seed strings in §6
+(`Medicines`, `Wellness`, etc.).
+
+#### 30. `GET /v1/admin/products?category={label}` → `200` — `Product[]`
+Full inventory, out-of-stock items included. `category` optional; omit for
+the entire catalog. Response objects match the customer `Product` shape
+above (including the new `stock` field). `403 forbidden_admin_only` if the
+caller isn't admin.
+
+#### 31. `GET /v1/admin/products/{id}` → `200` — `Product`
+Single product for the edit form. `404 product_not_found` if missing.
+
+#### 32. `POST /v1/admin/products` → `201` — created `Product`
+Request:
+```json
+{
+  "name": "Paracetamol 500mg Tablets",
+  "brand": "Micro Labs",
+  "category": "Medicines",
+  "price": 30,
+  "stock": 100,
+  "requiresPrescription": false,
+  "composition": "Paracetamol 500mg",
+  "mrp": 35,
+  "description": "Relieves mild to moderate pain and reduces fever.",
+  "dosage": "1 tablet every 6 hours, as needed (max 4/day)",
+  "ingredients": ["Paracetamol", "Starch", "Povidone"],
+  "imageUrl": null
+}
+```
+- Mandatory (client validates): `name`, `brand`, `category`, `price`,
+  `stock`, `requiresPrescription`, `composition`.
+- Optional (omit or `null`): `mrp`, `description` (may be `""`), `dosage`,
+  `ingredients` (may be `[]`), `imageUrl`.
+- Server assigns the id.
+- Errors: `400 validation_error` (missing mandatory field or bad type),
+  `400 invalid_category` (unknown category label),
+  `403 forbidden_admin_only`.
+
+#### 33. `PUT /v1/admin/products/{id}` → `200` — updated `Product`
+Same request/response shape as #32. Full replace (client currently sends the
+complete object). `404 product_not_found` if missing.
+
+#### 34. `DELETE /v1/admin/products/{id}` → `204`
+Hard delete. `404 product_not_found` if missing. Backend may want to prevent
+deletion if the product is referenced by unfulfilled orders — flag with
+`409 product_in_use` if so; the client will surface the message.
+
+---
+
 ## 4. Error envelope
 
 Every 4xx/5xx (except the bare `401` auth challenge) returns:
@@ -360,7 +430,8 @@ promo), `401` (missing/invalid token), `404` (not found), `500` (`internal_error
 Common codes: `validation_error`, `invalid_promo_code`, `invalid_upi_id`, `empty_cart`,
 `address_required`, `not_found`, `user_not_found`, `product_not_found`, `lab_test_not_found`,
 `order_not_found`, `lab_test_booking_not_found`, `address_not_found`, `payment_method_not_found`,
-`doctor_not_found`, `full_name_required`, `internal_error`.
+`doctor_not_found`, `full_name_required`, `internal_error`, `forbidden_admin_only`,
+`invalid_category`, `product_in_use`.
 
 ---
 

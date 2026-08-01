@@ -22,15 +22,19 @@ class CartController extends Notifier<List<CartItem>> {
   @override
   List<CartItem> build() => const [];
 
-  /// Adds one unit of a medicine.
-  void addProduct(Product product) => _add(
-    id: 'medicine-${product.id}',
-    catalogId: product.id,
-    title: product.name,
-    subtitle: product.brand,
-    price: product.price,
-    kind: CartItemKind.medicine,
-  );
+  /// Adds one unit of a medicine. No-op when the product is out of stock —
+  /// the UI already disables the Add button, this is a defensive backstop.
+  void addProduct(Product product) {
+    if (product.isOutOfStock) return;
+    _add(
+      id: 'medicine-${product.id}',
+      catalogId: product.id,
+      title: product.name,
+      subtitle: product.brand,
+      price: product.price,
+      kind: CartItemKind.medicine,
+    );
+  }
 
   /// Adds one unit of a lab test.
   void addLabTest(LabTest test) => _add(

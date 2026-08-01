@@ -55,11 +55,18 @@ Feature-first. Each feature: `lib/features/<feature>/{domain,data,presentation/{
 enforces the whole policy, driven by `authControllerProvider` via a
 `refreshListenable`.
 
-- Top-level routes (no bottom bar): `/` splash, `/login`, `/onboarding`, `/admin`.
+- Top-level routes (no bottom bar): `/` splash, `/login`, `/onboarding`.
 - Customer area = `StatefulShellRoute.indexedStack` with 5 tabs (each keeps its
   own stack, in this order): **Pharmacy** `/pharmacy` (default), **Lab Tests**
   `/lab-tests`, **Appointments** `/appointments`, **Cart** `/cart`, **Profile**
   `/profile`. (Nav destination order must match branch order in the router.)
+- Admin area = **parallel** `StatefulShellRoute.indexedStack` with 5 tabs:
+  **Inventory** `/admin/inventory` (default), **Appointments**
+  `/admin/appointments`, **Orders** `/admin/orders`, **Discounts**
+  `/admin/discounts`, **Statistics** `/admin/statistics`. Admin nested routes
+  live under the parent tab, e.g. `/admin/inventory/new`,
+  `/admin/inventory/edit/<productId>`. Admin screens include an
+  `AdminSignOutButton` app-bar action (no Profile tab to sign out from).
 - Sub-pages nest under their tab so the bottom bar stays visible, e.g.
   `/pharmacy/medicines?category=<label>`, `/pharmacy/medicine/<productId>`,
   `/lab-tests/<testId>`, `/cart/checkout`, `/profile/account`, `/profile/orders`,
@@ -67,8 +74,10 @@ enforces the whole policy, driven by `authControllerProvider` via a
 - The Cart tab icon shows a live item-count `Badge` (`ScaffoldWithNavBar` is a
   `ConsumerWidget` watching `cartItemCountProvider`).
 - Redirect policy: `unknown`→splash; `unauthenticated`→login;
-  `onboarding`→/onboarding; authenticated→role home (admin→/admin,
-  customer→/pharmacy) and each role is kept out of the other's area.
+  `onboarding`→/onboarding; authenticated→role home
+  (admin→`/admin/inventory`, customer→`/pharmacy`); admins blocked from
+  everything outside `/admin/**` and customers blocked from `/admin/**` via
+  a `startsWith(AppRoutes.admin)` prefix check.
 
 ## Authentication (Firebase Phone Auth — live & verified)
 
@@ -84,10 +93,13 @@ Real Firebase phone/OTP auth, verified end-to-end on the emulator.
   → if the Firebase user has no `displayName` → **onboarding** screen (collect
   name → `updateDisplayName`) → dashboard.
 - **Name** is stored on the Firebase user's `displayName` (no profile DB).
-- **Role** is read from the ID-token custom claim `role` (default `customer`;
-  `admin` only if the claim says so). The app already reads it, so admins "just
-  work" once the .NET backend sets the claim via the Admin SDK. `UserRole` enum
-  in `core/models`.
+- **Role** is admin if **either**: (a) the ID token's `role` custom claim is
+  `admin` (set by the backend via the Admin SDK), **or** (b) the signed-in
+  phone number is in `FirebaseAuthRepository._adminPhoneNumbers` — a
+  hard-coded 10-digit set. Currently only `9124833215` (`+91 91248 33215`).
+  The hard-coded fallback lets the admin console be demoed with no backend
+  infrastructure; add new admins by extending the set. `UserRole` enum in
+  `core/models`.
 - Phone numbers: UI takes 10 digits; controller sends E.164 `+91<digits>`.
   `AppUser.phoneNumber` stores the national 10-digit; `displayPhone` formats it.
 - Widget test overrides `authRepositoryProvider` with an in-test fake so it
@@ -111,7 +123,7 @@ that are the designated swap points.
   banner; **Shop by category** grid (`homeCategoriesProvider`); **Suggested for
   you** horizontal products.
 - **Medicines** — category-filtered product list from `?category=`; `Product`
-  model + `MockProductRepository` + `medicine_providers`. "Add" → adds to cart.
+  model + `medicine_providers`. "Add" → adds to cart.
   Tapping a product name/card (list, suggested row, or similar-products row)
   opens **medicine detail** (`/pharmacy/medicine/<productId>`): image
   placeholder, price/discount, description, composition, dosage, ingredients
@@ -119,6 +131,10 @@ that are the designated swap points.
   and a sticky **Add to cart**. `Product` carries the extra fields
   (`description`/`composition`/`dosage`/`ingredients`), all optional since
   non-medicine categories (e.g. Devices) don't populate them.
+  Also carries `stock: int` — when `0`, `Product.isOutOfStock` is true and
+  the catalog UIs (ProductCard, SuggestedProductCard, MedicineDetailScreen)
+  grey out the card + disable Add + show an "Out of stock" badge. Cart's
+  `addProduct` no-ops on out-of-stock as a defensive backstop.
 - **Lab Tests** (tab) — bookable-test catalog like medicines
   (`features/lab_tests`, `LabTest` model + `MockLabTestRepository` +
   `labTestCatalogProvider`). List → detail (`/lab-tests/<testId>`) with sample
@@ -154,8 +170,24 @@ that are the designated swap points.
     `paymentMethodsProvider`). Only UPI supported for now.
   - Read-only profile data (`MockProfileRepository`); name/phone shown around the
     app are the real auth values, but Account's extended fields are still mock.
-- **Admin** — separate console screen, role-gated, no bottom tabs (dormant until
-  a `role=admin` claim exists).
+- **Admin console** (`lib/features/admin/`) — role-gated, mirrors the
+  customer's 5-tab shell (`AdminScaffoldWithNavBar` in `core/widgets`). Tabs:
+  - **Inventory** — full CRUD over the product catalog against
+    `/v1/admin/products`. `InventoryRepository` (`domain`) +
+    `ApiInventoryRepository` (`data`) exposed via
+    `inventoryRepositoryProvider`; `adminInventoryListProvider(category)`
+    and `adminProductByIdProvider(id)` back the screens. **List** with
+    category filter chips (from `homeCategoriesProvider` — same categories
+    as the customer dashboard) + an "In stock only" toggle; each row shows a
+    `StockBadge` (In stock N / Low: N / Out of stock) and the Rx flag. Tap a
+    row → **Edit form**; FAB → **Add form**. The form supports both modes
+    (`productId == null` means Add), captures all `Product` fields
+    (mandatory: Name, Brand, Category, Price, Quantity, Composition, Rx;
+    optional: MRP, Description, Dosage, Ingredients as comma-separated
+    string, Image URL), and has a delete-with-confirm action on Edit.
+  - **Appointments, Orders, Discounts, Statistics** — placeholder screens
+    until their features are implemented. All use the shared
+    `PlaceholderScreen` + `AdminSignOutButton`.
 
 ## Android / build notes
 

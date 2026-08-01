@@ -2,8 +2,14 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sunil_medical_store/core/routes/app_routes.dart';
+import 'package:sunil_medical_store/core/widgets/admin_scaffold_with_nav_bar.dart';
 import 'package:sunil_medical_store/core/widgets/scaffold_with_nav_bar.dart';
-import 'package:sunil_medical_store/features/admin/presentation/screens/admin_dashboard_screen.dart';
+import 'package:sunil_medical_store/features/admin/appointments/presentation/screens/admin_appointments_screen.dart';
+import 'package:sunil_medical_store/features/admin/discounts/presentation/screens/admin_discounts_screen.dart';
+import 'package:sunil_medical_store/features/admin/inventory/presentation/screens/add_or_edit_product_screen.dart';
+import 'package:sunil_medical_store/features/admin/inventory/presentation/screens/inventory_list_screen.dart';
+import 'package:sunil_medical_store/features/admin/orders/presentation/screens/admin_orders_screen.dart';
+import 'package:sunil_medical_store/features/admin/statistics/presentation/screens/admin_statistics_screen.dart';
 import 'package:sunil_medical_store/features/appointments/presentation/screens/appointments_screen.dart';
 import 'package:sunil_medical_store/features/auth/presentation/providers/auth_controller.dart';
 import 'package:sunil_medical_store/features/auth/presentation/providers/auth_state.dart';
@@ -43,6 +49,9 @@ import 'package:sunil_medical_store/features/splash/presentation/screens/splash_
 /// keeps its own navigation stack and state; the admin console is a separate
 /// top-level route with no bottom navigation.
 ///
+/// The admin console lives in its own five-tab [StatefulShellRoute] parallel
+/// to the customer shell — same navigation pattern, disjoint route trees.
+///
 /// A [ValueNotifier] bumped on every auth change is wired to
 /// [GoRouter.refreshListenable] so the redirect re-runs when auth state moves.
 final routerProvider = Provider<GoRouter>((ref) {
@@ -77,7 +86,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
       // Signed in from here on. Resolve the role's home.
       final isAdmin = auth.user!.role.isAdmin;
-      final home = isAdmin ? AppRoutes.admin : AppRoutes.pharmacy;
+      final home = isAdmin ? AppRoutes.adminInventory : AppRoutes.pharmacy;
 
       // Leaving splash/login/onboarding after auth -> go home.
       if (location == AppRoutes.splash ||
@@ -86,9 +95,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         return home;
       }
 
-      // Keep each role inside its own area.
-      final inAdminArea = location == AppRoutes.admin;
-      if (isAdmin && !inAdminArea) return AppRoutes.admin;
+      // Keep each role inside its own area. Admin routes live under /admin;
+      // everything else is customer.
+      final inAdminArea = location.startsWith(AppRoutes.admin);
+      if (isAdmin && !inAdminArea) return AppRoutes.adminInventory;
       if (!isAdmin && inAdminArea) return AppRoutes.pharmacy;
 
       return null;
@@ -106,9 +116,64 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: AppRoutes.onboarding,
         builder: (context, state) => const OnboardingScreen(),
       ),
-      GoRoute(
-        path: AppRoutes.admin,
-        builder: (context, state) => const AdminDashboardScreen(),
+      // Admin tab shell (parallel to customer shell).
+      StatefulShellRoute.indexedStack(
+        builder: (context, state, navigationShell) =>
+            AdminScaffoldWithNavBar(navigationShell: navigationShell),
+        branches: [
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.adminInventory,
+                builder: (context, state) => const InventoryListScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'new',
+                    builder: (context, state) => const AddOrEditProductScreen(),
+                  ),
+                  GoRoute(
+                    path: 'edit/:productId',
+                    builder: (context, state) => AddOrEditProductScreen(
+                      productId: state.pathParameters['productId'],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.adminAppointments,
+                builder: (context, state) => const AdminAppointmentsScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.adminOrders,
+                builder: (context, state) => const AdminOrdersScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.adminDiscounts,
+                builder: (context, state) => const AdminDiscountsScreen(),
+              ),
+            ],
+          ),
+          StatefulShellBranch(
+            routes: [
+              GoRoute(
+                path: AppRoutes.adminStatistics,
+                builder: (context, state) => const AdminStatisticsScreen(),
+              ),
+            ],
+          ),
+        ],
       ),
       // Customer tab shell.
       StatefulShellRoute.indexedStack(

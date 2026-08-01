@@ -18,6 +18,7 @@ class ProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final oos = product.isOutOfStock;
 
     return Card(
       child: InkWell(
@@ -25,34 +26,67 @@ class ProductCard extends StatelessWidget {
         onTap: onTap,
         child: Padding(
           padding: const EdgeInsets.all(AppConstants.spacingMd),
-          child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _ProductThumb(size: 56, iconSize: 28),
-            const SizedBox(width: AppConstants.spacingMd),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(product.name, style: theme.textTheme.titleSmall, maxLines: 2, overflow: TextOverflow.ellipsis),
-                  Text(
-                    product.brand,
-                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+          child: Opacity(
+            opacity: oos ? 0.5 : 1.0,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _ProductThumb(size: 56, iconSize: 28),
+                const SizedBox(width: AppConstants.spacingMd),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(product.name, style: theme.textTheme.titleSmall, maxLines: 2, overflow: TextOverflow.ellipsis),
+                      Text(
+                        product.brand,
+                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                      if (product.requiresPrescription || oos) ...[
+                        const SizedBox(height: AppConstants.spacingXs),
+                        Row(
+                          children: [
+                            if (product.requiresPrescription) const _RxBadge(),
+                            if (product.requiresPrescription && oos)
+                              const SizedBox(width: AppConstants.spacingXs),
+                            if (oos) const _OutOfStockBadge(),
+                          ],
+                        ),
+                      ],
+                      const SizedBox(height: AppConstants.spacingSm),
+                      _PriceRow(product: product),
+                    ],
                   ),
-                  if (product.requiresPrescription) ...[
-                    const SizedBox(height: AppConstants.spacingXs),
-                    const _RxBadge(),
-                  ],
-                  const SizedBox(height: AppConstants.spacingSm),
-                  _PriceRow(product: product),
-                ],
-              ),
+                ),
+                const SizedBox(width: AppConstants.spacingSm),
+                FilledButton.tonal(
+                  onPressed: oos ? null : onAdd,
+                  child: const Text('Add'),
+                ),
+              ],
             ),
-            const SizedBox(width: AppConstants.spacingSm),
-            FilledButton.tonal(onPressed: onAdd, child: const Text('Add')),
-          ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _OutOfStockBadge extends StatelessWidget {
+  const _OutOfStockBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: AppConstants.spacingSm, vertical: 2),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(AppConstants.radiusSm),
+      ),
+      child: Text(
+        'Out of stock',
+        style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
       ),
     );
   }

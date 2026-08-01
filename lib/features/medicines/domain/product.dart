@@ -17,6 +17,7 @@ class Product {
     this.dosage,
     this.ingredients = const [],
     this.imageUrl,
+    this.stock = 0,
   });
 
   final String id;
@@ -50,6 +51,12 @@ class Product {
   /// Product photo URL, when the catalog has one (`null` falls back to a
   /// placeholder icon in the UI — no real product images exist yet).
   final String? imageUrl;
+
+  /// Units on hand. `0` means out of stock — customer catalog greys the
+  /// product out and disables Add; admin inventory still shows it.
+  final int stock;
+
+  bool get isOutOfStock => stock <= 0;
 
   /// Discount percentage vs. [mrp], or `null` when there's no discount.
   int? get discountPercent {

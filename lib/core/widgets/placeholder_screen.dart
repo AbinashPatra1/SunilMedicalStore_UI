@@ -12,18 +12,22 @@ class PlaceholderScreen extends StatelessWidget {
     required this.title,
     required this.icon,
     this.message,
+    this.appBarActions = const [],
   });
 
   final String title;
   final IconData icon;
   final String? message;
 
+  /// Optional app-bar actions (e.g. a sign-out button on admin screens).
+  final List<Widget> appBarActions;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: AppBar(title: Text(title), actions: appBarActions),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(AppConstants.spacingLg),

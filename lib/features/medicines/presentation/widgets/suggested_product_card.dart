@@ -20,6 +20,7 @@ class SuggestedProductCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final oos = product.isOutOfStock;
 
     return SizedBox(
       width: width,
@@ -28,62 +29,65 @@ class SuggestedProductCard extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(AppConstants.radiusMd),
           onTap: onTap,
-          child: Padding(
-          padding: const EdgeInsets.all(AppConstants.spacingSm),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                height: 72,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer,
-                  borderRadius: BorderRadius.circular(AppConstants.radiusMd),
-                ),
-                child: Icon(Icons.medication, color: theme.colorScheme.onPrimaryContainer),
-              ),
-              const SizedBox(height: AppConstants.spacingSm),
-              Text(
-                product.name,
-                style: theme.textTheme.labelLarge,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              Text(
-                product.brand,
-                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: AppConstants.spacingXs),
-              Row(
+          child: Opacity(
+            opacity: oos ? 0.5 : 1.0,
+            child: Padding(
+              padding: const EdgeInsets.all(AppConstants.spacingSm),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('₹${product.price}', style: theme.textTheme.titleSmall),
-                  if (product.discountPercent != null) ...[
-                    const SizedBox(width: AppConstants.spacingXs),
-                    Expanded(
-                      child: Text(
-                        '₹${product.mrp}',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
-                          decoration: TextDecoration.lineThrough,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
+                  Container(
+                    height: 72,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(AppConstants.radiusMd),
                     ),
-                  ],
+                    child: Icon(Icons.medication, color: theme.colorScheme.onPrimaryContainer),
+                  ),
+                  const SizedBox(height: AppConstants.spacingSm),
+                  Text(
+                    product.name,
+                    style: theme.textTheme.labelLarge,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    product.brand,
+                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: AppConstants.spacingXs),
+                  Row(
+                    children: [
+                      Text('₹${product.price}', style: theme.textTheme.titleSmall),
+                      if (product.discountPercent != null) ...[
+                        const SizedBox(width: AppConstants.spacingXs),
+                        Expanded(
+                          child: Text(
+                            '₹${product.mrp}',
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                              decoration: TextDecoration.lineThrough,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: AppConstants.spacingSm),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.tonal(
+                      onPressed: oos ? null : onAdd,
+                      child: Text(oos ? 'Out of stock' : 'Add'),
+                    ),
+                  ),
                 ],
               ),
-              const SizedBox(height: AppConstants.spacingSm),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.tonal(
-                  onPressed: onAdd,
-                  child: const Text('Add'),
-                ),
-              ),
-            ],
-          ),
+            ),
           ),
         ),
       ),

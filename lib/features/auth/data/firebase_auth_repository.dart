@@ -7,14 +7,26 @@ import 'package:sunil_medical_store/features/auth/domain/auth_repository.dart';
 
 /// [AuthRepository] backed by Firebase Phone Authentication.
 ///
-/// Role is read from the ID token's custom claims (`role`), defaulting to
-/// [UserRole.customer]. The display name is stored on the Firebase user
-/// itself, so no separate profile database is required.
+/// Role is admin if either:
+/// * the ID token's `role` custom claim is `admin` (set by the backend via
+///   the Firebase Admin SDK), or
+/// * the signed-in phone is in the hard-coded [_adminPhoneNumbers] set.
+///
+/// The hard-coded fallback lets us demo the admin console without any
+/// backend infrastructure; when the backend starts issuing claims, admins
+/// promoted that way will "just work" without a code change here. New
+/// hard-coded admins can be added by extending the set below.
+///
+/// The display name is stored on the Firebase user itself, so no separate
+/// profile database is required.
 class FirebaseAuthRepository implements AuthRepository {
   FirebaseAuthRepository([FirebaseAuth? auth])
     : _auth = auth ?? FirebaseAuth.instance;
 
   final FirebaseAuth _auth;
+
+  /// 10-digit national numbers whose owners are always treated as admins.
+  static const _adminPhoneNumbers = {'9124833215'};
 
   @override
   Stream<AuthAccount?> authStateChanges() {
@@ -25,12 +37,13 @@ class FirebaseAuthRepository implements AuthRepository {
 
   Future<AuthAccount> _accountFor(User user) async {
     final token = await user.getIdTokenResult();
-    final role = token.claims?['role'] == 'admin'
-        ? UserRole.admin
-        : UserRole.customer;
+    final phone = _nationalNumber(user.phoneNumber);
+    final claimAdmin = token.claims?['role'] == 'admin';
+    final hardcodedAdmin = _adminPhoneNumbers.contains(phone);
+    final role = (claimAdmin || hardcodedAdmin) ? UserRole.admin : UserRole.customer;
     return AuthAccount(
       uid: user.uid,
-      phoneNumber: _nationalNumber(user.phoneNumber),
+      phoneNumber: phone,
       role: role,
       displayName: user.displayName,
     );

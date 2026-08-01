@@ -94,6 +94,10 @@ class _Detail extends ConsumerWidget {
                   const SizedBox(height: AppConstants.spacingSm),
                   _Badge(label: 'Prescription required', color: theme.colorScheme.errorContainer, onColor: theme.colorScheme.onErrorContainer),
                 ],
+                if (product.isOutOfStock) ...[
+                  const SizedBox(height: AppConstants.spacingSm),
+                  _Badge(label: 'Out of stock', color: theme.colorScheme.surfaceContainerHighest, onColor: theme.colorScheme.onSurfaceVariant),
+                ],
                 const SizedBox(height: AppConstants.spacingMd),
                 Row(
                   children: [
@@ -175,9 +179,9 @@ class _Detail extends ConsumerWidget {
                 child: SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
-                    onPressed: () => _added(context, ref, product),
+                    onPressed: product.isOutOfStock ? null : () => _added(context, ref, product),
                     icon: const Icon(Icons.add_shopping_cart),
-                    label: const Text('Add to cart'),
+                    label: Text(product.isOutOfStock ? 'Out of stock' : 'Add to cart'),
                   ),
                 ),
               ),

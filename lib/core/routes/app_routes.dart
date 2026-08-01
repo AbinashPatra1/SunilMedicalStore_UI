@@ -5,8 +5,15 @@ abstract final class AppRoutes {
   static const login = '/login';
   static const onboarding = '/onboarding';
 
-  // Admin area (separate from the customer tab shell).
+  // Admin console — 5-tab shell parallel to the customer area.
   static const admin = '/admin';
+  static const adminInventory = '/admin/inventory';
+  static const adminInventoryEdit = '/admin/inventory/edit'; // + /<productId>
+  static const adminInventoryAdd = '/admin/inventory/new';
+  static const adminAppointments = '/admin/appointments';
+  static const adminOrders = '/admin/orders';
+  static const adminDiscounts = '/admin/discounts';
+  static const adminStatistics = '/admin/statistics';
 
   // Customer bottom-navigation tabs.
   static const pharmacy = '/pharmacy';
