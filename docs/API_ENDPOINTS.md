@@ -75,6 +75,16 @@ brief see [`API_SPEC.md`](API_SPEC.md); for backend internals see [`claude.md`](
 | 32 | POST | `/v1/admin/products` | ✔ admin | Create product → 201 |
 | 33 | PUT | `/v1/admin/products/{id}` | ✔ admin | Update product → 200 |
 | 34 | DELETE | `/v1/admin/products/{id}` | ✔ admin | Delete product → 204 |
+| 35 | GET | `/v1/admin/doctors` | ✔ admin | All doctors |
+| 36 | GET | `/v1/admin/doctors/{id}` | ✔ admin | Single doctor for edit |
+| 37 | POST | `/v1/admin/doctors` | ✔ admin | Create doctor → 201 |
+| 38 | PUT | `/v1/admin/doctors/{id}` | ✔ admin | Update doctor → 200 |
+| 39 | DELETE | `/v1/admin/doctors/{id}` | ✔ admin | Delete doctor → 204 |
+| 40 | GET | `/v1/admin/appointments?…filters` | ✔ admin | All appointments across users |
+| 41 | GET | `/v1/admin/appointments/{id}` | ✔ admin | Single appointment |
+| 42 | POST | `/v1/admin/appointments` | ✔ admin | Book on behalf of user → 201 |
+| 43 | PUT | `/v1/admin/appointments/{id}` | ✔ admin | Reschedule and/or change status |
+| 44 | GET | `/v1/admin/users?search={q}` | ✔ admin | Directory of all users |
 
 **Admin endpoints (30–34)**: require the caller's role to be `admin` — either
 via the `role=admin` custom claim on the Firebase ID token, or (for
@@ -418,6 +428,145 @@ deletion if the product is referenced by unfulfilled orders — flag with
 
 ---
 
+### Admin — Doctors
+
+Full CRUD over the doctor catalog. Reads mirror the customer `Doctor` shape
+(§11) — same fields, so the client shares its `Doctor` domain model.
+
+#### 35. `GET /v1/admin/doctors` → `200` — `Doctor[]`
+All doctors, including any inactive/hidden ones the customer catalog might
+filter out. `403 forbidden_admin_only` if not admin.
+
+#### 36. `GET /v1/admin/doctors/{id}` → `200` — `Doctor`
+Single doctor for the edit form. `404 doctor_not_found` if missing.
+
+#### 37. `POST /v1/admin/doctors` → `201` — created `Doctor`
+Request:
+```json
+{
+  "name": "Dr. Ananya Sharma",
+  "specialization": "General Physician",
+  "qualification": "MBBS, MD (Internal Medicine)",
+  "experienceYears": 12,
+  "rating": 4.8,
+  "consultationFee": 400,
+  "availableWeekdays": [1, 3, 5],
+  "availableTime": "10:00 AM – 1:00 PM",
+  "photoUrl": null
+}
+```
+- Client-mandatory: `name`, `specialization`, `qualification`,
+  `experienceYears`, `rating` (0–5), `consultationFee`, `availableWeekdays`
+  (non-empty; ISO Mon=1..Sun=7), `availableTime`.
+- Optional: `photoUrl`.
+- Errors: `400 validation_error`, `403 forbidden_admin_only`.
+
+#### 38. `PUT /v1/admin/doctors/{id}` → `200` — updated `Doctor`
+Same request shape as #37 (full replace). `404 doctor_not_found` if missing.
+
+#### 39. `DELETE /v1/admin/doctors/{id}` → `204`
+The client warns that existing appointments will be preserved. If the backend
+soft-deletes instead, that's fine — just ensure the customer `/doctors` list
+stops returning them. `404 doctor_not_found` if missing; `409 doctor_in_use`
+if the backend refuses to delete a doctor with upcoming appointments.
+
+---
+
+### Admin — Appointments
+
+Admin's read + write surface for every appointment across every user. Note
+the DTO here is **richer** than the customer's `PastAppointment` (§13) —
+it also carries `userId`/`userName`/`userPhone` so admin lists don't need a
+separate user fetch.
+
+#### 40. `GET /v1/admin/appointments?…filters` → `200` — `AdminAppointment[]`
+Newest first. All query parameters are optional; combine as needed.
+
+Filter query params:
+- `search` — free-text match against user name **and** doctor name.
+- `status` — `upcoming | completed | cancelled` (single value).
+- `doctorId` — filter to one doctor.
+- `dateFrom`, `dateTo` — `yyyy-MM-dd`, inclusive range on the appointment
+  date (server compares against `dateTime`'s date component).
+- `weekday` — ISO 1..7 (Mon..Sun).
+
+**AdminAppointment object:**
+```json
+{
+  "id": "a1",
+  "userId": "LESzBD8zGdTww6U0HhFsEIGK5Y32",
+  "userName": "Rahul Kumar",
+  "userPhone": "8123456789",
+  "doctorId": "doc-1",
+  "doctorName": "Dr. Ananya Sharma",
+  "specialization": "General Physician",
+  "dateTime": "2026-07-10T11:00:00Z",
+  "status": "upcoming",
+  "fee": 400
+}
+```
+
+#### 41. `GET /v1/admin/appointments/{id}` → `200` — `AdminAppointment`
+`404 appointment_not_found` if missing.
+
+#### 42. `POST /v1/admin/appointments` → `201` — created `AdminAppointment`
+Book on a user's behalf. Same shape as the customer's `POST /appointments`
+(§12) plus a `userId`. `timeSlot` should match the doctor's advertised
+consulting hours (client sends `Doctor.availableTime` verbatim).
+
+Request:
+```json
+{
+  "userId": "LESzBD8zGdTww6U0HhFsEIGK5Y32",
+  "doctorId": "doc-1",
+  "date": "2026-08-03",
+  "timeSlot": "10:00 AM – 1:00 PM"
+}
+```
+Errors: `404 user_not_found`, `404 doctor_not_found`,
+`409 slot_unavailable` (doctor already booked for that date — one-per-day
+model), `403 forbidden_admin_only`.
+
+#### 43. `PUT /v1/admin/appointments/{id}` → `200` — updated `AdminAppointment`
+Change status and/or reschedule to a new date. Any field omitted stays as-is;
+the client sends only what actually changed.
+
+Request:
+```json
+{ "status": "completed", "date": "2026-08-05" }
+```
+- `status` — `upcoming | completed | cancelled`.
+- `date` — `yyyy-MM-dd`. If sent, server keeps the doctor's `timeSlot` and
+  updates `dateTime` accordingly.
+- Doctor cannot be reassigned via this endpoint (delete + recreate if
+  needed).
+- Errors: `404 appointment_not_found`, `409 slot_unavailable` (rescheduling
+  to a date the doctor is already booked on).
+
+---
+
+### Admin — Users (directory)
+
+#### 44. `GET /v1/admin/users?search={q}` → `200` — `AdminUser[]`
+Directory used today by the "book on behalf" user picker; the Statistics
+tab will reuse it. `search` matches against name and phone (server-side).
+Client currently doesn't paginate — if the backend needs pagination,
+introduce `page`/`pageSize` later.
+
+**AdminUser object:**
+```json
+{
+  "id": "LESzBD8zGdTww6U0HhFsEIGK5Y32",
+  "fullName": "Rahul Kumar",
+  "phoneNumber": "8123456789",
+  "email": "rahul.kumar@example.com"
+}
+```
+- `email` may be `null`. `phoneNumber` is the national 10-digit form.
+- `403 forbidden_admin_only` if not admin.
+
+---
+
 ## 4. Error envelope
 
 Every 4xx/5xx (except the bare `401` auth challenge) returns:
@@ -431,7 +580,8 @@ Common codes: `validation_error`, `invalid_promo_code`, `invalid_upi_id`, `empty
 `address_required`, `not_found`, `user_not_found`, `product_not_found`, `lab_test_not_found`,
 `order_not_found`, `lab_test_booking_not_found`, `address_not_found`, `payment_method_not_found`,
 `doctor_not_found`, `full_name_required`, `internal_error`, `forbidden_admin_only`,
-`invalid_category`, `product_in_use`.
+`invalid_category`, `product_in_use`, `doctor_in_use`, `appointment_not_found`,
+`slot_unavailable`.
 
 ---
 

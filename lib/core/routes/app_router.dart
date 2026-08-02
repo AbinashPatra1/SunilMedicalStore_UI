@@ -4,7 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:sunil_medical_store/core/routes/app_routes.dart';
 import 'package:sunil_medical_store/core/widgets/admin_scaffold_with_nav_bar.dart';
 import 'package:sunil_medical_store/core/widgets/scaffold_with_nav_bar.dart';
+import 'package:sunil_medical_store/features/admin/appointments/presentation/screens/add_or_edit_doctor_screen.dart';
 import 'package:sunil_medical_store/features/admin/appointments/presentation/screens/admin_appointments_screen.dart';
+import 'package:sunil_medical_store/features/admin/appointments/presentation/screens/create_appointment_screen.dart';
+import 'package:sunil_medical_store/features/admin/appointments/presentation/screens/edit_appointment_screen.dart';
 import 'package:sunil_medical_store/features/admin/discounts/presentation/screens/admin_discounts_screen.dart';
 import 'package:sunil_medical_store/features/admin/inventory/presentation/screens/add_or_edit_product_screen.dart';
 import 'package:sunil_medical_store/features/admin/inventory/presentation/screens/inventory_list_screen.dart';
@@ -146,6 +149,28 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: AppRoutes.adminAppointments,
                 builder: (context, state) => const AdminAppointmentsScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'new',
+                    builder: (context, state) => const CreateAppointmentScreen(),
+                  ),
+                  GoRoute(
+                    path: 'edit/:id',
+                    builder: (context, state) => EditAppointmentScreen(
+                      appointmentId: state.pathParameters['id']!,
+                    ),
+                  ),
+                  GoRoute(
+                    path: 'doctors/new',
+                    builder: (context, state) => const AddOrEditDoctorScreen(),
+                  ),
+                  GoRoute(
+                    path: 'doctors/edit/:id',
+                    builder: (context, state) => AddOrEditDoctorScreen(
+                      doctorId: state.pathParameters['id'],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

@@ -185,9 +185,29 @@ that are the designated swap points.
     (mandatory: Name, Brand, Category, Price, Quantity, Composition, Rx;
     optional: MRP, Description, Dosage, Ingredients as comma-separated
     string, Image URL), and has a delete-with-confirm action on Edit.
-  - **Appointments, Orders, Discounts, Statistics** — placeholder screens
-    until their features are implemented. All use the shared
-    `PlaceholderScreen` + `AdminSignOutButton`.
+  - **Appointments** — a `DefaultTabController` shell with **two sub-tabs**:
+    - _Appointments sub-tab_ (`AdminAppointmentsListScreen`) — every
+      appointment across every user. Search bar (name or doctor) +
+      filter bottom sheet (`AppointmentFilterSheet`) with status chips,
+      doctor dropdown, date range, day-of-week. Applied filters live in
+      `adminAppointmentFiltersProvider` (Notifier); the list is a
+      `FutureProvider` that re-fetches when filters change. Tap a row →
+      `EditAppointmentScreen` (change status and/or reschedule date; doctor
+      and user stay the same). FAB → `CreateAppointmentScreen` (pick user
+      via `PickUserSheet` → pick doctor from dropdown → pick date with
+      selectable-days constrained to the doctor's weekly schedule → book
+      via `POST /admin/appointments`). All backed by
+      `AdminAppointmentRepository` (`domain`) +
+      `ApiAdminAppointmentRepository` (`data`) against
+      `/v1/admin/appointments`, plus `AdminUsersRepository` for the picker.
+    - _Doctors sub-tab_ (`AdminDoctorsListScreen`) — full CRUD via
+      `DoctorAdminRepository` on `/v1/admin/doctors`. Tap a row →
+      `AddOrEditDoctorScreen` (all `Doctor` fields; weekday multi-select
+      via shared `WeekdaySelector`; free-text consulting hours; delete-with-
+      confirm on edit). Reuses the customer `Doctor` domain model.
+  - **Orders, Discounts, Statistics** — placeholder screens until their
+    features are implemented. All use the shared `PlaceholderScreen` +
+    `AdminSignOutButton`.
 
 ## Android / build notes
 
