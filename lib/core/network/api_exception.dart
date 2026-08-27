@@ -26,7 +26,7 @@ class ApiException implements Exception {
         e.type == DioExceptionType.connectionError) {
       return const ApiException('network_error', 'Network error. Check your connection.');
     }
-    return ApiException('unknown_error', e.message ?? 'Something went wrong.');
+    return const ApiException('unknown_error', 'Something went wrong. Please try again.');
   }
 
   @override

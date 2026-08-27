@@ -1,18 +1,74 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/core/models/order.dart';
+import 'package:sunil_medical_store/features/cart/presentation/providers/cart_providers.dart';
+import 'package:sunil_medical_store/features/profile/presentation/providers/profile_providers.dart';
 import 'package:sunil_medical_store/features/profile/presentation/widgets/status_chip.dart';
 
-/// Detail of a single order, with a (placeholder) download-invoice action.
-class OrderDetailScreen extends StatelessWidget {
+/// Detail of a single order, with a (placeholder) download-invoice action
+/// and — while the order is still cancellable — a Cancel action.
+class OrderDetailScreen extends ConsumerStatefulWidget {
   const OrderDetailScreen({super.key, required this.order});
 
   final Order? order;
 
   @override
+  ConsumerState<OrderDetailScreen> createState() => _OrderDetailScreenState();
+}
+
+class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
+  late Order? _order = widget.order;
+  bool _cancelling = false;
+
+  Future<void> _cancel() async {
+    final order = _order;
+    if (order == null) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Cancel order?'),
+        content: Text('This will cancel order ${order.orderNumber}. This can\'t be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Keep order'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Cancel order'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _cancelling = true);
+    try {
+      final updated = await ref.read(orderRepositoryProvider).cancelOrder(order.id);
+      ref.invalidate(pastOrdersProvider);
+      if (mounted) {
+        setState(() => _order = updated);
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(const SnackBar(content: Text('Order cancelled')));
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } finally {
+      if (mounted) setState(() => _cancelling = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final order = this.order;
+    final order = _order;
     if (order == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Order')),
@@ -67,6 +123,17 @@ class OrderDetailScreen extends StatelessWidget {
             icon: const Icon(Icons.download_outlined),
             label: const Text('Download invoice'),
           ),
+          if (order.status.isCustomerCancellable) ...[
+            const SizedBox(height: AppConstants.spacingSm),
+            OutlinedButton.icon(
+              onPressed: _cancelling ? null : _cancel,
+              style: OutlinedButton.styleFrom(foregroundColor: theme.colorScheme.error),
+              icon: _cancelling
+                  ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.cancel_outlined),
+              label: const Text('Cancel order'),
+            ),
+          ],
         ],
       ),
     );

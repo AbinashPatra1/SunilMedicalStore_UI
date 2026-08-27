@@ -11,7 +11,8 @@ import 'package:sunil_medical_store/features/admin/appointments/presentation/scr
 import 'package:sunil_medical_store/features/admin/discounts/presentation/screens/admin_discounts_screen.dart';
 import 'package:sunil_medical_store/features/admin/inventory/presentation/screens/add_or_edit_product_screen.dart';
 import 'package:sunil_medical_store/features/admin/inventory/presentation/screens/inventory_list_screen.dart';
-import 'package:sunil_medical_store/features/admin/orders/presentation/screens/admin_orders_screen.dart';
+import 'package:sunil_medical_store/features/admin/orders/presentation/screens/admin_order_detail_screen.dart';
+import 'package:sunil_medical_store/features/admin/orders/presentation/screens/admin_orders_list_screen.dart';
 import 'package:sunil_medical_store/features/admin/statistics/presentation/screens/admin_statistics_screen.dart';
 import 'package:sunil_medical_store/features/appointments/presentation/screens/appointments_screen.dart';
 import 'package:sunil_medical_store/features/auth/presentation/providers/auth_controller.dart';
@@ -178,7 +179,15 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.adminOrders,
-                builder: (context, state) => const AdminOrdersScreen(),
+                builder: (context, state) => const AdminOrdersListScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'edit/:id',
+                    builder: (context, state) => AdminOrderDetailScreen(
+                      orderId: state.pathParameters['id']!,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

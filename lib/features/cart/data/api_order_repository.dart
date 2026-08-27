@@ -43,6 +43,16 @@ class ApiOrderRepository implements OrderRepository {
     }
   }
 
+  @override
+  Future<Order> cancelOrder(String id) async {
+    try {
+      final response = await _dio.put<Map<String, dynamic>>('/orders/$id/cancel');
+      return _fromJson(response.data!);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
   Order _fromJson(Map<String, dynamic> json) => Order(
     id: json['id'] as String,
     orderNumber: json['orderNumber'] as String,

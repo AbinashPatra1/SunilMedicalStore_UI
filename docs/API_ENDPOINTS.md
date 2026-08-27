@@ -85,6 +85,19 @@ brief see [`API_SPEC.md`](API_SPEC.md); for backend internals see [`claude.md`](
 | 42 | POST | `/v1/admin/appointments` | ✔ admin | Book on behalf of user → 201 |
 | 43 | PUT | `/v1/admin/appointments/{id}` | ✔ admin | Reschedule and/or change status |
 | 44 | GET | `/v1/admin/users?search={q}` | ✔ admin | Directory of all users |
+| 45 | PUT | `/v1/orders/{id}/cancel` | ✔ | Customer cancels their own order → 200 |
+| 46 | GET | `/v1/admin/orders?…filters` | ✔ admin | All orders across all users |
+| 47 | GET | `/v1/admin/orders/{id}` | ✔ admin | Single order |
+| 48 | PUT | `/v1/admin/orders/{id}` | ✔ admin | Change order status (incl. cancel) |
+
+**⚠ Not yet implemented on the backend** — 45–48 are a **proposed** addition to
+the contract, drafted by the Flutter client for the Admin Orders feature. The
+client is already built against this shape; the backend still needs it.
+This also **widens the `order status` enum** (see §5) from
+`processing | delivered | cancelled` to
+`created | processing | shipped | delivered | cancelled` — a freshly placed
+order (#15) should now come back with `status: "created"` instead of
+`"processing"`.
 
 **Admin endpoints (30–34)**: require the caller's role to be `admin` — either
 via the `role=admin` custom claim on the Firebase ID token, or (for
@@ -311,6 +324,12 @@ Response:
 { "invoiceUrl": "https://api.sunilmedicalstore.com/v1/orders/o10/invoice.pdf" }
 ```
 - Placeholder URL (no PDF generated yet); client just opens the URL.
+
+#### 45. `PUT /v1/orders/{id}/cancel` → `200` — updated `Order` — **proposed, not yet built**
+No body. The customer cancelling their own order.
+- Only valid while `status` is `created` or `processing` — reject with
+  `409 order_not_cancellable` once `shipped`/`delivered`/already `cancelled`.
+- `404 order_not_found` if missing or not the caller's order.
 
 ---
 
@@ -567,6 +586,59 @@ introduce `page`/`pageSize` later.
 
 ---
 
+### Admin — Orders — **proposed, not yet built**
+
+Admin's read + write surface for every order across every user. Note the
+DTO here is **richer** than the customer's `Order` (§15) — it also carries
+`userId`/`userName`/`userPhone`, same pattern as `AdminAppointment` (§40).
+
+#### 46. `GET /v1/admin/orders?…filters` → `200` — `AdminOrder[]`
+Newest first. All query parameters are optional; combine as needed.
+
+Filter query params:
+- `search` — free-text match against order number, user name **and** phone.
+- `status` — `created | processing | shipped | delivered | cancelled` (single value).
+- `dateFrom`, `dateTo` — `yyyy-MM-dd`, inclusive range on `placedOn`'s date.
+
+**AdminOrder object:**
+```json
+{
+  "id": "o10",
+  "orderNumber": "SMS-100238",
+  "userId": "LESzBD8zGdTww6U0HhFsEIGK5Y32",
+  "userName": "Rahul Kumar",
+  "userPhone": "8123456789",
+  "placedOn": "2026-07-27T14:32:00Z",
+  "status": "processing",
+  "items": [
+    { "name": "Paracetamol 500mg Tablets", "quantity": 2, "price": 30 }
+  ],
+  "subtotal": 510,
+  "discount": 51,
+  "delivery": 0,
+  "total": 459,
+  "paymentMethod": "googlePay",
+  "addressId": "addr-0"
+}
+```
+
+#### 47. `GET /v1/admin/orders/{id}` → `200` — `AdminOrder`
+`404 order_not_found` if missing.
+
+#### 48. `PUT /v1/admin/orders/{id}` → `200` — updated `AdminOrder`
+Change the order's status — advance the fulfilment lifecycle or cancel.
+Unlike the customer's self-cancel (#45), admin may set **any** status,
+including `cancelled`, regardless of the pre-shipment window.
+
+Request:
+```json
+{ "status": "shipped" }
+```
+- `status` — `created | processing | shipped | delivered | cancelled`.
+- Errors: `404 order_not_found`, `403 forbidden_admin_only`.
+
+---
+
 ## 4. Error envelope
 
 Every 4xx/5xx (except the bare `401` auth challenge) returns:
@@ -581,7 +653,7 @@ Common codes: `validation_error`, `invalid_promo_code`, `invalid_upi_id`, `empty
 `order_not_found`, `lab_test_booking_not_found`, `address_not_found`, `payment_method_not_found`,
 `doctor_not_found`, `full_name_required`, `internal_error`, `forbidden_admin_only`,
 `invalid_category`, `product_in_use`, `doctor_in_use`, `appointment_not_found`,
-`slot_unavailable`.
+`slot_unavailable`, `order_not_cancellable` (proposed, with #45).
 
 ---
 
@@ -592,7 +664,7 @@ Common codes: `validation_error`, `invalid_promo_code`, `invalid_upi_id`, `empty
 | `role` | `customer`, `admin` |
 | `gender` | `male`, `female`, `other` |
 | address `type` | `home`, `work`, `other` |
-| order `status` | `processing`, `delivered`, `cancelled` |
+| order `status` | `created`, `processing`, `shipped`, `delivered`, `cancelled` (proposed — currently `processing`, `delivered`, `cancelled`) |
 | lab-booking `status` | `completed`, `scheduled`, `cancelled` |
 | appointment `status` | `completed`, `cancelled`, `upcoming` |
 | order item `kind` | `medicine`, `labTest` |

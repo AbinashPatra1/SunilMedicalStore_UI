@@ -26,4 +26,9 @@ abstract interface class OrderRepository {
     required String paymentMethod,
     String? upiId,
   });
+
+  /// Cancels the caller's own order. Only valid while
+  /// `order.status.isCustomerCancellable` — the server rejects it once the
+  /// order has shipped.
+  Future<Order> cancelOrder(String id);
 }

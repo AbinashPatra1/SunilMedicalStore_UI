@@ -170,9 +170,12 @@ over Dio — no mock repositories remain.
   (`/cart/checkout`): default delivery address + change (bottom-sheet picker
   from `addressesProvider`); pay via UPI apps (Google Pay / PhonePe / BHIM /
   Other UPI with a custom UPI-id field) or **Cash on Delivery**; **Order Now** →
-  success dialog → clears cart + promo → home. Payment is a selection UI + mock
-  placement (no gateway/UPI deep-link); placed orders are **not** yet saved to
-  Profile → Orders (that history is still mock, pending the backend).
+  real `POST /orders` (`ApiOrderRepository`) → success dialog → clears cart +
+  promo → home. Payment is a selection UI only (no gateway/UPI deep-link) — the
+  order itself is real and shows up immediately in Profile → Orders.
+  Profile → Orders → detail has a **Cancel order** action while
+  `status.isCustomerCancellable` (`created`/`processing` — hidden once
+  shipped); calls `OrderRepository.cancelOrder` (`PUT /orders/{id}/cancel`).
 - **Profile** — header + 6 menus + Sign Out:
   - **Account** — gender-based avatar, personal details, medical records (mock).
   - **Appointments** — past appointments + "Book Appointment" → Appointments tab.
@@ -224,9 +227,21 @@ over Dio — no mock repositories remain.
       `AddOrEditDoctorScreen` (all `Doctor` fields; weekday multi-select
       via shared `WeekdaySelector`; free-text consulting hours; delete-with-
       confirm on edit). Reuses the customer `Doctor` domain model.
-  - **Orders, Discounts, Statistics** — placeholder screens until their
-    features are implemented. All use the shared `PlaceholderScreen` +
-    `AdminSignOutButton`.
+  - **Orders** — list + detail/status-edit, mirroring the Appointments admin
+    pattern. `AdminOrdersListScreen` (search by order #/user/phone + filter
+    sheet: status, date range) → tap a row → `AdminOrderDetailScreen`
+    (read-only user/items/total, status `ChoiceChip`s covering the full
+    lifecycle — `created → processing → shipped → delivered`, plus
+    `cancelled` — Save applies via a single status-change PUT). Backed by
+    `AdminOrderRepository` (`domain`) + `ApiAdminOrderRepository` (`data`)
+    against `/v1/admin/orders`. **Built ahead of the backend** — endpoints
+    45–48 in `docs/API_ENDPOINTS.md` are drafted but not yet implemented
+    server-side (currently 404s; the client shows a clean error + Retry).
+    This also widens `OrderStatus` (`core/models/order.dart`) from
+    `processing | delivered | cancelled` to
+    `created | processing | shipped | delivered | cancelled`.
+  - **Discounts, Statistics** — placeholder screens until their features are
+    implemented. Use the shared `PlaceholderScreen` + `AdminSignOutButton`.
 
 ## Android / build notes
 

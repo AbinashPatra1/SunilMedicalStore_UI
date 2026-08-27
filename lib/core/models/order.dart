@@ -1,14 +1,21 @@
 /// Fulfilment status of an order.
 enum OrderStatus {
+  created,
   processing,
+  shipped,
   delivered,
   cancelled;
 
   String get label => switch (this) {
+    OrderStatus.created => 'Created',
     OrderStatus.processing => 'Processing',
+    OrderStatus.shipped => 'Shipped',
     OrderStatus.delivered => 'Delivered',
     OrderStatus.cancelled => 'Cancelled',
   };
+
+  /// The customer can self-cancel only before the order ships.
+  bool get isCustomerCancellable => this == created || this == processing;
 }
 
 /// A single line item within an [Order].
