@@ -5,8 +5,8 @@
 Android application for a local pharmacy ("Sunil Medical Store"). Customers
 browse/search medicines, upload prescriptions, book doctor appointments, and
 manage orders, lab tests, addresses and payments. Admins get a separate
-console. Everything backend-facing is currently mocked in-app pending the
-real backend.
+console. The backend is **live** (ASP.NET Core + MySQL, deployed to Azure) and
+every feature talks to it over HTTP — see "Data & backend strategy".
 
 ## Tech Stack
 
@@ -16,7 +16,8 @@ real backend.
 - Firebase Authentication (phone/OTP) — **live**
 - Firebase Messaging (planned)
 - Azure Blob Storage (planned, for prescription/file uploads)
-- **ASP.NET Core + MySQL backend (future)** — this is the real data store
+- **ASP.NET Core + MySQL backend** — **live**, deployed to Azure App Service;
+  this is the real data store
 - No Firestore. See "Data & backend strategy".
 
 ## Coding Guidelines
@@ -108,12 +109,25 @@ Real Firebase phone/OTP auth, verified end-to-end on the emulator.
 ## Data & backend strategy (important decision)
 
 **Firebase = Auth (+ Messaging later) only. No Firestore.** All app data —
-users, orders, lab tests, addresses, payments, catalog — will live in **MySQL**
-behind the **.NET Core** backend. The app will authenticate API calls by
-sending the Firebase **ID token**, which the backend verifies with the Firebase
-Admin SDK (and can set role custom claims). `cloud_firestore` was removed as
-unused. Until the backend exists, every feature reads from **mock repositories**
-that are the designated swap points.
+users, orders, lab tests, addresses, payments, catalog — lives in **MySQL**
+behind the **.NET Core** backend (see the sibling repo `SunilMedicalStore` for
+the backend source and `docs/API_ENDPOINTS.md` for the full contract). Every
+API call sends the Firebase **ID token**, which the backend verifies with the
+Firebase Admin SDK (and can set role custom claims). `cloud_firestore` was
+removed as unused. Every repository is now backed by a real `Api*Repository`
+over Dio — no mock repositories remain.
+
+- **API base URL** (`lib/core/network/api_config.dart`): defaults to the
+  hosted Azure backend —
+  `https://sunilmedical-bxg0bheub8aqdjfk.southindia-01.azurewebsites.net/v1`
+  (DB: Aiven-hosted MySQL, free tier). Override for local dev with
+  `flutter build apk --debug --dart-define=API_BASE_URL=http://10.0.2.2:5260/v1`
+  (`10.0.2.2` is how the Android emulator reaches the host machine's
+  `localhost`).
+- `lib/core/network/api_client.dart` (`dioProvider`) attaches the bearer token
+  and, in debug builds, logs every request/response via `LogInterceptor`
+  (visible in `adb logcat`, tag `flutter`) — the go-to tool for diagnosing
+  401/500/timeout issues against either backend.
 
 ## Features (current state)
 
@@ -196,7 +210,12 @@ that are the designated swap points.
       and user stay the same). FAB → `CreateAppointmentScreen` (pick user
       via `PickUserSheet` → pick doctor from dropdown → pick date with
       selectable-days constrained to the doctor's weekly schedule → book
-      via `POST /admin/appointments`). All backed by
+      via `POST /admin/appointments`). `_pickDate` walks forward from
+      today/the current selection to the first day matching the doctor's
+      `availableWeekdays` before opening `showDatePicker` — its
+      `initialDate` must already satisfy `selectableDayPredicate` or the
+      picker throws (hit this for real: today, Fri, wasn't one of the
+      selected doctor's working days). All backed by
       `AdminAppointmentRepository` (`domain`) +
       `ApiAdminAppointmentRepository` (`data`) against
       `/v1/admin/appointments`, plus `AdminUsersRepository` for the picker.

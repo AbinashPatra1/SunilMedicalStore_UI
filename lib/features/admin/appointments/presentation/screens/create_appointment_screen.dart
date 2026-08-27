@@ -44,9 +44,16 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
     if (_doctor == null) return;
     final today = DateTime.now();
     final todayDate = DateTime(today.year, today.month, today.day);
+    // showDatePicker asserts that initialDate satisfies selectableDayPredicate,
+    // so when there's no prior selection we can't just default to today — the
+    // doctor may not work today. Walk forward to the first day they do.
+    DateTime initialDate = _date ?? todayDate;
+    while (!_doctor!.availableWeekdays.contains(initialDate.weekday)) {
+      initialDate = initialDate.add(const Duration(days: 1));
+    }
     final picked = await showDatePicker(
       context: context,
-      initialDate: _date ?? todayDate,
+      initialDate: initialDate,
       firstDate: todayDate,
       lastDate: todayDate.add(const Duration(days: 90)),
       selectableDayPredicate: (day) =>
