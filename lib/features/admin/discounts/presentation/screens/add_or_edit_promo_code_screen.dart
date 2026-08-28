@@ -235,9 +235,16 @@ class _PromoCodeFormState extends ConsumerState<_PromoCodeForm> {
           children: [
             TextFormField(
               controller: _code,
-              enabled: !busy,
+              // The backend keys promo codes by `code` and silently ignores
+              // renames on update (the original code always wins) — disable
+              // editing here rather than let admins believe a rename worked.
+              enabled: !busy && !widget.isEdit,
               textCapitalization: TextCapitalization.characters,
-              decoration: const InputDecoration(labelText: 'Code', hintText: 'e.g. SAVE10'),
+              decoration: InputDecoration(
+                labelText: 'Code',
+                hintText: 'e.g. SAVE10',
+                helperText: widget.isEdit ? "Can't be changed after creation" : null,
+              ),
               validator: _required,
             ),
             const SizedBox(height: AppConstants.spacingMd),

@@ -81,7 +81,10 @@ class ApiDiscountRepository implements DiscountRepository {
   };
 
   AdminPromoCode _fromJson(Map<String, dynamic> json) => AdminPromoCode(
-    id: json['id'] as String,
+    // The backend keys promo codes by `code` (no separate id column) — the
+    // seed data confirms it: list/detail responses never include `id`, and
+    // `code` is what every route (`/admin/promo-codes/{code}`) expects.
+    id: (json['id'] as String?) ?? json['code'] as String,
     code: json['code'] as String,
     label: json['label'] as String,
     type: PromoType.values.byName(json['type'] as String),
