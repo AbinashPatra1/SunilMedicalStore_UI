@@ -240,8 +240,18 @@ over Dio — no mock repositories remain.
     This also widens `OrderStatus` (`core/models/order.dart`) from
     `processing | delivered | cancelled` to
     `created | processing | shipped | delivered | cancelled`.
-  - **Discounts, Statistics** — placeholder screens until their features are
-    implemented. Use the shared `PlaceholderScreen` + `AdminSignOutButton`.
+  - **Discounts** — full CRUD over promo codes, mirroring the Inventory
+    pattern. `DiscountsListScreen` (code, label, value, active/expired/
+    exhausted status badge) → tap a row → `AddOrEditPromoCodeScreen`
+    (mandatory: code, label, type — percentage/flat —, value, active;
+    optional: min order, expiry date, max total uses, max uses/user;
+    delete-with-confirm on edit). Backed by `DiscountRepository` (`domain`)
+    + `ApiDiscountRepository` (`data`) against `/v1/admin/promo-codes`.
+    **Built ahead of the backend** — endpoints 49–53 in
+    `docs/API_ENDPOINTS.md` are drafted but not yet implemented server-side.
+    Reuses the customer `PromoType` enum (`features/cart/domain/promo_code.dart`).
+  - **Statistics** — placeholder screen until implemented. Uses the shared
+    `PlaceholderScreen` + `AdminSignOutButton`.
 
 ## Android / build notes
 

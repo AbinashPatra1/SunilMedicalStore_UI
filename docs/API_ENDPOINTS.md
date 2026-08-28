@@ -89,8 +89,13 @@ brief see [`API_SPEC.md`](API_SPEC.md); for backend internals see [`claude.md`](
 | 46 | GET | `/v1/admin/orders?…filters` | ✔ admin | All orders across all users |
 | 47 | GET | `/v1/admin/orders/{id}` | ✔ admin | Single order |
 | 48 | PUT | `/v1/admin/orders/{id}` | ✔ admin | Change order status (incl. cancel) |
+| 49 | GET | `/v1/admin/promo-codes` | ✔ admin | All promo codes |
+| 50 | GET | `/v1/admin/promo-codes/{id}` | ✔ admin | Single promo code for edit |
+| 51 | POST | `/v1/admin/promo-codes` | ✔ admin | Create promo code → 201 |
+| 52 | PUT | `/v1/admin/promo-codes/{id}` | ✔ admin | Update promo code → 200 |
+| 53 | DELETE | `/v1/admin/promo-codes/{id}` | ✔ admin | Delete promo code → 204 |
 
-**⚠ Not yet implemented on the backend** — 45–48 are a **proposed** addition to
+**⚠ Not yet implemented on the backend** — 45–53 are a **proposed** addition to
 the contract, drafted by the Flutter client for the Admin Orders feature. The
 client is already built against this shape; the backend still needs it.
 This also **widens the `order status` enum** (see §5) from
@@ -98,6 +103,15 @@ This also **widens the `order status` enum** (see §5) from
 `created | processing | shipped | delivered | cancelled` — a freshly placed
 order (#15) should now come back with `status: "created"` instead of
 `"processing"`.
+
+49–53 additionally mean **#14 `POST /v1/promo-codes/validate` gains new
+rejection rules** — reject (still `400 invalid_promo_code`, just a different
+`message`) when the code is `active: false`, past `expiresAt`, at
+`maxRedemptions`, or the caller has already redeemed it `perUserLimit`
+times. The client doesn't branch on error code for promo validation, only
+displays `message` — so no new error codes are required here, just accurate
+messages (e.g. `"This code has expired."`, `"This code is no longer
+active."`, `"You've already used this code."`).
 
 **Admin endpoints (30–34)**: require the caller's role to be `admin` — either
 via the `role=admin` custom claim on the Firebase ID token, or (for
@@ -639,6 +653,75 @@ Request:
 
 ---
 
+### Admin — Discounts (promo codes) — **proposed, not yet built**
+
+Full CRUD over promo codes, admin-only. #14 `POST /v1/promo-codes/validate`
+is the customer-facing read-only validation surface; these are the admin
+mutation surface (mirrors the Inventory split).
+
+#### 49. `GET /v1/admin/promo-codes` → `200` — `AdminPromoCode[]`
+All promo codes, newest first. `403 forbidden_admin_only` if not admin.
+
+**AdminPromoCode object:**
+```json
+{
+  "id": "promo-1",
+  "code": "SAVE10",
+  "label": "10% off your order",
+  "type": "percentage",
+  "value": 10,
+  "minOrder": 0,
+  "active": true,
+  "expiresAt": null,
+  "maxRedemptions": null,
+  "perUserLimit": 1,
+  "redemptionCount": 37
+}
+```
+- `type`: `percentage | flat` (same wire values as #14).
+- `expiresAt`: `yyyy-MM-dd` date, or `null` for no expiry.
+- `maxRedemptions`, `perUserLimit`: `null` = unlimited.
+- `redemptionCount`: server-computed, read-only — how many times the code
+  has been successfully used (across all users) so far.
+
+#### 50. `GET /v1/admin/promo-codes/{id}` → `200` — `AdminPromoCode`
+Single code for the edit form. `404 not_found` if missing.
+
+#### 51. `POST /v1/admin/promo-codes` → `201` — created `AdminPromoCode`
+Request:
+```json
+{
+  "code": "SAVE10",
+  "label": "10% off your order",
+  "type": "percentage",
+  "value": 10,
+  "minOrder": 0,
+  "active": true,
+  "expiresAt": null,
+  "maxRedemptions": null,
+  "perUserLimit": 1
+}
+```
+- Mandatory: `code`, `label`, `type`, `value`, `active`.
+- Optional (omit or `null`): `minOrder` (default `0`), `expiresAt`,
+  `maxRedemptions`, `perUserLimit`.
+- `code` should be unique (case-insensitive) — reject duplicates with
+  `409 promo_code_exists`.
+- Server starts `redemptionCount` at `0`.
+- Errors: `400 validation_error`, `409 promo_code_exists`, `403 forbidden_admin_only`.
+
+#### 52. `PUT /v1/admin/promo-codes/{id}` → `200` — updated `AdminPromoCode`
+Same request shape as #51 (full replace). `redemptionCount` is untouched by
+this call — it only ever changes as a side effect of successful order
+placement. `404 not_found` if missing.
+
+#### 53. `DELETE /v1/admin/promo-codes/{id}` → `204`
+Hard delete. `404 not_found` if missing. No "in use" guard needed —
+deleting a code doesn't affect orders that already redeemed it (their
+`discount` was already computed and stored at order time).
+
+---
+
 ## 4. Error envelope
 
 Every 4xx/5xx (except the bare `401` auth challenge) returns:
@@ -653,7 +736,8 @@ Common codes: `validation_error`, `invalid_promo_code`, `invalid_upi_id`, `empty
 `order_not_found`, `lab_test_booking_not_found`, `address_not_found`, `payment_method_not_found`,
 `doctor_not_found`, `full_name_required`, `internal_error`, `forbidden_admin_only`,
 `invalid_category`, `product_in_use`, `doctor_in_use`, `appointment_not_found`,
-`slot_unavailable`, `order_not_cancellable` (proposed, with #45).
+`slot_unavailable`, `order_not_cancellable` (proposed, with #45),
+`promo_code_exists` (proposed, with #51).
 
 ---
 

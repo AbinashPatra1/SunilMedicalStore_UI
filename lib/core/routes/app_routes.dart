@@ -19,6 +19,8 @@ abstract final class AppRoutes {
   static const adminOrders = '/admin/orders';
   static const adminOrderEdit = '/admin/orders/edit'; // + /<id>
   static const adminDiscounts = '/admin/discounts';
+  static const adminDiscountEdit = '/admin/discounts/edit'; // + /<id>
+  static const adminDiscountAdd = '/admin/discounts/new';
   static const adminStatistics = '/admin/statistics';
 
   // Customer bottom-navigation tabs.

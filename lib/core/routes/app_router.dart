@@ -8,7 +8,8 @@ import 'package:sunil_medical_store/features/admin/appointments/presentation/scr
 import 'package:sunil_medical_store/features/admin/appointments/presentation/screens/admin_appointments_screen.dart';
 import 'package:sunil_medical_store/features/admin/appointments/presentation/screens/create_appointment_screen.dart';
 import 'package:sunil_medical_store/features/admin/appointments/presentation/screens/edit_appointment_screen.dart';
-import 'package:sunil_medical_store/features/admin/discounts/presentation/screens/admin_discounts_screen.dart';
+import 'package:sunil_medical_store/features/admin/discounts/presentation/screens/add_or_edit_promo_code_screen.dart';
+import 'package:sunil_medical_store/features/admin/discounts/presentation/screens/discounts_list_screen.dart';
 import 'package:sunil_medical_store/features/admin/inventory/presentation/screens/add_or_edit_product_screen.dart';
 import 'package:sunil_medical_store/features/admin/inventory/presentation/screens/inventory_list_screen.dart';
 import 'package:sunil_medical_store/features/admin/orders/presentation/screens/admin_order_detail_screen.dart';
@@ -195,7 +196,19 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.adminDiscounts,
-                builder: (context, state) => const AdminDiscountsScreen(),
+                builder: (context, state) => const DiscountsListScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'new',
+                    builder: (context, state) => const AddOrEditPromoCodeScreen(),
+                  ),
+                  GoRoute(
+                    path: 'edit/:id',
+                    builder: (context, state) => AddOrEditPromoCodeScreen(
+                      promoCodeId: state.pathParameters['id'],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
