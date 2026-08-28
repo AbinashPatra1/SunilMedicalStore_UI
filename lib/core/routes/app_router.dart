@@ -13,7 +13,8 @@ import 'package:sunil_medical_store/features/admin/discounts/presentation/screen
 import 'package:sunil_medical_store/features/admin/inventory/presentation/screens/add_or_edit_product_screen.dart';
 import 'package:sunil_medical_store/features/admin/inventory/presentation/screens/inventory_list_screen.dart';
 import 'package:sunil_medical_store/features/admin/orders/presentation/screens/admin_order_detail_screen.dart';
-import 'package:sunil_medical_store/features/admin/orders/presentation/screens/admin_orders_list_screen.dart';
+import 'package:sunil_medical_store/features/admin/orders/presentation/screens/admin_orders_screen.dart';
+import 'package:sunil_medical_store/features/admin/orders/presentation/screens/admin_prescription_detail_screen.dart';
 import 'package:sunil_medical_store/features/admin/statistics/presentation/screens/admin_statistics_screen.dart';
 import 'package:sunil_medical_store/features/appointments/presentation/screens/appointments_screen.dart';
 import 'package:sunil_medical_store/features/auth/presentation/providers/auth_controller.dart';
@@ -27,6 +28,7 @@ import 'package:sunil_medical_store/features/lab_tests/presentation/screens/lab_
 import 'package:sunil_medical_store/features/lab_tests/presentation/screens/lab_tests_catalog_screen.dart';
 import 'package:sunil_medical_store/features/medicines/presentation/screens/medicine_detail_screen.dart';
 import 'package:sunil_medical_store/features/medicines/presentation/screens/medicines_screen.dart';
+import 'package:sunil_medical_store/features/prescriptions/presentation/screens/prescriptions_screen.dart';
 import 'package:sunil_medical_store/features/profile/domain/lab_test.dart';
 import 'package:sunil_medical_store/core/models/order.dart';
 import 'package:sunil_medical_store/features/profile/presentation/screens/account_screen.dart';
@@ -180,12 +182,18 @@ final routerProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: AppRoutes.adminOrders,
-                builder: (context, state) => const AdminOrdersListScreen(),
+                builder: (context, state) => const AdminOrdersScreen(),
                 routes: [
                   GoRoute(
                     path: 'edit/:id',
                     builder: (context, state) => AdminOrderDetailScreen(
                       orderId: state.pathParameters['id']!,
+                    ),
+                  ),
+                  GoRoute(
+                    path: 'prescriptions/edit/:id',
+                    builder: (context, state) => AdminPrescriptionDetailScreen(
+                      prescriptionId: state.pathParameters['id']!,
                     ),
                   ),
                 ],
@@ -248,6 +256,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                     builder: (context, state) => MedicineDetailScreen(
                       productId: state.pathParameters['productId']!,
                     ),
+                  ),
+                  GoRoute(
+                    path: 'prescriptions',
+                    builder: (context, state) => const PrescriptionsScreen(),
                   ),
                 ],
               ),

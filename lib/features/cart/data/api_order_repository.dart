@@ -17,6 +17,7 @@ class ApiOrderRepository implements OrderRepository {
     String? promoCode,
     required String paymentMethod,
     String? upiId,
+    String? prescriptionId,
   }) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
@@ -35,6 +36,7 @@ class ApiOrderRepository implements OrderRepository {
           'promoCode': ?promoCode,
           'paymentMethod': paymentMethod,
           'upiId': ?upiId,
+          'prescriptionId': ?prescriptionId,
         },
       );
       return _fromJson(response.data!);

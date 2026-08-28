@@ -94,8 +94,14 @@ brief see [`API_SPEC.md`](API_SPEC.md); for backend internals see [`claude.md`](
 | 51 | POST | `/v1/admin/promo-codes` | ✔ admin | Create promo code → 201 |
 | 52 | PUT | `/v1/admin/promo-codes/{id}` | ✔ admin | Update promo code → 200 |
 | 53 | DELETE | `/v1/admin/promo-codes/{id}` | ✔ admin | Delete promo code → 204 |
+| 54 | POST | `/v1/prescriptions` | ✔ | Save an uploaded prescription's metadata → 201 |
+| 55 | GET | `/v1/prescriptions` | ✔ | Caller's prescriptions |
+| 56 | GET | `/v1/prescriptions/{id}` | ✔ | Single prescription |
+| 57 | GET | `/v1/admin/prescriptions?status=` | ✔ admin | All prescriptions across users |
+| 58 | GET | `/v1/admin/prescriptions/{id}` | ✔ admin | Single prescription for review |
+| 59 | PUT | `/v1/admin/prescriptions/{id}` | ✔ admin | Approve/reject → 200 |
 
-**⚠ Not yet implemented on the backend** — 45–53 are a **proposed** addition to
+**⚠ Not yet implemented on the backend** — 45–59 are a **proposed** addition to
 the contract, drafted by the Flutter client for the Admin Orders feature. The
 client is already built against this shape; the backend still needs it.
 This also **widens the `order status` enum** (see §5) from
@@ -112,6 +118,19 @@ times. The client doesn't branch on error code for promo validation, only
 displays `message` — so no new error codes are required here, just accurate
 messages (e.g. `"This code has expired."`, `"This code is no longer
 active."`, `"You've already used this code."`).
+
+**54–59 (prescriptions) — important architecture note:** the client uploads
+the image directly to **Firebase Storage** (path `prescriptions/{uid}/{uuid}.{ext}`,
+requires Storage security rules letting a signed-in user write under their
+own uid — not yet configured in the Firebase console, separately from this
+backend work) and only sends the backend the resulting download URL. The
+backend **never receives multipart/raw file bytes** for this — #54 is a
+plain JSON call. This also means **#15 `POST /v1/orders` gains an optional
+`prescriptionId` field** — validate server-side (don't just trust the
+client-side gate) that when any ordered item's product has
+`requiresPrescription: true`, a `prescriptionId` was sent and belongs to
+the caller; reject with `400 prescription_required` or
+`404 prescription_not_found` otherwise.
 
 **Admin endpoints (30–34)**: require the caller's role to be `admin` — either
 via the `role=admin` custom claim on the Firebase ID token, or (for
@@ -296,11 +315,14 @@ Request:
   ],
   "addressId": "addr-0",
   "promoCode": "SAVE10",
-  "paymentMethod": "googlePay"
+  "paymentMethod": "googlePay",
+  "prescriptionId": "rx-1"
 }
 ```
 - `items[].kind`: `medicine | labTest`. Send `productId` for medicines, `testId` for lab tests.
 - `promoCode`: optional (`null`/omit for none).
+- `prescriptionId`: optional/omit unless the cart has an Rx item (see §54–59
+  below) — required and server-validated in that case.
 - `paymentMethod`: `googlePay | phonePe | bhim | upi | cod`. For `upi`, also send `upiId`:
   ```json
   { "paymentMethod": "upi", "upiId": "rahul@okaxis" }
@@ -722,6 +744,74 @@ deleting a code doesn't affect orders that already redeemed it (their
 
 ---
 
+### Prescriptions — **proposed, not yet built**
+
+Customers upload a photo of a prescription (from the Pharmacy tab's
+"Prescription" button, or at checkout when the cart holds an Rx-flagged
+item); admin reviews it. See the architecture note above §2 — the backend
+only ever sees a Firebase Storage download URL, never raw image bytes.
+
+#### 54. `POST /v1/prescriptions` → `201` — created `Prescription`
+Request:
+```json
+{ "imageUrl": "https://firebasestorage.googleapis.com/v0/b/…/prescriptions%2Fuid%2Fabc.jpg?alt=media&token=…" }
+```
+Response:
+```json
+{
+  "id": "rx-1",
+  "imageUrl": "https://firebasestorage.googleapis.com/…",
+  "uploadedOn": "2026-08-28T10:00:00Z",
+  "status": "pending",
+  "note": null
+}
+```
+- Server sets `status: "pending"` and `uploadedOn: now` — not client-supplied.
+- `imageUrl` isn't validated for reachability; the app trusts Firebase Storage.
+
+#### 55. `GET /v1/prescriptions` → `200` — `Prescription[]` (caller's own, newest first)
+#### 56. `GET /v1/prescriptions/{id}` → `200` — `Prescription` — `404 prescription_not_found`
+
+---
+
+### Admin — Prescriptions — **proposed, not yet built**
+
+Admin's review queue. Presented as a sub-tab of Admin → Orders in the
+client (mirrors the Appointments/Doctors sub-tab split) since Rx approval
+is part of order fulfilment, but it's its own resource here.
+
+#### 57. `GET /v1/admin/prescriptions?status=` → `200` — `AdminPrescription[]`
+Newest first. `status` optional — `pending | approved | rejected`; omit for all.
+
+**AdminPrescription object:**
+```json
+{
+  "id": "rx-1",
+  "userId": "LESzBD8zGdTww6U0HhFsEIGK5Y32",
+  "userName": "Rahul Kumar",
+  "userPhone": "8123456789",
+  "imageUrl": "https://firebasestorage.googleapis.com/…",
+  "uploadedOn": "2026-08-28T10:00:00Z",
+  "status": "pending",
+  "note": null
+}
+```
+
+#### 58. `GET /v1/admin/prescriptions/{id}` → `200` — `AdminPrescription`
+`404 prescription_not_found` if missing.
+
+#### 59. `PUT /v1/admin/prescriptions/{id}` → `200` — updated `AdminPrescription`
+Request:
+```json
+{ "status": "rejected", "note": "Image is blurry, please re-upload." }
+```
+- `status` — `approved | rejected` (never sent back to `pending`).
+- `note` — optional either way; typically the rejection reason, shown to
+  the customer.
+- Errors: `404 prescription_not_found`, `403 forbidden_admin_only`.
+
+---
+
 ## 4. Error envelope
 
 Every 4xx/5xx (except the bare `401` auth challenge) returns:
@@ -737,7 +827,8 @@ Common codes: `validation_error`, `invalid_promo_code`, `invalid_upi_id`, `empty
 `doctor_not_found`, `full_name_required`, `internal_error`, `forbidden_admin_only`,
 `invalid_category`, `product_in_use`, `doctor_in_use`, `appointment_not_found`,
 `slot_unavailable`, `order_not_cancellable` (proposed, with #45),
-`promo_code_exists` (proposed, with #51).
+`promo_code_exists` (proposed, with #51), `prescription_required` (proposed,
+with #15), `prescription_not_found` (proposed, with #54–59).
 
 ---
 
@@ -754,6 +845,7 @@ Common codes: `validation_error`, `invalid_promo_code`, `invalid_upi_id`, `empty
 | order item `kind` | `medicine`, `labTest` |
 | promo `type` | `percentage`, `flat` |
 | `paymentMethod` | `googlePay`, `phonePe`, `bhim`, `upi`, `cod` |
+| prescription `status` | `pending`, `approved`, `rejected` (proposed) |
 
 Deserialize with Dart's `Enum.values.byName(json)` — values match member names 1:1.
 

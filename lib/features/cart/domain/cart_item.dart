@@ -13,6 +13,7 @@ class CartItem {
     required this.price,
     required this.kind,
     required this.quantity,
+    this.requiresPrescription = false,
   });
 
   /// Unique within the cart (kind-prefixed, e.g. `medicine-p1`, `labtest-lt2`).
@@ -32,6 +33,10 @@ class CartItem {
   final CartItemKind kind;
   final int quantity;
 
+  /// Whether this line requires a prescription — always `false` for lab
+  /// tests, mirrors `Product.requiresPrescription` for medicines.
+  final bool requiresPrescription;
+
   int get lineTotal => price * quantity;
 
   CartItem copyWith({int? quantity}) => CartItem(
@@ -42,5 +47,6 @@ class CartItem {
     price: price,
     kind: kind,
     quantity: quantity ?? this.quantity,
+    requiresPrescription: requiresPrescription,
   );
 }

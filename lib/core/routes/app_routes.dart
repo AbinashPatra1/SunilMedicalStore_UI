@@ -18,6 +18,7 @@ abstract final class AppRoutes {
   static const adminDoctorEdit = '/admin/appointments/doctors/edit'; // + /<id>
   static const adminOrders = '/admin/orders';
   static const adminOrderEdit = '/admin/orders/edit'; // + /<id>
+  static const adminOrderPrescriptionEdit = '/admin/orders/prescriptions/edit'; // + /<id>
   static const adminDiscounts = '/admin/discounts';
   static const adminDiscountEdit = '/admin/discounts/edit'; // + /<id>
   static const adminDiscountAdd = '/admin/discounts/new';
@@ -34,6 +35,7 @@ abstract final class AppRoutes {
   // Nested under the Pharmacy tab so the bottom bar stays visible.
   static const medicines = '/pharmacy/medicines';
   static const medicineDetail = '/pharmacy/medicine'; // + /<productId>
+  static const prescriptions = '/pharmacy/prescriptions';
 
   // Profile sub-sections (nested under the Profile tab).
   static const profileAccount = '/profile/account';

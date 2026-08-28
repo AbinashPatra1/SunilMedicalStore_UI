@@ -25,6 +25,7 @@ abstract interface class OrderRepository {
     String? promoCode,
     required String paymentMethod,
     String? upiId,
+    String? prescriptionId,
   });
 
   /// Cancels the caller's own order. Only valid while

@@ -14,8 +14,9 @@ import 'package:sunil_medical_store/features/dashboard/presentation/widgets/sugg
 /// Customer landing page (Pharmacy tab) shown after a non-admin signs in.
 ///
 /// Dummy content for now — categories come from [homeCategoriesProvider],
-/// products from the medicines providers, and the image-search / prescription
-/// actions are placeholders until those features are built.
+/// products from the medicines providers, and image search is a placeholder
+/// until that feature is built. Prescription upload is real — see
+/// `features/prescriptions`.
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
@@ -60,7 +61,7 @@ class DashboardScreen extends ConsumerWidget {
           const SizedBox(height: AppConstants.spacingLg),
           PharmacyActionButtons(
             onSearchByImage: () => _comingSoon(context, 'Image search'),
-            onUploadPrescription: () => _comingSoon(context, 'Prescription upload'),
+            onUploadPrescription: () => context.push(AppRoutes.prescriptions),
           ),
           const SizedBox(height: AppConstants.spacingMd),
           HomeSearchBar(onTap: () => _comingSoon(context, 'Search')),

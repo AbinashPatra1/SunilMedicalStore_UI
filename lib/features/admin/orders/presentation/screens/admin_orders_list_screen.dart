@@ -8,10 +8,9 @@ import 'package:sunil_medical_store/features/admin/orders/domain/admin_order_rep
 import 'package:sunil_medical_store/features/admin/orders/presentation/providers/admin_order_providers.dart';
 import 'package:sunil_medical_store/features/admin/orders/presentation/widgets/admin_order_tile.dart';
 import 'package:sunil_medical_store/features/admin/orders/presentation/widgets/order_filter_sheet.dart';
-import 'package:sunil_medical_store/features/admin/presentation/widgets/admin_sign_out_button.dart';
 
-/// Admin > Orders tab: every order across every user, with search + filter
-/// sheet. Tap a row to view/edit status.
+/// Admin > Orders > Orders sub-tab: every order across every user, with
+/// search + filter sheet. Tap a row to view/edit status.
 class AdminOrdersListScreen extends ConsumerStatefulWidget {
   const AdminOrdersListScreen({super.key});
 
@@ -67,10 +66,6 @@ class _AdminOrdersListScreenState extends ConsumerState<AdminOrdersListScreen> {
     final hasFilters = !filters.isEmpty;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Orders'),
-        actions: const [AdminSignOutButton()],
-      ),
       body: Column(
         children: [
           Padding(

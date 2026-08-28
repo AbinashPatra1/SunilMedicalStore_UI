@@ -15,7 +15,9 @@ every feature talks to it over HTTP — see "Data & backend strategy".
 - GoRouter 17 (navigation)
 - Firebase Authentication (phone/OTP) — **live**
 - Firebase Messaging (planned)
-- Azure Blob Storage (planned, for prescription/file uploads)
+- Firebase Storage (prescription image uploads — see "Prescriptions" below;
+  `firebase_storage` package, **needs Storage enabled in the Firebase
+  console** — not yet done, uploads currently fail with a 404 until it is)
 - **ASP.NET Core + MySQL backend** — **live**, deployed to Azure App Service;
   this is the real data store
 - No Firestore. See "Data & backend strategy".
@@ -133,9 +135,23 @@ over Dio — no mock repositories remain.
 
 - **Splash** — shown while the auth session resolves.
 - **Pharmacy (dashboard)** — greeting; two buttons above search (**Search by
-  image**, **Prescription** — placeholders); search bar (placeholder); promo
-  banner; **Shop by category** grid (`homeCategoriesProvider`); **Suggested for
-  you** horizontal products.
+  image** — placeholder; **Prescription** — real, opens `/pharmacy/prescriptions`);
+  search bar (placeholder); promo banner; **Shop by category** grid
+  (`homeCategoriesProvider`); **Suggested for you** horizontal products.
+- **Prescriptions** (`lib/features/prescriptions/`) — upload flow reachable
+  from the dashboard "Prescription" button and from checkout. `PrescriptionsScreen`:
+  list of the caller's uploads with a `StatusChip` (pending/approved/rejected
+  + rejection note) and an "Upload prescription" FAB → bottom sheet
+  (camera/gallery via `image_picker`) → uploads straight to **Firebase
+  Storage** (`prescriptions/{uid}/{uuid}.{ext}`) → sends the resulting
+  download URL to `POST /v1/prescriptions` (backend never sees raw file
+  bytes). Backed by `PrescriptionRepository` (`domain`) +
+  `ApiPrescriptionRepository` (`data`). **Built ahead of the backend** —
+  endpoints 54–59 in `docs/API_ENDPOINTS.md` are drafted but not implemented
+  server-side. **Also needs one manual step**: Firebase Storage isn't
+  enabled for this project yet (Console → Storage → Get started) — until
+  then, uploads fail with a Firebase `object-not-found`/404 (verified live
+  on the emulator; surfaces as a clean snackbar, doesn't crash).
 - **Medicines** — category-filtered product list from `?category=`; `Product`
   model + `medicine_providers`. "Add" → adds to cart.
   Tapping a product name/card (list, suggested row, or similar-products row)
@@ -169,10 +185,17 @@ over Dio — no mock repositories remain.
   derived via providers in `cart_providers.dart`. **Payment** → **Checkout**
   (`/cart/checkout`): default delivery address + change (bottom-sheet picker
   from `addressesProvider`); pay via UPI apps (Google Pay / PhonePe / BHIM /
-  Other UPI with a custom UPI-id field) or **Cash on Delivery**; **Order Now** →
-  real `POST /orders` (`ApiOrderRepository`) → success dialog → clears cart +
-  promo → home. Payment is a selection UI only (no gateway/UPI deep-link) — the
-  order itself is real and shows up immediately in Profile → Orders.
+  Other UPI with a custom UPI-id field) or **Cash on Delivery**. When the cart
+  holds an Rx-flagged item (`CartItem.requiresPrescription`, set from
+  `Product.requiresPrescription` in `addProduct`;
+  `cartRequiresPrescriptionProvider` derives the cart-wide flag), a
+  **"Prescription required"** card gates **Order Now** — pick an existing
+  non-rejected upload or take/upload a new one inline (reuses the
+  Prescriptions upload flow); the chosen id is sent as `prescriptionId`.
+  **Order Now** → real `POST /orders` (`ApiOrderRepository`) → success dialog
+  → clears cart + promo → home. Payment is a selection UI only (no
+  gateway/UPI deep-link) — the order itself is real and shows up immediately
+  in Profile → Orders.
   Profile → Orders → detail has a **Cancel order** action while
   `status.isCustomerCancellable` (`created`/`processing` — hidden once
   shipped); calls `OrderRepository.cancelOrder` (`PUT /orders/{id}/cancel`).
@@ -227,19 +250,30 @@ over Dio — no mock repositories remain.
       `AddOrEditDoctorScreen` (all `Doctor` fields; weekday multi-select
       via shared `WeekdaySelector`; free-text consulting hours; delete-with-
       confirm on edit). Reuses the customer `Doctor` domain model.
-  - **Orders** — list + detail/status-edit, mirroring the Appointments admin
-    pattern. `AdminOrdersListScreen` (search by order #/user/phone + filter
-    sheet: status, date range) → tap a row → `AdminOrderDetailScreen`
-    (read-only user/items/total, status `ChoiceChip`s covering the full
-    lifecycle — `created → processing → shipped → delivered`, plus
-    `cancelled` — Save applies via a single status-change PUT). Backed by
-    `AdminOrderRepository` (`domain`) + `ApiAdminOrderRepository` (`data`)
-    against `/v1/admin/orders`. **Built ahead of the backend** — endpoints
-    45–48 in `docs/API_ENDPOINTS.md` are drafted but not yet implemented
-    server-side (currently 404s; the client shows a clean error + Retry).
-    This also widens `OrderStatus` (`core/models/order.dart`) from
-    `processing | delivered | cancelled` to
-    `created | processing | shipped | delivered | cancelled`.
+  - **Orders** — a `DefaultTabController` shell with **two sub-tabs**
+    (mirrors the Appointments/Doctors pattern):
+    - _Orders sub-tab_ (`AdminOrdersListScreen`) — search by order
+      #/user/phone + filter sheet: status, date range → tap a row →
+      `AdminOrderDetailScreen` (read-only user/items/total, status
+      `ChoiceChip`s covering the full lifecycle —
+      `created → processing → shipped → delivered`, plus `cancelled` —
+      Save applies via a single status-change PUT). Backed by
+      `AdminOrderRepository` (`domain`) + `ApiAdminOrderRepository`
+      (`data`) against `/v1/admin/orders`. This also widens `OrderStatus`
+      (`core/models/order.dart`) from `processing | delivered | cancelled`
+      to `created | processing | shipped | delivered | cancelled`. **Live**
+      against Azure as of this writing.
+    - _Prescriptions sub-tab_ (`AdminPrescriptionsListScreen`) — Rx review
+      queue, status filter chips (defaults to **Pending review**) → tap a
+      row → `AdminPrescriptionDetailScreen` (full-size image +
+      Approve/Reject; Reject prompts for an optional note shown to the
+      customer). Backed by `AdminPrescriptionRepository` (`domain`) +
+      `ApiAdminPrescriptionRepository` (`data`) against
+      `/v1/admin/prescriptions`.
+    **Orders backend is live**; **Discounts (49–53) and Prescriptions
+    (54–59) endpoints in `docs/API_ENDPOINTS.md` are drafted but not yet
+    implemented server-side** (currently 404s; the client shows a clean
+    error + Retry).
   - **Discounts** — full CRUD over promo codes, mirroring the Inventory
     pattern. `DiscountsListScreen` (code, label, value, active/expired/
     exhausted status badge) → tap a row → `AddOrEditPromoCodeScreen`

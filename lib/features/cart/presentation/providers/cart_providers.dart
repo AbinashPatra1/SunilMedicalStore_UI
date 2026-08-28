@@ -33,6 +33,7 @@ class CartController extends Notifier<List<CartItem>> {
       subtitle: product.brand,
       price: product.price,
       kind: CartItemKind.medicine,
+      requiresPrescription: product.requiresPrescription,
     );
   }
 
@@ -53,6 +54,7 @@ class CartController extends Notifier<List<CartItem>> {
     required String subtitle,
     required int price,
     required CartItemKind kind,
+    bool requiresPrescription = false,
   }) {
     final index = state.indexWhere((i) => i.id == id);
     if (index >= 0) {
@@ -68,6 +70,7 @@ class CartController extends Notifier<List<CartItem>> {
           price: price,
           kind: kind,
           quantity: 1,
+          requiresPrescription: requiresPrescription,
         ),
       ];
     }
@@ -129,6 +132,12 @@ class AppliedPromoController extends Notifier<PromoCode?> {
 
 final cartItemCountProvider = Provider<int>((ref) {
   return ref.watch(cartProvider).fold(0, (sum, i) => sum + i.quantity);
+});
+
+/// Whether any line in the cart requires a prescription — checkout gates
+/// "Order Now" on a prescription being attached when this is true.
+final cartRequiresPrescriptionProvider = Provider<bool>((ref) {
+  return ref.watch(cartProvider).any((i) => i.requiresPrescription);
 });
 
 final cartSubtotalProvider = Provider<int>((ref) {

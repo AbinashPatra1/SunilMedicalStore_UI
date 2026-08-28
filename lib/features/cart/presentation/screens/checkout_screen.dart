@@ -1,6 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:intl/intl.dart';
+import 'package:sunil_medical_store/core/models/prescription.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/core/routes/app_routes.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
@@ -8,6 +13,7 @@ import 'package:sunil_medical_store/features/cart/domain/order_repository.dart';
 import 'package:sunil_medical_store/features/cart/presentation/providers/cart_providers.dart';
 import 'package:sunil_medical_store/features/cart/presentation/widgets/payment_option_tile.dart';
 import 'package:sunil_medical_store/features/cart/presentation/widgets/price_breakdown.dart';
+import 'package:sunil_medical_store/features/prescriptions/presentation/providers/prescription_providers.dart';
 import 'package:sunil_medical_store/features/profile/domain/address.dart';
 import 'package:sunil_medical_store/features/profile/presentation/providers/address_controller.dart';
 
@@ -42,6 +48,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   _PaymentChoice? _payment;
   String? _upiError;
   bool _placing = false;
+
+  String? _selectedPrescriptionId;
+  bool _uploadingPrescription = false;
 
   @override
   void dispose() {
@@ -100,6 +109,73 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     AddressType.other => Icons.location_on_outlined,
   };
 
+  Future<void> _uploadPrescription(ImageSource source) async {
+    final picked = await ImagePicker().pickImage(source: source, imageQuality: 85);
+    if (picked == null || !mounted) return;
+
+    setState(() => _uploadingPrescription = true);
+    try {
+      final prescription = await ref.read(prescriptionRepositoryProvider).upload(File(picked.path));
+      ref.invalidate(prescriptionsProvider);
+      if (mounted) setState(() => _selectedPrescriptionId = prescription.id);
+    } on ApiException catch (e) {
+      if (mounted) _snack(e.message);
+    } finally {
+      if (mounted) setState(() => _uploadingPrescription = false);
+    }
+  }
+
+  void _pickPrescription(List<Prescription> existing) {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (sheetContext) => SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppConstants.spacingLg),
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              Text('Attach a prescription', style: Theme.of(sheetContext).textTheme.titleMedium),
+              const SizedBox(height: AppConstants.spacingMd),
+              for (final p in existing.where((p) => p.status != PrescriptionStatus.rejected))
+                ListTile(
+                  leading: const Icon(Icons.description_outlined),
+                  title: Text(DateFormat('d MMM yyyy').format(p.uploadedOn)),
+                  subtitle: Text(p.status.label),
+                  trailing: p.id == _selectedPrescriptionId
+                      ? Icon(Icons.check_circle, color: Theme.of(sheetContext).colorScheme.primary)
+                      : null,
+                  onTap: () {
+                    setState(() => _selectedPrescriptionId = p.id);
+                    Navigator.of(sheetContext).pop();
+                  },
+                ),
+              const Divider(),
+              ListTile(
+                leading: const Icon(Icons.photo_camera_outlined),
+                title: const Text('Take a new photo'),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  _uploadPrescription(ImageSource.camera);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: const Text('Upload from gallery'),
+                onTap: () {
+                  Navigator.of(sheetContext).pop();
+                  _uploadPrescription(ImageSource.gallery);
+                },
+              ),
+              const SizedBox(height: AppConstants.spacingMd),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   void _select(_PaymentChoice choice) {
     setState(() {
       _payment = choice;
@@ -118,6 +194,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     }
     if (_payment == _PaymentChoice.otherUpi && !_upiPattern.hasMatch(_customUpiController.text.trim())) {
       setState(() => _upiError = 'Enter a valid UPI id (name@bank).');
+      return;
+    }
+    if (ref.read(cartRequiresPrescriptionProvider) && _selectedPrescriptionId == null) {
+      _snack('Please attach a prescription for the Rx item(s) in your cart.');
       return;
     }
     await _placeOrder(address);
@@ -140,6 +220,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         promoCode: promoCode,
         paymentMethod: payment.wireValue,
         upiId: payment == _PaymentChoice.otherUpi ? _customUpiController.text.trim() : null,
+        prescriptionId: _selectedPrescriptionId,
       );
 
       if (!mounted) return;
@@ -189,6 +270,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final addresses = ref.watch(addressesProvider).value ?? const <Address>[];
     final address = _selectedAddress(addresses);
     final total = ref.watch(cartTotalProvider);
+    final needsPrescription = ref.watch(cartRequiresPrescriptionProvider);
+    final prescriptions = ref.watch(prescriptionsProvider).value ?? const <Prescription>[];
+    Prescription? selectedPrescription;
+    for (final p in prescriptions) {
+      if (p.id == _selectedPrescriptionId) {
+        selectedPrescription = p;
+        break;
+      }
+    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('Checkout')),
@@ -213,6 +303,39 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           ),
                   ),
                 ),
+                if (needsPrescription) ...[
+                  const SizedBox(height: AppConstants.spacingLg),
+                  Text('Prescription required', style: theme.textTheme.titleMedium),
+                  const SizedBox(height: AppConstants.spacingSm),
+                  Card(
+                    child: ListTile(
+                      leading: Icon(
+                        selectedPrescription == null ? Icons.warning_amber_outlined : Icons.description_outlined,
+                        color: selectedPrescription == null ? theme.colorScheme.error : null,
+                      ),
+                      title: Text(
+                        selectedPrescription == null
+                            ? 'No prescription attached'
+                            : DateFormat('d MMM yyyy').format(selectedPrescription.uploadedOn),
+                      ),
+                      subtitle: Text(
+                        selectedPrescription == null
+                            ? 'Your cart has a prescription-only item'
+                            : selectedPrescription.status.label,
+                      ),
+                      trailing: (_placing || _uploadingPrescription)
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : TextButton(
+                              onPressed: () => _pickPrescription(prescriptions),
+                              child: Text(selectedPrescription == null ? 'Attach' : 'Change'),
+                            ),
+                    ),
+                  ),
+                ],
                 const SizedBox(height: AppConstants.spacingLg),
                 Text('Pay using UPI', style: theme.textTheme.titleMedium),
                 const SizedBox(height: AppConstants.spacingSm),
