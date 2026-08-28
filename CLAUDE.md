@@ -146,12 +146,14 @@ over Dio — no mock repositories remain.
   Storage** (`prescriptions/{uid}/{uuid}.{ext}`) → sends the resulting
   download URL to `POST /v1/prescriptions` (backend never sees raw file
   bytes). Backed by `PrescriptionRepository` (`domain`) +
-  `ApiPrescriptionRepository` (`data`). **Built ahead of the backend** —
-  endpoints 54–59 in `docs/API_ENDPOINTS.md` are drafted but not implemented
-  server-side. **Also needs one manual step**: Firebase Storage isn't
-  enabled for this project yet (Console → Storage → Get started) — until
-  then, uploads fail with a Firebase `object-not-found`/404 (verified live
-  on the emulator; surfaces as a clean snackbar, doesn't crash).
+  `ApiPrescriptionRepository` (`data`). **Backend endpoints 54–59 are live**
+  against Azure (`GET /prescriptions` verified). **Still blocked on one
+  manual step**: Firebase Storage isn't enabled for this project yet
+  (Console → Storage → Get started) — until then, the upload itself fails
+  with a Firebase `object-not-found`/404 before the backend is ever called
+  (verified live on the emulator; surfaces as a clean snackbar, doesn't
+  crash). The full checkout-gating and admin-review paths are built but not
+  yet exercised end-to-end because of this.
 - **Medicines** — category-filtered product list from `?category=`; `Product`
   model + `medicine_providers`. "Add" → adds to cart.
   Tapping a product name/card (list, suggested row, or similar-products row)
@@ -270,10 +272,11 @@ over Dio — no mock repositories remain.
       customer). Backed by `AdminPrescriptionRepository` (`domain`) +
       `ApiAdminPrescriptionRepository` (`data`) against
       `/v1/admin/prescriptions`.
-    **Orders backend is live**; **Discounts (49–53) and Prescriptions
-    (54–59) endpoints in `docs/API_ENDPOINTS.md` are drafted but not yet
-    implemented server-side** (currently 404s; the client shows a clean
-    error + Retry).
+    **Orders backend is live**; **Prescriptions (54–59) endpoints in
+    `docs/API_ENDPOINTS.md` are implemented server-side but prescription
+    uploads still fail** — see the Prescriptions feature note below (Firebase
+    Storage isn't enabled for this project yet, a separate manual step from
+    the backend deploy).
   - **Discounts** — full CRUD over promo codes, mirroring the Inventory
     pattern. `DiscountsListScreen` (code, label, value, active/expired/
     exhausted status badge) → tap a row → `AddOrEditPromoCodeScreen`
@@ -281,9 +284,13 @@ over Dio — no mock repositories remain.
     optional: min order, expiry date, max total uses, max uses/user;
     delete-with-confirm on edit). Backed by `DiscountRepository` (`domain`)
     + `ApiDiscountRepository` (`data`) against `/v1/admin/promo-codes`.
-    **Built ahead of the backend** — endpoints 49–53 in
-    `docs/API_ENDPOINTS.md` are drafted but not yet implemented server-side.
-    Reuses the customer `PromoType` enum (`features/cart/domain/promo_code.dart`).
+    **Live** against Azure — full CRUD verified. Reuses the customer
+    `PromoType` enum (`features/cart/domain/promo_code.dart`). **Note**: the
+    backend keys promo codes by `code` itself — there's no separate `id` in
+    the wire shape, and `PUT` silently keeps the original `code` even if the
+    request body sends a different one (renames aren't supported). The
+    client's `_fromJson` falls back to `code` when `id` is absent, and the
+    Code field is locked (not editable) once a promo code exists.
   - **Statistics** — placeholder screen until implemented. Uses the shared
     `PlaceholderScreen` + `AdminSignOutButton`.
 
