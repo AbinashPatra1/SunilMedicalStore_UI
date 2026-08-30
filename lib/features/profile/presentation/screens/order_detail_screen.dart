@@ -7,9 +7,10 @@ import 'package:sunil_medical_store/core/models/order.dart';
 import 'package:sunil_medical_store/features/cart/presentation/providers/cart_providers.dart';
 import 'package:sunil_medical_store/features/profile/presentation/providers/profile_providers.dart';
 import 'package:sunil_medical_store/features/profile/presentation/widgets/status_chip.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-/// Detail of a single order, with a (placeholder) download-invoice action
-/// and — while the order is still cancellable — a Cancel action.
+/// Detail of a single order, with a download-invoice action and — while the
+/// order is still cancellable — a Cancel action.
 class OrderDetailScreen extends ConsumerStatefulWidget {
   const OrderDetailScreen({super.key, required this.order});
 
@@ -22,6 +23,30 @@ class OrderDetailScreen extends ConsumerStatefulWidget {
 class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   late Order? _order = widget.order;
   bool _cancelling = false;
+  bool _downloadingInvoice = false;
+
+  Future<void> _downloadInvoice() async {
+    final order = _order;
+    if (order == null) return;
+    setState(() => _downloadingInvoice = true);
+    try {
+      final url = await ref.read(profileRepositoryProvider).orderInvoiceUrl(order.id);
+      final launched = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+      if (!launched && mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(const SnackBar(content: Text('Could not open the invoice.')));
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } finally {
+      if (mounted) setState(() => _downloadingInvoice = false);
+    }
+  }
 
   Future<void> _cancel() async {
     final order = _order;
@@ -115,12 +140,10 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
           ),
           const SizedBox(height: AppConstants.spacingLg),
           OutlinedButton.icon(
-            onPressed: () {
-              ScaffoldMessenger.of(context)
-                ..hideCurrentSnackBar()
-                ..showSnackBar(const SnackBar(content: Text('Invoice download coming soon')));
-            },
-            icon: const Icon(Icons.download_outlined),
+            onPressed: _downloadingInvoice ? null : _downloadInvoice,
+            icon: _downloadingInvoice
+                ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.download_outlined),
             label: const Text('Download invoice'),
           ),
           if (order.status.isCustomerCancellable) ...[

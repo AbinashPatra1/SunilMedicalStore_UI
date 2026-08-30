@@ -1,18 +1,52 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
+import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/profile/domain/lab_test.dart';
+import 'package:sunil_medical_store/features/profile/presentation/providers/profile_providers.dart';
 import 'package:sunil_medical_store/features/profile/presentation/widgets/status_chip.dart';
+import 'package:url_launcher/url_launcher.dart';
 
-/// Detail of a single lab test, with a (placeholder) download-invoice action.
-class LabTestDetailScreen extends StatelessWidget {
+/// Detail of a single lab test, with a download-invoice action.
+class LabTestDetailScreen extends ConsumerStatefulWidget {
   const LabTestDetailScreen({super.key, required this.labTest});
 
   final LabTest? labTest;
 
   @override
+  ConsumerState<LabTestDetailScreen> createState() => _LabTestDetailScreenState();
+}
+
+class _LabTestDetailScreenState extends ConsumerState<LabTestDetailScreen> {
+  bool _downloadingInvoice = false;
+
+  Future<void> _downloadInvoice() async {
+    final test = widget.labTest;
+    if (test == null) return;
+    setState(() => _downloadingInvoice = true);
+    try {
+      final url = await ref.read(profileRepositoryProvider).labTestInvoiceUrl(test.id);
+      final launched = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+      if (!launched && mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(const SnackBar(content: Text('Could not open the invoice.')));
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } finally {
+      if (mounted) setState(() => _downloadingInvoice = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final test = labTest;
+    final test = widget.labTest;
     if (test == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('Lab Test')),
@@ -61,12 +95,10 @@ class LabTestDetailScreen extends StatelessWidget {
           ),
           const SizedBox(height: AppConstants.spacingLg),
           OutlinedButton.icon(
-            onPressed: () {
-              ScaffoldMessenger.of(context)
-                ..hideCurrentSnackBar()
-                ..showSnackBar(const SnackBar(content: Text('Invoice download coming soon')));
-            },
-            icon: const Icon(Icons.download_outlined),
+            onPressed: _downloadingInvoice ? null : _downloadInvoice,
+            icon: _downloadingInvoice
+                ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Icon(Icons.download_outlined),
             label: const Text('Download invoice'),
           ),
         ],

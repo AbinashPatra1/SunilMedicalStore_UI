@@ -69,6 +69,22 @@ class ApiProfileRepository implements ProfileRepository {
   @override
   Future<List<LabTest>> labTests() => _getList('/lab-test-bookings', _labTestFromJson);
 
+  @override
+  Future<String> orderInvoiceUrl(String orderId) => _invoiceUrl('/orders/$orderId/invoice');
+
+  @override
+  Future<String> labTestInvoiceUrl(String labTestId) =>
+      _invoiceUrl('/lab-test-bookings/$labTestId/invoice');
+
+  Future<String> _invoiceUrl(String path) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(path);
+      return response.data!['invoiceUrl'] as String;
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
   Future<List<T>> _getList<T>(String path, T Function(Map<String, dynamic>) fromJson) async {
     try {
       final response = await _dio.get<List<dynamic>>(path);

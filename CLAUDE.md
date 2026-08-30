@@ -204,8 +204,16 @@ over Dio — no mock repositories remain.
 - **Profile** — header + 6 menus + Sign Out:
   - **Account** — gender-based avatar, personal details, medical records (mock).
   - **Appointments** — past appointments + "Book Appointment" → Appointments tab.
-  - **Orders** — history list → detail (items, total, "Download invoice" placeholder).
-  - **Lab Tests** — history list → detail (parameters, "Download invoice" placeholder).
+  - **Orders** — history list → detail (items, total, **Download invoice**).
+  - **Lab Tests** — history list → detail (parameters, **Download invoice**).
+  - **Invoice download** (Orders + Lab Tests detail) — real: fetches
+    `{ invoiceUrl }` from `GET /orders/{id}/invoice` /
+    `GET /lab-test-bookings/{id}/invoice` via `ProfileRepository`, opens it
+    with `url_launcher` (`LaunchMode.externalApplication`). Verified live —
+    Chrome opens with the exact URL the backend returns. The backend's
+    `invoiceUrl` is currently a placeholder domain (`api.sunilmedicalstore.com`,
+    doesn't resolve — no real PDF generation yet), so the page itself won't
+    load; that's expected per `docs/API_ENDPOINTS.md`, not a client bug.
   - **Addresses** — list, **Set as default**, **Add address** (functional,
     in-memory `addressesProvider` Notifier).
   - **Payment Methods** — list, **Add UPI** dialog (functional, in-memory

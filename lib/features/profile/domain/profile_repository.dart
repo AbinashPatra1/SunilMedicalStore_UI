@@ -25,4 +25,11 @@ abstract interface class ProfileRepository {
   Future<List<PastAppointment>> pastAppointments();
   Future<List<Order>> pastOrders();
   Future<List<LabTest>> labTests();
+
+  /// A downloadable invoice URL for a past order. Placeholder PDF for now
+  /// (backend hasn't generated real invoices yet) — the client just opens it.
+  Future<String> orderInvoiceUrl(String orderId);
+
+  /// Same as [orderInvoiceUrl] but for a booked lab test.
+  Future<String> labTestInvoiceUrl(String labTestId);
 }
