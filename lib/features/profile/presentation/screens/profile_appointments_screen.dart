@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/core/routes/app_routes.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/profile/domain/past_appointment.dart';
@@ -24,16 +25,31 @@ class ProfileAppointmentsScreen extends ConsumerWidget {
           Expanded(
             child: appointmentsAsync.when(
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (_, _) => const Center(child: Text('Could not load appointments.')),
+              error: (error, _) => Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(error is ApiException ? error.message : 'Could not load appointments.'),
+                    const SizedBox(height: AppConstants.spacingSm),
+                    TextButton(
+                      onPressed: () => ref.invalidate(pastAppointmentsProvider),
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
               data: (appointments) {
                 if (appointments.isEmpty) {
                   return const Center(child: Text('No past appointments.'));
                 }
-                return ListView.separated(
-                  padding: const EdgeInsets.all(AppConstants.spacingLg),
-                  itemCount: appointments.length,
-                  separatorBuilder: (_, _) => const SizedBox(height: AppConstants.spacingMd),
-                  itemBuilder: (context, index) => _AppointmentCard(appointment: appointments[index]),
+                return RefreshIndicator(
+                  onRefresh: () async => ref.invalidate(pastAppointmentsProvider),
+                  child: ListView.separated(
+                    padding: const EdgeInsets.all(AppConstants.spacingLg),
+                    itemCount: appointments.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: AppConstants.spacingMd),
+                    itemBuilder: (context, index) => _AppointmentCard(appointment: appointments[index]),
+                  ),
                 );
               },
             ),

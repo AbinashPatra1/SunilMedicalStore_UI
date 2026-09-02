@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/core/routes/app_routes.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/core/models/order.dart';
@@ -21,22 +22,37 @@ class OrdersScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Orders')),
       body: ordersAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, _) => const Center(child: Text('Could not load orders.')),
+        error: (error, _) => Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(error is ApiException ? error.message : 'Could not load orders.'),
+              const SizedBox(height: AppConstants.spacingSm),
+              TextButton(
+                onPressed: () => ref.invalidate(pastOrdersProvider),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
         data: (orders) {
           if (orders.isEmpty) {
             return const Center(child: Text('No orders yet.'));
           }
-          return ListView.separated(
-            padding: const EdgeInsets.all(AppConstants.spacingLg),
-            itemCount: orders.length,
-            separatorBuilder: (_, _) => const SizedBox(height: AppConstants.spacingMd),
-            itemBuilder: (context, index) {
-              final order = orders[index];
-              return _OrderCard(
-                order: order,
-                onTap: () => context.push(AppRoutes.profileOrderDetail, extra: order),
-              );
-            },
+          return RefreshIndicator(
+            onRefresh: () async => ref.invalidate(pastOrdersProvider),
+            child: ListView.separated(
+              padding: const EdgeInsets.all(AppConstants.spacingLg),
+              itemCount: orders.length,
+              separatorBuilder: (_, _) => const SizedBox(height: AppConstants.spacingMd),
+              itemBuilder: (context, index) {
+                final order = orders[index];
+                return _OrderCard(
+                  order: order,
+                  onTap: () => context.push(AppRoutes.profileOrderDetail, extra: order),
+                );
+              },
+            ),
           );
         },
       ),

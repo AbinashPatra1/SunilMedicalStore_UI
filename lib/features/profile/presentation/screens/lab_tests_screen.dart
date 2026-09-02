@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/core/routes/app_routes.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/profile/domain/lab_test.dart';
@@ -21,22 +22,37 @@ class LabTestsScreen extends ConsumerWidget {
       appBar: AppBar(title: const Text('Lab Tests')),
       body: testsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (_, _) => const Center(child: Text('Could not load lab tests.')),
+        error: (error, _) => Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(error is ApiException ? error.message : 'Could not load lab tests.'),
+              const SizedBox(height: AppConstants.spacingSm),
+              TextButton(
+                onPressed: () => ref.invalidate(labTestsProvider),
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
         data: (tests) {
           if (tests.isEmpty) {
             return const Center(child: Text('No lab tests yet.'));
           }
-          return ListView.separated(
-            padding: const EdgeInsets.all(AppConstants.spacingLg),
-            itemCount: tests.length,
-            separatorBuilder: (_, _) => const SizedBox(height: AppConstants.spacingMd),
-            itemBuilder: (context, index) {
-              final test = tests[index];
-              return _LabTestCard(
-                test: test,
-                onTap: () => context.push(AppRoutes.profileLabTestDetail, extra: test),
-              );
-            },
+          return RefreshIndicator(
+            onRefresh: () async => ref.invalidate(labTestsProvider),
+            child: ListView.separated(
+              padding: const EdgeInsets.all(AppConstants.spacingLg),
+              itemCount: tests.length,
+              separatorBuilder: (_, _) => const SizedBox(height: AppConstants.spacingMd),
+              itemBuilder: (context, index) {
+                final test = tests[index];
+                return _LabTestCard(
+                  test: test,
+                  onTap: () => context.push(AppRoutes.profileLabTestDetail, extra: test),
+                );
+              },
+            ),
           );
         },
       ),
