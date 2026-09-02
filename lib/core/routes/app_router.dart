@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sunil_medical_store/core/routes/app_routes.dart';
@@ -36,6 +36,7 @@ import 'package:sunil_medical_store/features/profile/presentation/screens/add_ad
 import 'package:sunil_medical_store/features/profile/presentation/screens/addresses_screen.dart';
 import 'package:sunil_medical_store/features/profile/presentation/screens/lab_test_detail_screen.dart';
 import 'package:sunil_medical_store/features/profile/presentation/screens/lab_tests_screen.dart';
+import 'package:sunil_medical_store/features/profile/presentation/screens/order_detail_by_id_screen.dart';
 import 'package:sunil_medical_store/features/profile/presentation/screens/order_detail_screen.dart';
 import 'package:sunil_medical_store/features/profile/presentation/screens/orders_screen.dart';
 import 'package:sunil_medical_store/features/profile/presentation/screens/payment_methods_screen.dart';
@@ -61,12 +62,18 @@ import 'package:sunil_medical_store/features/splash/presentation/screens/splash_
 ///
 /// A [ValueNotifier] bumped on every auth change is wired to
 /// [GoRouter.refreshListenable] so the redirect re-runs when auth state moves.
+/// The app's single root [Navigator], exposed so code outside the widget
+/// tree (the in-app push-notification banner) can insert an [OverlayEntry]
+/// without needing a [BuildContext] of its own.
+final rootNavigatorKey = GlobalKey<NavigatorState>();
+
 final routerProvider = Provider<GoRouter>((ref) {
   final refreshSignal = ValueNotifier<int>(0);
   ref.onDispose(refreshSignal.dispose);
   ref.listen(authControllerProvider, (_, _) => refreshSignal.value++);
 
   return GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: AppRoutes.splash,
     debugLogDiagnostics: true,
     refreshListenable: refreshSignal,
@@ -318,6 +325,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                       GoRoute(
                         path: 'detail',
                         builder: (context, state) => OrderDetailScreen(order: state.extra as Order?),
+                      ),
+                      GoRoute(
+                        path: 'view/:id',
+                        builder: (context, state) => OrderDetailByIdScreen(
+                          orderId: state.pathParameters['id']!,
+                        ),
                       ),
                     ],
                   ),

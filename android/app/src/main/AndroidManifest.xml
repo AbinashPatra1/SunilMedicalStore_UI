@@ -2,6 +2,9 @@
     <!-- Required for Firebase Authentication (and any network access) in
          release builds; the Flutter tool only injects this for debug/profile. -->
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Runtime-requested (via FirebaseMessaging.requestPermission) on
+         Android 13+; declaring it here is what makes that request possible. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
         android:label="sunil_medical_store"
         android:name="${applicationName}"

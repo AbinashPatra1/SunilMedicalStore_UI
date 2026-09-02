@@ -14,7 +14,8 @@ every feature talks to it over HTTP — see "Data & backend strategy".
 - Riverpod 3 (state management)
 - GoRouter 17 (navigation)
 - Firebase Authentication (phone/OTP) — **live**
-- Firebase Messaging (planned)
+- Firebase Messaging (push notifications — see "Push notifications" below;
+  client-side fully wired and verified live, **blocked on backend send-side**)
 - Firebase Storage (prescription image uploads — see "Prescriptions" below;
   `firebase_storage` package, **needs Storage enabled in the Firebase
   console** — not yet done, uploads currently fail with a 404 until it is)
@@ -154,6 +155,36 @@ over Dio — no mock repositories remain.
   (verified live on the emulator; surfaces as a clean snackbar, doesn't
   crash). The full checkout-gating and admin-review paths are built but not
   yet exercised end-to-end because of this.
+- **Push notifications** (`lib/core/notifications/`) — customer gets
+  notified on order status → shipped/delivered/cancelled (not `processing`)
+  and same-day appointment/lab-test reminders (daily job, 8 AM IST); admin
+  gets notified on order placed/delivered and new appointment/lab-test
+  bookings. `NotificationService` (`notification_service.dart`) is
+  initialized from `AuthController` on every authenticated transition
+  (alongside the profile bootstrap call): requests `POST_NOTIFICATIONS`
+  permission, fetches the FCM token, PUTs it to `/v1/users/me/fcm-token`
+  (re-sent on `onTokenRefresh`). `FirebaseMessaging.onMessage` (foreground)
+  shows an in-app banner (`in_app_notification_banner.dart`, an `Overlay`
+  entry inserted via `rootNavigatorKey` from `app_router.dart` — no
+  `BuildContext` needed, works from anywhere); background/terminated is
+  handled automatically by Android's system tray for a `notification` +
+  `data` payload. Tapping (foreground banner, `onMessageOpenedApp`, or
+  `getInitialMessage()` on cold start) parses the `data` payload
+  (`NotificationPayload`, `type: order|appointment|labTest` + `id`) and
+  deep-links via `GoRouter` — customer order taps use a new fetch-by-id path
+  (`ProfileRepository.orderById` → `OrderDetailByIdScreen`, since a
+  notification only carries an id, not the full `Order` the in-list route
+  normally gets via `extra`); admin order/appointment taps reuse the
+  existing `getById` providers. Admin lab-test-booking notifications have
+  nowhere dedicated to deep-link to yet (no admin lab-test screen exists) —
+  they land on Admin → Orders as the closest related surface.
+  **Client-side fully built and verified live** (permission dialog, real FCM
+  token fetched, correctly PUT to the backend) — **blocked entirely on the
+  backend**: endpoint 60 doesn't exist yet (404s, swallowed silently), and
+  nothing server-side sends a push yet (no Admin SDK integration, no event
+  triggers, no daily reminder job). Full contract — message shape, every
+  event trigger, the daily job's schedule — is drafted in
+  `docs/API_ENDPOINTS.md` §Push notifications.
 - **Medicines** — category-filtered product list from `?category=`; `Product`
   model + `medicine_providers`. "Add" → adds to cart.
   Tapping a product name/card (list, suggested row, or similar-products row)

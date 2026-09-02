@@ -42,6 +42,7 @@ abstract final class AppRoutes {
   static const profileAppointments = '/profile/appointments';
   static const profileOrders = '/profile/orders';
   static const profileOrderDetail = '/profile/orders/detail';
+  static const profileOrderView = '/profile/orders/view'; // + /<id> — for notification deep links
   static const profileLabTests = '/profile/lab-tests';
   static const profileLabTestDetail = '/profile/lab-tests/detail';
   static const profileAddresses = '/profile/addresses';

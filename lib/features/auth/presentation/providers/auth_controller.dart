@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sunil_medical_store/core/models/app_user.dart';
+import 'package:sunil_medical_store/core/notifications/notification_service.dart';
 import 'package:sunil_medical_store/features/auth/data/firebase_auth_repository.dart';
 import 'package:sunil_medical_store/features/auth/domain/auth_account.dart';
 import 'package:sunil_medical_store/features/auth/domain/auth_repository.dart';
@@ -48,6 +49,7 @@ class AuthController extends Notifier<AuthState> {
     } else {
       state = AuthState.authenticated(_toAppUser(account));
       unawaited(_bootstrapProfile(account.displayName));
+      unawaited(_registerForPushNotifications());
     }
   }
 
@@ -99,6 +101,7 @@ class AuthController extends Notifier<AuthState> {
       final account = await _repository.completeProfile(fullName: fullName.trim());
       state = AuthState.authenticated(_toAppUser(account));
       unawaited(_bootstrapProfile(account.displayName));
+      unawaited(_registerForPushNotifications());
     } on AuthException catch (e) {
       state = AuthState.onboarding(errorMessage: e.message);
     }
@@ -115,6 +118,18 @@ class AuthController extends Notifier<AuthState> {
       await ref.read(profileRepositoryProvider).upsertProfile(fullName: fullName);
     } catch (_) {
       _bootstrapped = false;
+    }
+  }
+
+  /// Best-effort push-notification setup: requests permission and registers
+  /// this device's FCM token. Not fatal if it fails (e.g. permission denied,
+  /// or the token call 404s before the backend endpoint exists) — the user
+  /// just won't get pushes until the next successful attempt.
+  Future<void> _registerForPushNotifications() async {
+    try {
+      await ref.read(notificationServiceProvider).initialize();
+    } catch (_) {
+      // Ignored — see doc comment above.
     }
   }
 

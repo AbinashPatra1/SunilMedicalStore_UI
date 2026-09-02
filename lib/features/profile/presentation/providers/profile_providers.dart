@@ -21,6 +21,11 @@ final pastOrdersProvider = FutureProvider<List<Order>>((ref) {
   return ref.watch(profileRepositoryProvider).pastOrders();
 });
 
+/// A single order by id — see [ProfileRepository.orderById].
+final orderByIdProvider = FutureProvider.family<Order, String>((ref, id) {
+  return ref.watch(profileRepositoryProvider).orderById(id);
+});
+
 final labTestsProvider = FutureProvider<List<LabTest>>((ref) {
   return ref.watch(profileRepositoryProvider).labTests();
 });

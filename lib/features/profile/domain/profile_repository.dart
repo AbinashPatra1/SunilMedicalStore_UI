@@ -26,6 +26,11 @@ abstract interface class ProfileRepository {
   Future<List<Order>> pastOrders();
   Future<List<LabTest>> labTests();
 
+  /// A single order by id — used to open Profile → Orders → detail from a
+  /// push-notification tap, where only the id is known (not the full
+  /// `Order` the in-list route normally receives via `extra`).
+  Future<Order> orderById(String id);
+
   /// A downloadable invoice URL for a past order. Placeholder PDF for now
   /// (backend hasn't generated real invoices yet) — the client just opens it.
   Future<String> orderInvoiceUrl(String orderId);

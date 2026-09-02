@@ -100,15 +100,20 @@ brief see [`API_SPEC.md`](API_SPEC.md); for backend internals see [`claude.md`](
 | 57 | GET | `/v1/admin/prescriptions?status=` | ✔ admin | All prescriptions across users |
 | 58 | GET | `/v1/admin/prescriptions/{id}` | ✔ admin | Single prescription for review |
 | 59 | PUT | `/v1/admin/prescriptions/{id}` | ✔ admin | Approve/reject → 200 |
+| 60 | PUT | `/v1/users/me/fcm-token` | ✔ | Register this device for push notifications |
 
-**⚠ Not yet implemented on the backend** — 45–59 are a **proposed** addition to
-the contract, drafted by the Flutter client for the Admin Orders feature. The
-client is already built against this shape; the backend still needs it.
-This also **widens the `order status` enum** (see §5) from
-`processing | delivered | cancelled` to
-`created | processing | shipped | delivered | cancelled` — a freshly placed
-order (#15) should now come back with `status: "created"` instead of
+**45–59 are live** (verified against Azure) — widened the `order status`
+enum (see §5) from `processing | delivered | cancelled` to
+`created | processing | shipped | delivered | cancelled`, a freshly placed
+order (#15) now comes back with `status: "created"` instead of
 `"processing"`.
+
+**⚠ 60 (and the push-notification send-side described after §3) is not yet
+implemented on the backend** — proposed by the Flutter client, which is
+already built against this contract (permission request, token
+registration, foreground/background message handling, tap deep-linking all
+verified live — the token PUT currently 404s and is swallowed silently, as
+designed, until the backend has the endpoint).
 
 49–53 additionally mean **#14 `POST /v1/promo-codes/validate` gains new
 rejection rules** — reject (still `400 invalid_promo_code`, just a different
@@ -812,6 +817,92 @@ Request:
 
 ---
 
+### Push notifications — **proposed, endpoint 60 + send-side not yet built**
+
+The client side is fully wired (`firebase_messaging`): requests
+`POST_NOTIFICATIONS` permission on sign-in, fetches the FCM token, PUTs it
+to #60 (and again on every `onTokenRefresh`), shows an in-app banner for
+foreground messages (`FirebaseMessaging.onMessage` — Android never shows
+its own tray notification while the app is foregrounded), and deep-links on
+tap (`onMessageOpenedApp` / `getInitialMessage()`) using the `data` payload
+below. All verified live against Azure except the parts that need the
+backend: #60 currently 404s (swallowed silently, retried on next app open
+or token refresh — not surfaced to the user), and no push has actually been
+sent yet since nothing server-side triggers one.
+
+#### 60. `PUT /v1/users/me/fcm-token` → `200`
+Request:
+```json
+{ "token": "dIHXf2kG6fUSNAkWNdZTdK:APA91bH…", "platform": "android" }
+```
+- `platform` — `android | ios` (this app is Android-only today; the client
+  always sends `android`, kept generic for whenever iOS is added).
+- A user can have multiple devices — store per `(userId, token)`, don't
+  overwrite; upsert on `token` so re-registering the same device is a no-op.
+- No response body needed beyond `200`; the client ignores it.
+
+#### Message contract (what the backend sends via the Firebase Admin SDK)
+Every push must include **both** blocks — `notification` so Android shows
+its own tray notification automatically when the app is backgrounded/
+terminated (no work needed in the client for that path), and `data` so the
+client can build its in-app banner (foregrounded) and resolve a tap to a
+route:
+```json
+{
+  "token": "<recipient's registered FCM token>",
+  "notification": { "title": "Order shipped", "body": "Your order is out for delivery." },
+  "data": { "type": "order", "id": "o10" }
+}
+```
+- `data.type` — `order | appointment | labTest` (matches
+  `NotificationEntityType` in the client 1:1 — lowerCamelCase, same
+  convention as every other enum in this app).
+- `data.id` — the order id / appointment id / lab-test-booking id, used by
+  the client to route the tap:
+  - `order` → customer: `GET /v1/orders/{id}` then Profile → Orders detail;
+    admin: `GET /v1/admin/orders/{id}` then the admin order detail/edit screen.
+  - `appointment` → customer: Profile → Appointments list (no per-item
+    detail route exists client-side yet); admin: the admin appointment
+    edit screen via `GET /v1/admin/appointments/{id}`.
+  - `labTest` → customer: Profile → Lab Tests list; admin: **no dedicated
+    admin lab-test-booking screen exists yet**, so this currently just
+    opens the Admin → Orders tab as the closest related surface. Worth
+    building a real one if lab-test admin notifications turn out to matter
+    in practice.
+- Send to **one token at a time** (loop over a user's registered devices
+  server-side) — the client always expects a single-recipient message, no
+  multicast/topic assumptions on its end.
+
+#### Event triggers (server-side, none built yet)
+| Event | Recipient(s) | `data` | Message |
+|---|---|---|---|
+| `POST /orders` succeeds | All admins | `{type: "order", id}` | `"{userName} placed an order {orderNumber} for ₹{total}"` |
+| Order status → `shipped` | The customer | `{type: "order", id}` | `"Your order is out for delivery."` |
+| Order status → `delivered` | The customer | `{type: "order", id}` | `"Your order has been delivered."` |
+| Order status → `delivered` | All admins | `{type: "order", id}` | `"{orderNumber} was delivered at {time}"` |
+| Order status → `cancelled` | The customer | `{type: "order", id}` | `"Your order has been cancelled."` |
+| `POST /appointments` succeeds (customer books) | All admins | `{type: "appointment", id}` | `"{userName} scheduled an appointment with Dr. {doctorName} on {date time}"` |
+| Lab-test booking created (via `POST /orders` with a `labTest` item) | All admins | `{type: "labTest", id}` | `"{userName} scheduled a lab test for {testName} on {date time}"` |
+
+Per the product decision, order `processing` does **not** notify the
+customer (only `shipped`/`delivered`/`cancelled` do) — admin already sees
+every order via the console, so no `created`/`processing` admin pushes are
+needed either beyond the "placed" one above. `POST /admin/appointments`
+(admin booking on a user's behalf) does **not** trigger the "scheduled an
+appointment" admin push — that message names the customer as the actor, so
+it only fires for customer-initiated bookings.
+
+#### Daily reminder job (server-side, not built yet)
+A timer-triggered job, **once daily at 8:00 AM IST**, that:
+- Finds appointments with `status: "upcoming"` and a `dateTime` falling
+  today → push the customer `{type: "appointment", id}` /
+  `"Your appointment is scheduled today at {time}"`.
+- Finds lab-test bookings with `status: "scheduled"` and a date falling
+  today → push the customer `{type: "labTest", id}` /
+  `"Your lab test is due today at {time}"`.
+
+---
+
 ## 4. Error envelope
 
 Every 4xx/5xx (except the bare `401` auth challenge) returns:
@@ -839,13 +930,15 @@ with #15), `prescription_not_found` (proposed, with #54–59).
 | `role` | `customer`, `admin` |
 | `gender` | `male`, `female`, `other` |
 | address `type` | `home`, `work`, `other` |
-| order `status` | `created`, `processing`, `shipped`, `delivered`, `cancelled` (proposed — currently `processing`, `delivered`, `cancelled`) |
+| order `status` | `created`, `processing`, `shipped`, `delivered`, `cancelled` |
 | lab-booking `status` | `completed`, `scheduled`, `cancelled` |
 | appointment `status` | `completed`, `cancelled`, `upcoming` |
 | order item `kind` | `medicine`, `labTest` |
 | promo `type` | `percentage`, `flat` |
 | `paymentMethod` | `googlePay`, `phonePe`, `bhim`, `upi`, `cod` |
-| prescription `status` | `pending`, `approved`, `rejected` (proposed) |
+| prescription `status` | `pending`, `approved`, `rejected` |
+| push `platform` | `android`, `ios` (proposed, with #60) |
+| push `data.type` | `order`, `appointment`, `labTest` (proposed, with #60) |
 
 Deserialize with Dart's `Enum.values.byName(json)` — values match member names 1:1.
 
