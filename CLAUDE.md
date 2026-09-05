@@ -137,8 +137,20 @@ over Dio — no mock repositories remain.
 - **Splash** — shown while the auth session resolves.
 - **Pharmacy (dashboard)** — greeting; two buttons above search (**Search by
   image** — placeholder; **Prescription** — real, opens `/pharmacy/prescriptions`);
-  search bar (placeholder); promo banner; **Shop by category** grid
-  (`homeCategoriesProvider`); **Suggested for you** horizontal products.
+  search bar → real, opens `/pharmacy/search` (`SearchScreen`); promo banner;
+  **Shop by category** grid (`homeCategoriesProvider`); **Suggested for you**
+  horizontal products.
+- **Search** (`SearchScreen`, `lib/features/medicines/presentation/screens/search_screen.dart`)
+  — plain text field in the app bar (`onSubmitted`, matching the search-on-submit
+  convention used by every admin list screen), results as `ProductCard`s
+  reusing the Medicines list styling. Backed by `ProductRepository.searchProducts`
+  → `GET /catalog/products?search=`. **Built ahead of the backend** — the
+  `search` param is proposed in `docs/API_ENDPOINTS.md`; verified live that
+  the backend currently **ignores it silently** and returns the full
+  unfiltered catalog rather than erroring (searching "para" returned
+  Amoxicillin, Antiseptic Liquid, etc. — nothing matching), so this isn't
+  just unimplemented, it actively returns wrong results until the backend
+  adds real filtering.
 - **Prescriptions** (`lib/features/prescriptions/`) — upload flow reachable
   from the dashboard "Prescription" button and from checkout. `PrescriptionsScreen`:
   list of the caller's uploads with a `StatusChip` (pending/approved/rejected

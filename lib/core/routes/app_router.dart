@@ -28,6 +28,7 @@ import 'package:sunil_medical_store/features/lab_tests/presentation/screens/lab_
 import 'package:sunil_medical_store/features/lab_tests/presentation/screens/lab_tests_catalog_screen.dart';
 import 'package:sunil_medical_store/features/medicines/presentation/screens/medicine_detail_screen.dart';
 import 'package:sunil_medical_store/features/medicines/presentation/screens/medicines_screen.dart';
+import 'package:sunil_medical_store/features/medicines/presentation/screens/search_screen.dart';
 import 'package:sunil_medical_store/features/prescriptions/presentation/screens/prescriptions_screen.dart';
 import 'package:sunil_medical_store/features/profile/domain/lab_test.dart';
 import 'package:sunil_medical_store/core/models/order.dart';
@@ -267,6 +268,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'prescriptions',
                     builder: (context, state) => const PrescriptionsScreen(),
+                  ),
+                  GoRoute(
+                    path: 'search',
+                    builder: (context, state) => const SearchScreen(),
                   ),
                 ],
               ),

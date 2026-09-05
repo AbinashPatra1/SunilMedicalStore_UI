@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 
-/// Decorative search entry point for the dashboard.
-///
-/// Not wired to real search yet; tapping it invokes [onTap] (the dashboard
-/// currently shows a "coming soon" message).
+/// Search entry point on the dashboard — tapping it invokes [onTap], which
+/// navigates to [SearchScreen] (a plain-text field here; the actual query
+/// input lives on that screen).
 class HomeSearchBar extends StatelessWidget {
   const HomeSearchBar({super.key, required this.onTap});
 

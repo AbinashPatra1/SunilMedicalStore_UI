@@ -23,6 +23,13 @@ final productsByCategoryProvider =
       : repo.productsByCategory(category);
 });
 
+/// Free-text product search results for the given query. Empty query isn't
+/// meant to be watched — the search screen shows a prompt instead of
+/// querying with nothing.
+final searchProductsProvider = FutureProvider.family<List<Product>, String>((ref, query) {
+  return ref.watch(productRepositoryProvider).searchProducts(query);
+});
+
 /// A single product for the detail screen.
 final productByIdProvider = FutureProvider.family<Product, String>((ref, id) {
   return ref.watch(productRepositoryProvider).productById(id);

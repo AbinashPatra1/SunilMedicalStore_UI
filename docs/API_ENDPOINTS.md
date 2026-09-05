@@ -45,7 +45,7 @@ brief see [`API_SPEC.md`](API_SPEC.md); for backend internals see [`claude.md`](
 | 2 | PUT | `/v1/users/me` | ✔ | Upsert profile (onboarding bootstrap) |
 | 3 | GET | `/v1/users/me/medical-records` | ✔ | Medical records only |
 | 4 | GET | `/v1/catalog/categories` | **Public** | Home categories |
-| 5 | GET | `/v1/catalog/products?category={label}` | ✔ | Product list (filter optional) |
+| 5 | GET | `/v1/catalog/products?category={label}&search={q}` | ✔ | Product list (both filters optional; `search` proposed) |
 | 6 | GET | `/v1/catalog/products/suggested` | ✔ | "Suggested for you" (6) |
 | 7 | GET | `/v1/catalog/products/{id}` | ✔ | Product detail |
 | 8 | GET | `/v1/catalog/products/{id}/similar` | ✔ | Same-category products |
@@ -196,8 +196,13 @@ Request (all fields optional; `fullName` required on first-ever create):
 ]
 ```
 
-#### 5. `GET /v1/catalog/products?category={label}` → `200` — `Product[]`
-`category` is optional; omit for the full catalog. **Product object:**
+#### 5. `GET /v1/catalog/products?category={label}&search={q}` → `200` — `Product[]`
+`category` and `search` are both optional and combinable; omit both for the
+full catalog. **`search` (proposed, not yet implemented) — free-text match
+against `name` and `brand`**, case-insensitive substring (e.g. `search=para`
+matches "Paracetamol 500mg Tablets"). Powers the dashboard search bar
+(`SearchScreen`), which sends only `search` (no category). **Product
+object:**
 ```json
 {
   "id": "p1",

@@ -15,8 +15,8 @@ import 'package:sunil_medical_store/features/dashboard/presentation/widgets/sugg
 ///
 /// Dummy content for now — categories come from [homeCategoriesProvider],
 /// products from the medicines providers, and image search is a placeholder
-/// until that feature is built. Prescription upload is real — see
-/// `features/prescriptions`.
+/// until that feature is built. Prescription upload and the search bar are
+/// real — see `features/prescriptions` and `SearchScreen`.
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
@@ -64,7 +64,7 @@ class DashboardScreen extends ConsumerWidget {
             onUploadPrescription: () => context.push(AppRoutes.prescriptions),
           ),
           const SizedBox(height: AppConstants.spacingMd),
-          HomeSearchBar(onTap: () => _comingSoon(context, 'Search')),
+          HomeSearchBar(onTap: () => context.push(AppRoutes.search)),
           const SizedBox(height: AppConstants.spacingLg),
           PromoBanner(onTap: () => context.go(AppRoutes.medicines)),
           const SizedBox(height: AppConstants.spacingLg),

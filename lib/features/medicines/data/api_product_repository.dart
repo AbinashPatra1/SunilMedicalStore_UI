@@ -20,6 +20,10 @@ class ApiProductRepository implements ProductRepository {
       _getList('/catalog/products', queryParameters: {'category': category});
 
   @override
+  Future<List<Product>> searchProducts(String query) =>
+      _getList('/catalog/products', queryParameters: {'search': query});
+
+  @override
   Future<Product> productById(String id) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>('/catalog/products/$id');
