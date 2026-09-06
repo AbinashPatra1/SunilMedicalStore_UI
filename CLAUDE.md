@@ -47,11 +47,14 @@ Feature-first. Each feature: `lib/features/<feature>/{domain,data,presentation/{
   `lab_tests`, `appointments`, `cart`, `profile`, `admin`.
 
 **Conventions**
-- Repositories: `domain/<x>_repository.dart` (interface) + `data/mock_*.dart`
-  (in-memory mock) exposed via a Riverpod `Provider`. Swap the provider's impl
-  for the real backend later; UI is untouched.
+- Repositories: `domain/<x>_repository.dart` (interface) + `data/api_*.dart`
+  (real implementation over Dio) exposed via a Riverpod `Provider`. No mock
+  repositories remain — see "Data & backend strategy".
 - Read data with `FutureProvider` + `AsyncValue.when` (loading/error/data).
-- Mutable in-memory state via `Notifier`/`NotifierProvider` (e.g. addresses, payments).
+- Mutations that need to refresh a list after writing go through an
+  `AsyncNotifier`/`AsyncNotifierProvider` (e.g. addresses, payment methods)
+  that calls the repository then re-fetches; purely local/derived state (e.g.
+  cart quantities) uses a plain `Notifier`/`NotifierProvider`.
 - "Coming soon" features show a SnackBar placeholder.
 - Design tokens (spacing/radius) live in `AppConstants`; don't hard-code.
 
@@ -214,22 +217,28 @@ over Dio — no mock repositories remain.
   grey out the card + disable Add + show an "Out of stock" badge. Cart's
   `addProduct` no-ops on out-of-stock as a defensive backstop.
 - **Lab Tests** (tab) — bookable-test catalog like medicines
-  (`features/lab_tests`, `LabTest` model + `MockLabTestRepository` +
-  `labTestCatalogProvider`). List → detail (`/lab-tests/<testId>`) with sample
-  type / report time / fasting / parameters → **Add to cart**. Note: distinct
-  from **Profile → Lab Tests** (booked history); this tab is the storefront.
-- **Appointments** — doctors available this week (`MockDoctorRepository`,
-  `weeklyDoctorsProvider`); doctor cards with a Mon–Sun availability strip;
-  **Book** = coming soon. Current-week math in `core/utils/week_range.dart`.
+  (`features/lab_tests`, `LabTest` model + `ApiLabTestRepository` +
+  `labTestCatalogProvider`), backed by `GET /catalog/lab-tests` /
+  `GET /catalog/lab-tests/{id}`. List → detail (`/lab-tests/<testId>`) with
+  sample type / report time / fasting / parameters → **Add to cart**. Note:
+  distinct from **Profile → Lab Tests** (booked history); this tab is the
+  storefront.
+- **Appointments** — doctors available this week, real via
+  `ApiDoctorRepository` (`GET /doctors`, `weeklyDoctorsProvider`); doctor
+  cards with a Mon–Sun availability strip; **Book** is real —
+  `ApiAppointmentRepository.book()` (`POST /appointments`), confirmed live
+  with a booking confirmation snackbar. Current-week math in
+  `core/utils/week_range.dart`.
 - **Cart** — functional, in-memory (`cartProvider` Notifier), holds **both
   medicines and lab tests**. `CartItem` stores neutral fields (`id`, `title`,
   `subtitle`, `price`, `kind` = `CartItemKind.medicine|labTest`) — a snapshot of
   the catalog item, so the cart isn't coupled to either catalog domain;
   `addProduct(Product)` / `addLabTest(LabTest)` map into it. Add-to-cart from
   medicines list + dashboard suggestions + lab test detail. Cart screen: line
-  items with ± quantity steppers + remove; **promo code**
-  (`MockPromoRepository`: `SAVE10` 10%, `FLAT50` ₹50>₹300, `NEW100` ₹100>₹500);
-  price breakdown (subtotal, discount, delivery — free above ₹500 — total),
+  items with ± quantity steppers + remove; **promo code** — real via
+  `ApiPromoRepository.validate()` (`POST /promo-codes/validate`), codes are
+  whatever's live in Admin → Discounts (no client-hardcoded codes); price
+  breakdown (subtotal, discount, delivery — free above ₹500 — total),
   derived via providers in `cart_providers.dart`. **Payment** → **Checkout**
   (`/cart/checkout`): default delivery address + change (bottom-sheet picker
   from `addressesProvider`); pay via UPI apps (Google Pay / PhonePe / BHIM /
@@ -248,7 +257,8 @@ over Dio — no mock repositories remain.
   `status.isCustomerCancellable` (`created`/`processing` — hidden once
   shipped); calls `OrderRepository.cancelOrder` (`PUT /orders/{id}/cancel`).
 - **Profile** — header + 6 menus + Sign Out:
-  - **Account** — gender-based avatar, personal details, medical records (mock).
+  - **Account** — gender-based avatar, personal details, medical records
+    (real backend data, read-only — see the Account note below).
   - **Appointments** — past appointments + "Book Appointment" → Appointments tab.
   - **Orders** — history list → detail (items, total, **Download invoice**).
   - **Lab Tests** — history list → detail (parameters, **Download invoice**).
@@ -260,12 +270,23 @@ over Dio — no mock repositories remain.
     `invoiceUrl` is currently a placeholder domain (`api.sunilmedicalstore.com`,
     doesn't resolve — no real PDF generation yet), so the page itself won't
     load; that's expected per `docs/API_ENDPOINTS.md`, not a client bug.
-  - **Addresses** — list, **Set as default**, **Add address** (functional,
-    in-memory `addressesProvider` Notifier).
-  - **Payment Methods** — list, **Add UPI** dialog (functional, in-memory
-    `paymentMethodsProvider`). Only UPI supported for now.
-  - Read-only profile data (`MockProfileRepository`); name/phone shown around the
-    app are the real auth values, but Account's extended fields are still mock.
+  - **Addresses** — list, **Set as default**, **Add address** — real via
+    `ApiAddressRepository` (`GET/POST /addresses`,
+    `PUT /addresses/{id}/default`, `DELETE /addresses/{id}`), wrapped in an
+    `AsyncNotifierProvider` (`addressesProvider`) that re-fetches after each
+    mutation.
+  - **Payment Methods** — list, **Add UPI** dialog — real via
+    `ApiPaymentMethodRepository` (`GET/POST /payment-methods`,
+    `PUT /payment-methods/{id}/default`, `DELETE /payment-methods/{id}`),
+    same `AsyncNotifierProvider` pattern (`paymentMethodsProvider`). Only UPI
+    supported for now.
+  - **Account** data — real via `ApiProfileRepository.customerProfile()`
+    (`customerProfileProvider`), which self-heals a missing backend user row
+    on first sign-in. Name/phone shown around the app are the real auth
+    values; Account's extended fields (gender, DOB, email, medical records)
+    now come from the backend too, not mock data — there's just no edit UI
+    for them yet (`upsertProfile()` exists on the repository but nothing
+    calls it).
 - **Admin console** (`lib/features/admin/`) — role-gated, mirrors the
   customer's 5-tab shell (`AdminScaffoldWithNavBar` in `core/widgets`). Tabs:
   - **Inventory** — full CRUD over the product catalog against
