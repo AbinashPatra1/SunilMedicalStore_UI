@@ -72,10 +72,16 @@ enforces the whole policy, driven by `authControllerProvider` via a
 - Admin area = **parallel** `StatefulShellRoute.indexedStack` with 5 tabs:
   **Inventory** `/admin/inventory` (default), **Appointments**
   `/admin/appointments`, **Orders** `/admin/orders`, **Discounts**
-  `/admin/discounts`, **Statistics** `/admin/statistics`. Admin nested routes
-  live under the parent tab, e.g. `/admin/inventory/new`,
-  `/admin/inventory/edit/<productId>`. Admin screens include an
-  `AdminSignOutButton` app-bar action (no Profile tab to sign out from).
+  `/admin/discounts`, **More** `/admin/more` (a menu screen, not a direct
+  feature — see below). Admin nested routes live under the parent tab, e.g.
+  `/admin/inventory/new`, `/admin/inventory/edit/<productId>`. Every
+  *tab-root* admin screen includes an `AdminSignOutButton` app-bar action (no
+  Profile tab to sign out from); nested/detail screens don't repeat it.
+  **More** (`AdminMoreScreen`) is a plain `ListTile` menu — not a feature
+  itself — for admin destinations that don't warrant their own bottom-nav
+  slot: currently **Statistics** (`/admin/more/statistics`, moved here from
+  its own tab) and **Users** (`/admin/more/users`); future admin-only
+  screens append the same way instead of growing the bottom nav further.
 - Sub-pages nest under their tab so the bottom bar stays visible, e.g.
   `/pharmacy/medicines?category=<label>`, `/pharmacy/medicine/<productId>`,
   `/lab-tests/<testId>`, `/cart/checkout`, `/profile/account`, `/profile/orders`,
@@ -363,23 +369,48 @@ over Dio — no mock repositories remain.
     request body sends a different one (renames aren't supported). The
     client's `_fromJson` falls back to `code` when `id` is absent, and the
     Code field is locked (not editable) once a promo code exists.
-  - **Statistics** — one dashboard, one aggregate call per range change
-    (`GET /v1/admin/stats?range=`, not one endpoint per widget).
-    `StatsRange` selector (`today | 7d | 30d | all`) as `ChoiceChip`s at the
-    top, backed by `statsRangeProvider`. Below: revenue + order-count
-    `StatTile`s, a `RevenueLineChart` (`fl_chart`) trend — bucket labels
-    (hourly/daily/monthly) are pre-formatted server-side, the client just
-    renders them; an order-status `StatusBarChart` (also `fl_chart`, one
-    semantically-colored bar per `OrderStatus`); a top-10 best-sellers list;
-    a low-stock list reusing Inventory's `StockBadge`; and the same
-    stat-tile + status-bar-chart pattern repeated for appointments and lab
-    tests. Backed by `StatsRepository` (`domain`) + `ApiStatsRepository`
-    (`data`) against endpoint 61 in `docs/API_ENDPOINTS.md`. **Live** —
-    verified against real data on the emulator: revenue/order totals, the
-    revenue trend line, and the order-status bar chart all correctly
-    reflected a real cancelled ₹70 test order; low-stock, appointments, and
-    lab-tests sections all rendered correctly too (including a correctly
-    empty lab-tests chart with zero bookings).
+  - **More** (`AdminMoreScreen`, `lib/features/admin/more/`) — a plain
+    `ListTile` menu, not a feature of its own, for admin destinations that
+    don't need their own bottom-nav slot. Currently two entries:
+    - **Statistics** (`/admin/more/statistics`) — one dashboard, one
+      aggregate call per range change (`GET /v1/admin/stats?range=`, not
+      one endpoint per widget). `StatsRange` selector
+      (`today | 7d | 30d | all`) as `ChoiceChip`s at the top, backed by
+      `statsRangeProvider`. Below: revenue + order-count `StatTile`s, a
+      `RevenueLineChart` (`fl_chart`) trend — bucket labels
+      (hourly/daily/monthly) are pre-formatted server-side, the client just
+      renders them; an order-status `StatusBarChart` (also `fl_chart`, one
+      semantically-colored bar per `OrderStatus`); a top-10 best-sellers
+      list; a low-stock list reusing Inventory's `StockBadge`; and the same
+      stat-tile + status-bar-chart pattern repeated for appointments and lab
+      tests. Backed by `StatsRepository` (`domain`) + `ApiStatsRepository`
+      (`data`) against endpoint 61 in `docs/API_ENDPOINTS.md`. **Live** —
+      verified against real data on the emulator: revenue/order totals, the
+      revenue trend line, and the order-status bar chart all correctly
+      reflected a real cancelled ₹70 test order; low-stock, appointments,
+      and lab-tests sections all rendered correctly too (including a
+      correctly empty lab-tests chart with zero bookings). No longer a
+      tab root, so its app bar dropped the `AdminSignOutButton`.
+    - **Users** (`/admin/more/users`, `lib/features/admin/users/`) — full
+      CRUD directory over customer records, mirroring the Inventory/
+      Discounts pattern. `AdminUsersListScreen`: search bar (name or phone)
+      + `AdminUserTile` rows; FAB → **Add user**. Tap a row → **Edit user**
+      (full name + email editable; phone number locked — it's the account's
+      Firebase login identity, same lock reasoning as Discounts' `code`
+      field — plus delete-with-confirm). Backed by `AdminUsersRepository`
+      (`domain`) + `ApiAdminUsersRepository` (`data`) against
+      `/v1/admin/users` (endpoints 44, 62–65 in `docs/API_ENDPOINTS.md`);
+      the same repository also backs the "book on behalf" `PickUserSheet`
+      in Admin → Appointments. **"Add user" pre-registers a walk-in/phone
+      customer** who hasn't signed into the app yet — the backend must key
+      this by phone number and reconcile it with that person's real Firebase
+      account on their first real login (see the doc's reconciliation
+      note), otherwise they'd end up with two separate history-splitting
+      records. **Delete is blocked server-side** (not just client-side) if
+      the user has any order/appointment/lab-test history, surfaced as a
+      plain error message. **Built ahead of the backend** — endpoints
+      62–65 are drafted but not yet implemented server-side; #44 (list) was
+      already live, reused as-is.
 
 ## Android / build notes
 

@@ -14,3 +14,8 @@ final adminUsersProvider =
     FutureProvider.family<List<AdminUser>, String>((ref, query) {
   return ref.watch(adminUsersRepositoryProvider).list(query: query);
 });
+
+/// A single user for the edit form.
+final adminUserByIdProvider = FutureProvider.family<AdminUser, String>((ref, id) {
+  return ref.watch(adminUsersRepositoryProvider).getById(id);
+});

@@ -45,7 +45,7 @@ brief see [`API_SPEC.md`](API_SPEC.md); for backend internals see [`claude.md`](
 | 2 | PUT | `/v1/users/me` | ✔ | Upsert profile (onboarding bootstrap) |
 | 3 | GET | `/v1/users/me/medical-records` | ✔ | Medical records only |
 | 4 | GET | `/v1/catalog/categories` | **Public** | Home categories |
-| 5 | GET | `/v1/catalog/products?category={label}&search={q}` | ✔ | Product list (both filters optional; `search` proposed) |
+| 5 | GET | `/v1/catalog/products?category={label}&search={q}` | ✔ | Product list (both filters optional; `search` live) |
 | 6 | GET | `/v1/catalog/products/suggested` | ✔ | "Suggested for you" (6) |
 | 7 | GET | `/v1/catalog/products/{id}` | ✔ | Product detail |
 | 8 | GET | `/v1/catalog/products/{id}/similar` | ✔ | Same-category products |
@@ -102,19 +102,26 @@ brief see [`API_SPEC.md`](API_SPEC.md); for backend internals see [`claude.md`](
 | 59 | PUT | `/v1/admin/prescriptions/{id}` | ✔ admin | Approve/reject → 200 |
 | 60 | PUT | `/v1/users/me/fcm-token` | ✔ | Register this device for push notifications |
 | 61 | GET | `/v1/admin/stats?range=` | ✔ admin | Aggregate dashboard stats |
+| 62 | POST | `/v1/admin/users` | ✔ admin | Pre-register a walk-in customer → 201 |
+| 63 | GET | `/v1/admin/users/{id}` | ✔ admin | Single user for edit |
+| 64 | PUT | `/v1/admin/users/{id}` | ✔ admin | Update fullName/email (phone locked) → 200 |
+| 65 | DELETE | `/v1/admin/users/{id}` | ✔ admin | Delete → 204 (blocked if the user has order/appointment/lab-test history) |
 
-**45–60 are live** (verified against Azure), including the push-notification
+**45–61 are live** (verified against Azure), including the push-notification
 send side described after §3 — real order placement/cancellation triggered
 real pushes end-to-end (Admin SDK send → device delivery → in-app banner),
 confirmed live on the emulator. This also widened the `order status` enum
 (see §5) from `processing | delivered | cancelled` to
 `created | processing | shipped | delivered | cancelled`, a freshly placed
 order (#15) now comes back with `status: "created"` instead of
-`"processing"`.
+`"processing"`. **61 (Statistics)** was verified live on the emulator against
+real data — revenue/order totals, the revenue trend line, and the
+order-status bar chart all correctly reflected a real cancelled order.
 
-**⚠ 61 is not yet implemented on the backend** — proposed by the Flutter
-client for the Admin Statistics dashboard (see the dedicated section after
-§3 for the full response shape).
+**⚠ 62–65 are not yet implemented on the backend** — proposed by the Flutter
+client for the new Admin → More → Users directory screen (full CRUD over
+walk-in customer records). See the dedicated section below for the full
+request/response shapes and the reconciliation requirement for #62.
 
 49–53 additionally mean **#14 `POST /v1/promo-codes/validate` gains new
 rejection rules** — reject (still `400 invalid_promo_code`, just a different
@@ -199,11 +206,12 @@ Request (all fields optional; `fullName` required on first-ever create):
 
 #### 5. `GET /v1/catalog/products?category={label}&search={q}` → `200` — `Product[]`
 `category` and `search` are both optional and combinable; omit both for the
-full catalog. **`search` (proposed, not yet implemented) — free-text match
-against `name` and `brand`**, case-insensitive substring (e.g. `search=para`
-matches "Paracetamol 500mg Tablets"). Powers the dashboard search bar
-(`SearchScreen`), which sends only `search` (no category). **Product
-object:**
+full catalog. **`search` — live** — free-text match against `name` and
+`brand`, case-insensitive substring (e.g. `search=para` matches "Paracetamol
+500mg Tablets"). Powers the dashboard search bar (`SearchScreen`), which
+sends only `search` (no category). Verified live on the emulator: searching
+"para" now returns only Paracetamol, not the full catalog as it briefly did
+before this was implemented. **Product object:**
 ```json
 {
   "id": "p1",
@@ -611,13 +619,13 @@ Request:
 
 ---
 
-### Admin — Users (directory)
+### Admin — Users (directory) — **62–65 proposed, not yet built**
 
 #### 44. `GET /v1/admin/users?search={q}` → `200` — `AdminUser[]`
-Directory used today by the "book on behalf" user picker; the Statistics
-tab will reuse it. `search` matches against name and phone (server-side).
-Client currently doesn't paginate — if the backend needs pagination,
-introduce `page`/`pageSize` later.
+Directory used by the "book on behalf" user picker and the standalone
+Admin → More → Users browser screen. `search` matches against name and
+phone (server-side). Client currently doesn't paginate — if the backend
+needs pagination, introduce `page`/`pageSize` later.
 
 **AdminUser object:**
 ```json
@@ -630,6 +638,59 @@ introduce `page`/`pageSize` later.
 ```
 - `email` may be `null`. `phoneNumber` is the national 10-digit form.
 - `403 forbidden_admin_only` if not admin.
+
+#### 62. `POST /v1/admin/users` → `201` — created `AdminUser`
+Pre-registers a walk-in/phone customer who hasn't installed or signed into
+the app yet — lets the admin start attaching orders/appointments to a real
+customer record before that person ever opens the app.
+
+Request:
+```json
+{
+  "fullName": "Ramesh Gupta",
+  "phoneNumber": "9876543210",
+  "email": null
+}
+```
+- Mandatory: `fullName`, `phoneNumber` (national 10-digit, no country code).
+- Optional: `email`.
+- **Reconciliation requirement, important**: this creates a row keyed by
+  `phoneNumber`, since there's no Firebase UID yet. When this phone number
+  later signs in for real via Firebase Phone Auth, the backend's existing
+  self-heal-on-first-login logic (see #1/#2) must look up an existing user
+  row **by phone number** before creating a new one, and attach the
+  authenticated Firebase UID to that row. Otherwise the same person ends up
+  with two rows — the walk-in placeholder and a fresh duplicate — splitting
+  their order/appointment history across both.
+- Reject a duplicate `phoneNumber` with `409 user_exists`.
+- Errors: `400 validation_error`, `409 user_exists`, `403 forbidden_admin_only`.
+
+#### 63. `GET /v1/admin/users/{id}` → `200` — `AdminUser`
+Single user for the edit form. `404 not_found` if missing.
+
+#### 64. `PUT /v1/admin/users/{id}` → `200` — updated `AdminUser`
+Request:
+```json
+{
+  "fullName": "Ramesh Gupta",
+  "email": "ramesh@example.com"
+}
+```
+- **No `phoneNumber` field** — the client never sends one. Phone is the
+  login identity and can't be changed once set, same reasoning as promo
+  codes locking `code` after creation (see #52). If the request body
+  includes `phoneNumber` anyway, ignore it rather than apply it.
+- `404 not_found` if missing.
+
+#### 65. `DELETE /v1/admin/users/{id}` → `204`
+- **Block the delete** (`409 user_has_history`) if the user has any orders,
+  appointments, or lab-test bookings on record — deleting them would orphan
+  that history's foreign key. Surface a clear message (e.g. `"Can't delete:
+  this user has 3 orders on record."`) since the client just displays
+  `message` verbatim, no special-casing.
+- Only succeeds for a genuinely empty user (no history at all) — e.g.
+  cleaning up a walk-in entry added by mistake.
+- `404 not_found` if missing.
 
 ---
 

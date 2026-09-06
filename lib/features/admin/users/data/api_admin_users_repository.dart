@@ -25,6 +25,55 @@ class ApiAdminUsersRepository implements AdminUsersRepository {
     }
   }
 
+  @override
+  Future<AdminUser> getById(String id) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>('/admin/users/$id');
+      return _fromJson(response.data!);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  @override
+  Future<AdminUser> create({
+    required String fullName,
+    required String phoneNumber,
+    String? email,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/admin/users',
+        data: {'fullName': fullName, 'phoneNumber': phoneNumber, 'email': email},
+      );
+      return _fromJson(response.data!);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  @override
+  Future<AdminUser> update(String id, {required String fullName, String? email}) async {
+    try {
+      final response = await _dio.put<Map<String, dynamic>>(
+        '/admin/users/$id',
+        data: {'fullName': fullName, 'email': email},
+      );
+      return _fromJson(response.data!);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  @override
+  Future<void> delete(String id) async {
+    try {
+      await _dio.delete<void>('/admin/users/$id');
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
   AdminUser _fromJson(Map<String, dynamic> json) => AdminUser(
     id: json['id'] as String,
     fullName: json['fullName'] as String,

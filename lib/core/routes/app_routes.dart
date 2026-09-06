@@ -22,7 +22,11 @@ abstract final class AppRoutes {
   static const adminDiscounts = '/admin/discounts';
   static const adminDiscountEdit = '/admin/discounts/edit'; // + /<id>
   static const adminDiscountAdd = '/admin/discounts/new';
-  static const adminStatistics = '/admin/statistics';
+  static const adminMore = '/admin/more';
+  static const adminStatistics = '/admin/more/statistics';
+  static const adminUsers = '/admin/more/users';
+  static const adminUserAdd = '/admin/more/users/new';
+  static const adminUserEdit = '/admin/more/users/edit'; // + /<id>
 
   // Customer bottom-navigation tabs.
   static const pharmacy = '/pharmacy';

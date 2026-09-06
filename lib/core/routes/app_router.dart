@@ -12,10 +12,13 @@ import 'package:sunil_medical_store/features/admin/discounts/presentation/screen
 import 'package:sunil_medical_store/features/admin/discounts/presentation/screens/discounts_list_screen.dart';
 import 'package:sunil_medical_store/features/admin/inventory/presentation/screens/add_or_edit_product_screen.dart';
 import 'package:sunil_medical_store/features/admin/inventory/presentation/screens/inventory_list_screen.dart';
+import 'package:sunil_medical_store/features/admin/more/presentation/screens/admin_more_screen.dart';
 import 'package:sunil_medical_store/features/admin/orders/presentation/screens/admin_order_detail_screen.dart';
 import 'package:sunil_medical_store/features/admin/orders/presentation/screens/admin_orders_screen.dart';
 import 'package:sunil_medical_store/features/admin/orders/presentation/screens/admin_prescription_detail_screen.dart';
 import 'package:sunil_medical_store/features/admin/statistics/presentation/screens/admin_statistics_screen.dart';
+import 'package:sunil_medical_store/features/admin/users/presentation/screens/add_or_edit_admin_user_screen.dart';
+import 'package:sunil_medical_store/features/admin/users/presentation/screens/admin_users_list_screen.dart';
 import 'package:sunil_medical_store/features/appointments/presentation/screens/appointments_screen.dart';
 import 'package:sunil_medical_store/features/auth/presentation/providers/auth_controller.dart';
 import 'package:sunil_medical_store/features/auth/presentation/providers/auth_state.dart';
@@ -231,8 +234,30 @@ final routerProvider = Provider<GoRouter>((ref) {
           StatefulShellBranch(
             routes: [
               GoRoute(
-                path: AppRoutes.adminStatistics,
-                builder: (context, state) => const AdminStatisticsScreen(),
+                path: AppRoutes.adminMore,
+                builder: (context, state) => const AdminMoreScreen(),
+                routes: [
+                  GoRoute(
+                    path: 'statistics',
+                    builder: (context, state) => const AdminStatisticsScreen(),
+                  ),
+                  GoRoute(
+                    path: 'users',
+                    builder: (context, state) => const AdminUsersListScreen(),
+                    routes: [
+                      GoRoute(
+                        path: 'new',
+                        builder: (context, state) => const AddOrEditAdminUserScreen(),
+                      ),
+                      GoRoute(
+                        path: 'edit/:id',
+                        builder: (context, state) => AddOrEditAdminUserScreen(
+                          userId: state.pathParameters['id'],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ],
           ),

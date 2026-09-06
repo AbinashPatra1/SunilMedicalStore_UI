@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sunil_medical_store/core/models/order.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
-import 'package:sunil_medical_store/features/admin/presentation/widgets/admin_sign_out_button.dart';
 import 'package:sunil_medical_store/features/admin/statistics/domain/admin_stats.dart';
 import 'package:sunil_medical_store/features/admin/statistics/domain/stats_range.dart';
 import 'package:sunil_medical_store/features/admin/statistics/presentation/providers/stats_providers.dart';
@@ -27,10 +26,7 @@ class AdminStatisticsScreen extends ConsumerWidget {
     final async = ref.watch(adminStatsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Statistics'),
-        actions: const [AdminSignOutButton()],
-      ),
+      appBar: AppBar(title: const Text('Statistics')),
       body: Column(
         children: [
           Padding(
