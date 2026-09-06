@@ -6,7 +6,7 @@
          Android 13+; declaring it here is what makes that request possible. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
-        android:label="sunil_medical_store"
+        android:label="Sunil Medical Store"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
