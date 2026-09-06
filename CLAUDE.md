@@ -149,13 +149,10 @@ over Dio — no mock repositories remain.
   — plain text field in the app bar (`onSubmitted`, matching the search-on-submit
   convention used by every admin list screen), results as `ProductCard`s
   reusing the Medicines list styling. Backed by `ProductRepository.searchProducts`
-  → `GET /catalog/products?search=`. **Built ahead of the backend** — the
-  `search` param is proposed in `docs/API_ENDPOINTS.md`; verified live that
-  the backend currently **ignores it silently** and returns the full
-  unfiltered catalog rather than erroring (searching "para" returned
-  Amoxicillin, Antiseptic Liquid, etc. — nothing matching), so this isn't
-  just unimplemented, it actively returns wrong results until the backend
-  adds real filtering.
+  → `GET /catalog/products?search=`. **Live** — backend now does real
+  case-insensitive substring filtering (searching "para" correctly returns
+  only Paracetamol 500mg Tablets); previously it silently ignored the
+  `search` param and returned the full catalog, since fixed.
 - **Prescriptions** (`lib/features/prescriptions/`) — upload flow reachable
   from the dashboard "Prescription" button and from checkout. `PrescriptionsScreen`:
   list of the caller's uploads with a `StatusChip` (pending/approved/rejected
@@ -377,8 +374,12 @@ over Dio — no mock repositories remain.
     a low-stock list reusing Inventory's `StockBadge`; and the same
     stat-tile + status-bar-chart pattern repeated for appointments and lab
     tests. Backed by `StatsRepository` (`domain`) + `ApiStatsRepository`
-    (`data`). **Built ahead of the backend** — endpoint 61 is drafted in
-    `docs/API_ENDPOINTS.md` but not yet implemented server-side.
+    (`data`) against endpoint 61 in `docs/API_ENDPOINTS.md`. **Live** —
+    verified against real data on the emulator: revenue/order totals, the
+    revenue trend line, and the order-status bar chart all correctly
+    reflected a real cancelled ₹70 test order; low-stock, appointments, and
+    lab-tests sections all rendered correctly too (including a correctly
+    empty lab-tests chart with zero bookings).
 
 ## Android / build notes
 
