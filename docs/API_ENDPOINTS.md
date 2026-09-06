@@ -101,19 +101,20 @@ brief see [`API_SPEC.md`](API_SPEC.md); for backend internals see [`claude.md`](
 | 58 | GET | `/v1/admin/prescriptions/{id}` | ✔ admin | Single prescription for review |
 | 59 | PUT | `/v1/admin/prescriptions/{id}` | ✔ admin | Approve/reject → 200 |
 | 60 | PUT | `/v1/users/me/fcm-token` | ✔ | Register this device for push notifications |
+| 61 | GET | `/v1/admin/stats?range=` | ✔ admin | Aggregate dashboard stats |
 
-**45–59 are live** (verified against Azure) — widened the `order status`
-enum (see §5) from `processing | delivered | cancelled` to
+**45–60 are live** (verified against Azure), including the push-notification
+send side described after §3 — real order placement/cancellation triggered
+real pushes end-to-end (Admin SDK send → device delivery → in-app banner),
+confirmed live on the emulator. This also widened the `order status` enum
+(see §5) from `processing | delivered | cancelled` to
 `created | processing | shipped | delivered | cancelled`, a freshly placed
 order (#15) now comes back with `status: "created"` instead of
 `"processing"`.
 
-**⚠ 60 (and the push-notification send-side described after §3) is not yet
-implemented on the backend** — proposed by the Flutter client, which is
-already built against this contract (permission request, token
-registration, foreground/background message handling, tap deep-linking all
-verified live — the token PUT currently 404s and is swallowed silently, as
-designed, until the backend has the endpoint).
+**⚠ 61 is not yet implemented on the backend** — proposed by the Flutter
+client for the Admin Statistics dashboard (see the dedicated section after
+§3 for the full response shape).
 
 49–53 additionally mean **#14 `POST /v1/promo-codes/validate` gains new
 rejection rules** — reject (still `400 invalid_promo_code`, just a different
@@ -905,6 +906,66 @@ A timer-triggered job, **once daily at 8:00 AM IST**, that:
 - Finds lab-test bookings with `status: "scheduled"` and a date falling
   today → push the customer `{type: "labTest", id}` /
   `"Your lab test is due today at {time}"`.
+
+---
+
+### Admin — Statistics — **proposed, not yet built**
+
+One aggregate endpoint backs the whole Statistics dashboard — the client
+makes a single call per range change rather than one per widget.
+
+#### 61. `GET /v1/admin/stats?range={range}` → `200` — `AdminStats`
+`range` — `today | 7d | 30d | all`, required. All figures scoped to that
+window (`orders.placedOn`, `appointments.dateTime`, lab-test `bookedOn`
+falling inside it), except `lowStock` which is always current (stock levels
+aren't period-scoped).
+
+```json
+{
+  "revenue": {
+    "total": 12450,
+    "orderCount": 42,
+    "byStatus": { "created": 2, "processing": 5, "shipped": 10, "delivered": 20, "cancelled": 5 },
+    "series": [
+      { "label": "Mon", "revenue": 1200, "orderCount": 5 },
+      { "label": "Tue", "revenue": 980, "orderCount": 4 }
+    ]
+  },
+  "topProducts": [
+    { "productId": "p1", "name": "Paracetamol 500mg Tablets", "quantitySold": 120, "revenue": 3600 }
+  ],
+  "lowStock": [
+    { "productId": "p9", "name": "Amoxicillin 500mg Capsules", "stock": 0 }
+  ],
+  "appointments": {
+    "total": 15,
+    "byStatus": { "upcoming": 5, "completed": 8, "cancelled": 2 }
+  },
+  "labTests": {
+    "total": 9,
+    "byStatus": { "scheduled": 3, "completed": 5, "cancelled": 1 }
+  }
+}
+```
+- `revenue.byStatus` keys are the order `status` wire values (§5); `total`/
+  `orderCount` count every order in range regardless of status (a
+  `cancelled` order still counts — its revenue is real money that was
+  briefly committed, admin can see the swing via `byStatus`).
+- `revenue.series` — one point per bucket, **pre-labeled by the server**
+  (the client just renders `label` verbatim, no date math on its end):
+  - `range=today` → hourly buckets, label like `"2 PM"`.
+  - `range=7d` / `range=30d` → daily buckets, label like `"Mon"` (7d) or
+    `"12 Sep"` (30d).
+  - `range=all` → monthly buckets, label like `"Jan"`.
+- `topProducts` — top 10 by `quantitySold`, descending. Only counts
+  non-`cancelled` orders (a cancelled order's items shouldn't count as
+  "sold").
+- `lowStock` — products with `stock <= 10` (same threshold as the client's
+  `StockBadge`), ascending by `stock`, capped at ~20 entries.
+- `appointments.byStatus` / `labTests.byStatus` keys are the respective
+  status wire values (§5).
+- `403 forbidden_admin_only` if not admin. `400 validation_error` for an
+  unrecognized `range`.
 
 ---
 

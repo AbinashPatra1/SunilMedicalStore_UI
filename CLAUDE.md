@@ -15,7 +15,9 @@ every feature talks to it over HTTP — see "Data & backend strategy".
 - GoRouter 17 (navigation)
 - Firebase Authentication (phone/OTP) — **live**
 - Firebase Messaging (push notifications — see "Push notifications" below;
-  client-side fully wired and verified live, **blocked on backend send-side**)
+  **fully live end-to-end** — client and backend send-side both verified
+  against real devices)
+- `fl_chart` (Statistics dashboard charts — see "Statistics" below)
 - Firebase Storage (prescription image uploads — see "Prescriptions" below;
   `firebase_storage` package, **needs Storage enabled in the Firebase
   console** — not yet done, uploads currently fail with a 404 until it is)
@@ -190,12 +192,13 @@ over Dio — no mock repositories remain.
   existing `getById` providers. Admin lab-test-booking notifications have
   nowhere dedicated to deep-link to yet (no admin lab-test screen exists) —
   they land on Admin → Orders as the closest related surface.
-  **Client-side fully built and verified live** (permission dialog, real FCM
-  token fetched, correctly PUT to the backend) — **blocked entirely on the
-  backend**: endpoint 60 doesn't exist yet (404s, swallowed silently), and
-  nothing server-side sends a push yet (no Admin SDK integration, no event
-  triggers, no daily reminder job). Full contract — message shape, every
-  event trigger, the daily job's schedule — is drafted in
+  **Fully live end-to-end, verified with real devices** — placed and
+  cancelled a real order and watched both the admin "order placed" push and
+  the customer "order cancelled" push arrive as in-app banners with the
+  exact spec'd wording. Background/terminated tray delivery and the daily
+  8 AM reminder job haven't been separately exercised yet (the foreground
+  banner path covers the same code either way). Full contract — message
+  shape, every event trigger, the daily job's schedule — is in
   `docs/API_ENDPOINTS.md` §Push notifications.
 - **Medicines** — category-filtered product list from `?category=`; `Product`
   model + `medicine_providers`. "Add" → adds to cart.
@@ -342,8 +345,19 @@ over Dio — no mock repositories remain.
     request body sends a different one (renames aren't supported). The
     client's `_fromJson` falls back to `code` when `id` is absent, and the
     Code field is locked (not editable) once a promo code exists.
-  - **Statistics** — placeholder screen until implemented. Uses the shared
-    `PlaceholderScreen` + `AdminSignOutButton`.
+  - **Statistics** — one dashboard, one aggregate call per range change
+    (`GET /v1/admin/stats?range=`, not one endpoint per widget).
+    `StatsRange` selector (`today | 7d | 30d | all`) as `ChoiceChip`s at the
+    top, backed by `statsRangeProvider`. Below: revenue + order-count
+    `StatTile`s, a `RevenueLineChart` (`fl_chart`) trend — bucket labels
+    (hourly/daily/monthly) are pre-formatted server-side, the client just
+    renders them; an order-status `StatusBarChart` (also `fl_chart`, one
+    semantically-colored bar per `OrderStatus`); a top-10 best-sellers list;
+    a low-stock list reusing Inventory's `StockBadge`; and the same
+    stat-tile + status-bar-chart pattern repeated for appointments and lab
+    tests. Backed by `StatsRepository` (`domain`) + `ApiStatsRepository`
+    (`data`). **Built ahead of the backend** — endpoint 61 is drafted in
+    `docs/API_ENDPOINTS.md` but not yet implemented server-side.
 
 ## Android / build notes
 
