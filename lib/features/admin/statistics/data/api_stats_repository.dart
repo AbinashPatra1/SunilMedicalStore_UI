@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/features/admin/statistics/domain/admin_stats.dart';
-import 'package:sunil_medical_store/features/admin/statistics/domain/stats_range.dart';
+import 'package:sunil_medical_store/features/admin/statistics/domain/stats_filter.dart';
 import 'package:sunil_medical_store/features/admin/statistics/domain/stats_repository.dart';
 
 /// [StatsRepository] backed by `/v1/admin/stats`.
@@ -11,11 +11,18 @@ class ApiStatsRepository implements StatsRepository {
   final Dio _dio;
 
   @override
-  Future<AdminStats> getStats(StatsRange range) async {
+  Future<AdminStats> getStats(StatsFilter filter) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
         '/admin/stats',
-        queryParameters: {'range': range.wireValue},
+        queryParameters: switch (filter) {
+          StatsRangeFilter(:final range) => {'range': range.wireValue},
+          StatsPeriodFilter(:final year, :final month) => {
+            'range': 'custom',
+            'year': '$year',
+            if (month != null) 'month': '$month',
+          },
+        },
       );
       return _fromJson(response.data!);
     } on DioException catch (e) {

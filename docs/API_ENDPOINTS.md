@@ -151,6 +151,13 @@ finally makes the daily reminder job's `"...at {timeSlot}"` message (see
 below) buildable — previously nothing captured a real time anywhere in the
 system. No new endpoint numbers, just new fields on #15/#19.
 
+**⚠ #61 gains new `range` values and a custom-period mode, not yet
+implemented on the backend** — the Statistics dashboard's range pills grew
+`6m`/`1y`, and a new "more filters" year/month picker sends
+`range=custom&year=&month=`. See #61 for the full query-param and
+bucket-labeling details. No new endpoint number, just an extension of the
+existing live endpoint.
+
 49–53 additionally mean **#14 `POST /v1/promo-codes/validate` gains new
 rejection rules** — reject (still `400 invalid_promo_code`, just a different
 `message`) when the code is `active: false`, past `expiresAt`, at
@@ -1065,10 +1072,22 @@ One aggregate endpoint backs the whole Statistics dashboard — the client
 makes a single call per range change rather than one per widget.
 
 #### 61. `GET /v1/admin/stats?range={range}` → `200` — `AdminStats`
-`range` — `today | 7d | 30d | all`, required. All figures scoped to that
-window (`orders.placedOn`, `appointments.dateTime`, lab-test `bookedOn`
-falling inside it), except `lowStock` which is always current (stock levels
-aren't period-scoped).
+`range` — `today | 7d | 30d | 6m | 1y | all | custom`, required. All figures
+scoped to that window (`orders.placedOn`, `appointments.dateTime`, lab-test
+`bookedOn` falling inside it), except `lowStock` which is always current
+(stock levels aren't period-scoped).
+- **`6m`/`1y` — new values**: 6 months / 1 year back from today, same
+  semantics as `7d`/`30d` just longer windows.
+- **`range=custom` — new**: an arbitrary historical period instead of "N back
+  from today", for the admin's year/month picker. Takes two more query
+  params:
+  - `year` (required with `custom`) — e.g. `2026`.
+  - `month` (optional) — `1`–`12`. Omitted means the whole year; present
+    means just that month.
+  - Examples: `?range=custom&year=2025` (all of 2025) or
+    `?range=custom&year=2026&month=3` (March 2026 only).
+  - `400 validation_error` if `range=custom` without `year`, or `month` is
+    outside `1`–`12`.
 
 ```json
 {
@@ -1106,7 +1125,14 @@ aren't period-scoped).
   - `range=today` → hourly buckets, label like `"2 PM"`.
   - `range=7d` / `range=30d` → daily buckets, label like `"Mon"` (7d) or
     `"12 Sep"` (30d).
-  - `range=all` → monthly buckets, label like `"Jan"`.
+  - `range=6m` → weekly buckets, label like `"12 Sep"` (week-start date).
+  - `range=1y` / `range=all` → monthly buckets, label like `"Jan"` (`1y`
+    should also include the year if it'd otherwise be ambiguous, e.g.
+    `"Jan '25"` vs `"Jan '26"` — client just renders it verbatim either way).
+  - `range=custom` with `month` → daily buckets, label like `"12"` (day of
+    month, since the month itself is already known from the filter).
+  - `range=custom` without `month` (whole year) → monthly buckets, label
+    like `"Jan"`.
 - `topProducts` — top 10 by `quantitySold`, descending. Only counts
   non-`cancelled` orders (a cancelled order's items shouldn't count as
   "sold").

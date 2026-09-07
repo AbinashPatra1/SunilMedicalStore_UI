@@ -4,10 +4,12 @@ import 'package:sunil_medical_store/core/models/order.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/admin/statistics/domain/admin_stats.dart';
+import 'package:sunil_medical_store/features/admin/statistics/domain/stats_filter.dart';
 import 'package:sunil_medical_store/features/admin/statistics/domain/stats_range.dart';
 import 'package:sunil_medical_store/features/admin/statistics/presentation/providers/stats_providers.dart';
 import 'package:sunil_medical_store/features/admin/statistics/presentation/widgets/revenue_line_chart.dart';
 import 'package:sunil_medical_store/features/admin/statistics/presentation/widgets/stat_tile.dart';
+import 'package:sunil_medical_store/features/admin/statistics/presentation/widgets/stats_period_sheet.dart';
 import 'package:sunil_medical_store/features/admin/statistics/presentation/widgets/status_bar_chart.dart';
 import 'package:sunil_medical_store/features/admin/inventory/presentation/widgets/stock_badge.dart';
 import 'package:sunil_medical_store/features/profile/domain/lab_test.dart';
@@ -15,14 +17,26 @@ import 'package:sunil_medical_store/features/profile/domain/past_appointment.dar
 
 /// Admin > Statistics: revenue trend, order/appointment/lab-test status
 /// breakdowns, top-selling products, and low-stock alerts — all scoped to a
-/// selectable [StatsRange].
+/// selectable [StatsFilter] (a fixed [StatsRange] preset, or a custom
+/// year/month picked via the "more filters" icon).
 class AdminStatisticsScreen extends ConsumerWidget {
   const AdminStatisticsScreen({super.key});
+
+  Future<void> _pickCustomPeriod(BuildContext context, WidgetRef ref, StatsFilter current) async {
+    final result = await showModalBottomSheet<(int, int?)>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => StatsPeriodSheet(initial: current is StatsPeriodFilter ? current : null),
+    );
+    if (result == null) return;
+    final (year, month) = result;
+    ref.read(statsFilterProvider.notifier).setPeriod(year: year, month: month);
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final range = ref.watch(statsRangeProvider);
+    final filter = ref.watch(statsFilterProvider);
     final async = ref.watch(adminStatsProvider);
 
     return Scaffold(
@@ -41,11 +55,26 @@ class AdminStatisticsScreen extends ConsumerWidget {
                   for (final r in StatsRange.values) ...[
                     ChoiceChip(
                       label: Text(r.label),
-                      selected: range == r,
-                      onSelected: (_) => ref.read(statsRangeProvider.notifier).set(r),
+                      selected: filter is StatsRangeFilter && filter.range == r,
+                      onSelected: (_) => ref.read(statsFilterProvider.notifier).setRange(r),
                     ),
                     const SizedBox(width: AppConstants.spacingSm),
                   ],
+                  if (filter is StatsPeriodFilter) ...[
+                    InputChip(
+                      label: Text(filter.label),
+                      selected: true,
+                      showCheckmark: false,
+                      onDeleted: () => ref.read(statsFilterProvider.notifier).setRange(StatsRange.sevenDays),
+                      onPressed: () => _pickCustomPeriod(context, ref, filter),
+                    ),
+                    const SizedBox(width: AppConstants.spacingSm),
+                  ],
+                  IconButton(
+                    tooltip: 'More filters',
+                    onPressed: () => _pickCustomPeriod(context, ref, filter),
+                    icon: const Icon(Icons.tune),
+                  ),
                 ],
               ),
             ),

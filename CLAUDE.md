@@ -433,10 +433,20 @@ over Dio — no mock repositories remain.
     `ListTile` menu, not a feature of its own, for admin destinations that
     don't need their own bottom-nav slot. Currently two entries:
     - **Statistics** (`/admin/more/statistics`) — one dashboard, one
-      aggregate call per range change (`GET /v1/admin/stats?range=`, not
-      one endpoint per widget). `StatsRange` selector
-      (`today | 7d | 30d | all`) as `ChoiceChip`s at the top, backed by
-      `statsRangeProvider`. Below: revenue + order-count `StatTile`s, a
+      aggregate call per filter change (`GET /v1/admin/stats?range=`, not
+      one endpoint per widget). `StatsRange` pills
+      (`today | 7d | 30d | 6m | 1y | all`) as `ChoiceChip`s at the top,
+      plus a **"More filters"** icon (`Icons.tune`) opening
+      `StatsPeriodSheet` — pick a specific year, optionally narrowed to one
+      month — sent as `range=custom&year=&month=`. The active selection is
+      `StatsFilter` (`domain/stats_filter.dart`, a sealed
+      `StatsRangeFilter | StatsPeriodFilter`), backed by
+      `statsFilterProvider`; a custom period shows as its own `InputChip`
+      (e.g. "Mar 2026") with a delete action reverting to the 7-day default.
+      **Built ahead of the backend** — `6m`/`1y` and `range=custom` are new
+      additions to the already-live endpoint #61, not yet implemented
+      server-side; client-side plumbing not yet live-verified (deferred).
+      Below: revenue + order-count `StatTile`s, a
       `RevenueLineChart` (`fl_chart`) trend — bucket labels
       (hourly/daily/monthly) are pre-formatted server-side, the client just
       renders them; an order-status `StatusBarChart` (also `fl_chart`, one
@@ -488,7 +498,7 @@ ranking, new items) as items are picked up, finished, or reprioritized.
 | 4 | Enable Firebase Storage (Blaze plan) to unblock Prescriptions | Blocked — user action | Waiting on you | Prescriptions is fully built client + backend (endpoints 54–59 live); blocked on this one manual Firebase Console step (Console → Storage → Get started, then Blaze plan) |
 | 5 | Cancel appointment | New feature | **Backend deployed, live re-verification deferred** | Inline **Cancel** action on each upcoming appointment card in Profile → Appointments (`AppointmentStatus.isCustomerCancellable`, true only while `upcoming`), mirroring the order-cancel pattern: confirm dialog → `AppointmentRepository.cancel(id)` → `PUT /appointments/{id}/cancel` → invalidate `pastOrdersProvider`. Client-side verified live against a real appointment before the backend existed (confirm dialog copy, cancellable-only gating, clean error with no crash against the missing endpoint — endpoint #66). User confirmed 2026-09-07 the backend is now deployed; a full live pass (actually cancelling a real appointment end-to-end) is intentionally deferred to a later session |
 | 6 | Doctor ratings from customers | New feature | **Done (client)** | Customer can rate a doctor 1–5 stars after a `completed` appointment (`AppointmentRepository.rate(id, stars)` → `POST /appointments/{id}/rating`, endpoint #67), once per appointment, via a "Rate doctor" button + star-picker dialog on Profile → Appointments; already-rated appointments show "Your rating: ★★★★☆" read-only. `Doctor.rating` becomes a server-computed average with a new `ratingCount` field — admin's manual "Rating" input is removed from the doctor form (now a read-only info tile), and `DoctorCard` shows "New" instead of a fabricated number when `ratingCount == 0`. **Decided**: server-computed average replaces the admin field; one rating per completed appointment. Verified live: doctor cards correctly show "New" (0 ratings from real backend data); hit and fixed a real bug during testing — `PastAppointment` briefly had a non-nullable `doctorId` field that broke the *entire* appointments list against the current backend (crashed on missing field) — removed it since it turned out unused (the rating endpoint takes the appointment id, not the doctor's). The "Rate doctor" trigger itself wasn't exercised live (no completed appointment in the test account, and getting one needs admin access) — code-reviewed and pattern-matches the already-proven Cancel button exactly, so verification is deferred, not skipped for cause |
-| 7 | Statistics date filters: `6 months` / `1 year` + custom year/month picker | Improvement | Not started | Add range pills + a "more filters" icon opening a year/month selector |
+| 7 | Statistics date filters: `6 months` / `1 year` + custom year/month picker | Improvement | **Done (client)** | Added `sixMonths`/`oneYear` to the `StatsRange` pills, plus a "More filters" icon opening `StatsPeriodSheet` (year dropdown, required + month dropdown, optional — "whole year" when omitted). New sealed `StatsFilter` (`StatsRangeFilter \| StatsPeriodFilter`) replaces the old bare `StatsRange` as the provider's state shape; custom periods send `range=custom&year=&month=`. `flutter analyze`/`flutter test` clean; live verification deferred (needs the admin account, skipped this round) |
 | 8 | Admin order-status flow: swipe-to-advance + separate cancel; Orders gains 3 tabs (Pharmacy / Prescriptions / Pathology) | New feature | Not started | Replaces the free-choice `ChoiceChip` status picker with a linear swipe ("Process Order" → processing → shipped → delivered) + a standalone red Cancel button (disabled once already cancelled) |
 | 9 | Lab test / appointment status flow: `Scheduled → InSession → Completed`, `Cancelled` | New feature | Not started | Same swipe-to-advance + separate cancel pattern as #8. Depends on #8's swipe UI being built first |
 | 10 | Order ID format standardization — `PHSMS-<mmyy>-<seq>` / `PLSMS-<mmyy>-<seq>` / `DASMS-<mmyy>-<seq>` | New feature | Not started | Backend-heavy (per-type sequence generation). **Decided**: new orders only, existing `SMS-<seq>` orders keep their numbers, no backfill |

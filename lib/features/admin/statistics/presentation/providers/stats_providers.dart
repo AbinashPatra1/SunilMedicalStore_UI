@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sunil_medical_store/core/network/api_client.dart';
 import 'package:sunil_medical_store/features/admin/statistics/data/api_stats_repository.dart';
 import 'package:sunil_medical_store/features/admin/statistics/domain/admin_stats.dart';
+import 'package:sunil_medical_store/features/admin/statistics/domain/stats_filter.dart';
 import 'package:sunil_medical_store/features/admin/statistics/domain/stats_range.dart';
 import 'package:sunil_medical_store/features/admin/statistics/domain/stats_repository.dart';
 
@@ -9,18 +10,21 @@ final statsRepositoryProvider = Provider<StatsRepository>((ref) {
   return ApiStatsRepository(ref.watch(dioProvider));
 });
 
-/// Currently-selected time range for the Statistics dashboard.
-final statsRangeProvider = NotifierProvider<StatsRangeNotifier, StatsRange>(StatsRangeNotifier.new);
+/// Currently-selected time window for the Statistics dashboard — either a
+/// fixed [StatsRange] preset or a custom [StatsPeriodFilter] year/month.
+final statsFilterProvider = NotifierProvider<StatsFilterController, StatsFilter>(StatsFilterController.new);
 
-class StatsRangeNotifier extends Notifier<StatsRange> {
+class StatsFilterController extends Notifier<StatsFilter> {
   @override
-  StatsRange build() => StatsRange.sevenDays;
+  StatsFilter build() => const StatsRangeFilter(StatsRange.sevenDays);
 
-  void set(StatsRange next) => state = next;
+  void setRange(StatsRange range) => state = StatsRangeFilter(range);
+
+  void setPeriod({required int year, int? month}) => state = StatsPeriodFilter(year: year, month: month);
 }
 
-/// Aggregate stats for the currently-selected range.
+/// Aggregate stats for the currently-selected filter.
 final adminStatsProvider = FutureProvider<AdminStats>((ref) {
-  final range = ref.watch(statsRangeProvider);
-  return ref.watch(statsRepositoryProvider).getStats(range);
+  final filter = ref.watch(statsFilterProvider);
+  return ref.watch(statsRepositoryProvider).getStats(filter);
 });
