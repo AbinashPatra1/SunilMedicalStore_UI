@@ -442,17 +442,20 @@ Items marked (needs discussion) require scoping before estimation/build.
 7. **Order ID format standardization** — `PHSMS-<mmyy>-<5-digit seq>`
    (pharmacy), `PLSMS-<mmyy>-<5-digit seq>` (lab tests),
    `DASMS-<mmyy>-<5-digit seq>` (appointments), replacing the current
-   `SMS-<seq>` scheme. Backend-heavy (per-type sequence generation) — needs
-   a decision on whether existing orders get renumbered or only new ones
-   use the new format.
+   `SMS-<seq>` scheme. Backend-heavy (per-type sequence generation).
+   **Decided**: new orders only — existing `SMS-<seq>` orders keep their
+   current numbers, no backfill/migration.
 8. **Location integration** — capture the customer's device location when
    adding an address (with a permission prompt), derive area/pincode from
    it (read-only, not user-editable), show it on the home screen. Admin
    gets a new **Location configuration** menu (under More) to set an
    allowed order-placement radius from a fixed store location — outside it,
    pharmacy orders are blocked but lab tests/appointments still allowed
-   (they require an in-person visit anyway). Needs a geocoding/maps
-   provider decision.
+   (they require an in-person visit anyway). **Decided**: device-only
+   geocoding (Android's built-in `Geocoder`, no new API key/billing) for
+   area/pincode, straight-line Haversine distance for the radius check —
+   matches the user's own "approx" framing, no Google Maps Platform or
+   Nominatim dependency.
 9. **Dynamic delivery & platform fees** — admin-configurable fee tiers
    under a new More menu, replacing the hardcoded delivery fee. Multiple
    distance-based delivery-fee tiers (e.g. free ≤3km on orders ≥₹299) with
@@ -466,7 +469,10 @@ Items marked (needs discussion) require scoping before estimation/build.
 11. **UI beautification (needs discussion)** — full app redesign:
     modern/minimal visual language, new stylish components, new app logo,
     redesigned in-app notification style. Reference image provided by the
-    user. Scope (all-at-once vs. phased) and logo sourcing to be confirmed.
+    user. **Decided**: user will supply the logo asset (not designed by
+    Claude); scheduled last, after functional work (1–10) stabilizes, so
+    screens changing functionally (admin status UI, location/fee screens)
+    aren't restyled twice.
 
 ## Android / build notes
 
