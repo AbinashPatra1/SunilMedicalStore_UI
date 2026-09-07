@@ -16,6 +16,7 @@ import 'package:sunil_medical_store/features/admin/more/presentation/screens/adm
 import 'package:sunil_medical_store/features/admin/orders/presentation/screens/admin_order_detail_screen.dart';
 import 'package:sunil_medical_store/features/admin/orders/presentation/screens/admin_orders_screen.dart';
 import 'package:sunil_medical_store/features/admin/orders/presentation/screens/admin_prescription_detail_screen.dart';
+import 'package:sunil_medical_store/features/admin/pathology/presentation/screens/admin_lab_test_booking_detail_screen.dart';
 import 'package:sunil_medical_store/features/admin/statistics/presentation/screens/admin_statistics_screen.dart';
 import 'package:sunil_medical_store/features/admin/users/presentation/screens/add_or_edit_admin_user_screen.dart';
 import 'package:sunil_medical_store/features/admin/users/presentation/screens/admin_users_list_screen.dart';
@@ -205,6 +206,12 @@ final routerProvider = Provider<GoRouter>((ref) {
                     path: 'prescriptions/edit/:id',
                     builder: (context, state) => AdminPrescriptionDetailScreen(
                       prescriptionId: state.pathParameters['id']!,
+                    ),
+                  ),
+                  GoRoute(
+                    path: 'pathology/edit/:id',
+                    builder: (context, state) => AdminLabTestBookingDetailScreen(
+                      bookingId: state.pathParameters['id']!,
                     ),
                   ),
                 ],

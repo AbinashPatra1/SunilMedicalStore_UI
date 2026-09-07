@@ -1,13 +1,34 @@
 /// Status of a booked lab test.
 enum LabTestStatus {
-  completed,
   scheduled,
+  inSession,
+  completed,
   cancelled;
 
   String get label => switch (this) {
-    LabTestStatus.completed => 'Completed',
     LabTestStatus.scheduled => 'Scheduled',
+    LabTestStatus.inSession => 'In Session',
+    LabTestStatus.completed => 'Completed',
     LabTestStatus.cancelled => 'Cancelled',
+  };
+
+  /// The next status in the linear lab-test flow — same one-step-at-a-time
+  /// admin swipe pattern as [OrderStatus.next]. `null` once there's no next
+  /// step (already `completed`, or `cancelled`).
+  LabTestStatus? get next => switch (this) {
+    LabTestStatus.scheduled => LabTestStatus.inSession,
+    LabTestStatus.inSession => LabTestStatus.completed,
+    LabTestStatus.completed => null,
+    LabTestStatus.cancelled => null,
+  };
+
+  /// Swipe-bar label for advancing from this status to [next]. `null` when
+  /// [next] is `null` (nothing to advance to).
+  String? get advanceLabel => switch (this) {
+    LabTestStatus.scheduled => 'Start Session',
+    LabTestStatus.inSession => 'Mark Completed',
+    LabTestStatus.completed => null,
+    LabTestStatus.cancelled => null,
   };
 }
 

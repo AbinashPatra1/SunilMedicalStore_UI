@@ -108,6 +108,9 @@ brief see [`API_SPEC.md`](API_SPEC.md); for backend internals see [`claude.md`](
 | 65 | DELETE | `/v1/admin/users/{id}` | ✔ admin | Delete → 204 (blocked if the user has order/appointment/lab-test history) |
 | 66 | PUT | `/v1/appointments/{id}/cancel` | ✔ | Customer cancels their own appointment → 200 |
 | 67 | POST | `/v1/appointments/{id}/rating` | ✔ | Customer rates their doctor for a completed appointment → 200 |
+| 68 | GET | `/v1/admin/lab-test-bookings?…filters` | ✔ admin | All lab-test bookings across all users |
+| 69 | GET | `/v1/admin/lab-test-bookings/{id}` | ✔ admin | Single booking |
+| 70 | PUT | `/v1/admin/lab-test-bookings/{id}` | ✔ admin | Change booking status (advance or cancel) |
 
 **45–66 are live** (verified against Azure), including the push-notification
 send side described after §3 — real order placement/cancellation triggered
@@ -157,6 +160,19 @@ implemented on the backend** — the Statistics dashboard's range pills grew
 `range=custom&year=&month=`. See #61 for the full query-param and
 bucket-labeling details. No new endpoint number, just an extension of the
 existing live endpoint.
+
+**⚠ 68–70 are not yet implemented on the backend** — a brand-new admin
+surface ("Pathology" — the 3rd sub-tab under Admin → Orders, alongside the
+now-renamed "Pharmacy" and existing "Prescriptions") for managing lab-test
+bookings, which had no admin-side management at all before this. Mirrors
+the existing Admin — Orders endpoints (#46–48) almost exactly — see
+§Admin — Pathology below for the full shapes. Also means **lab-booking
+`status` gains a new `inSession` value** (see #19 and §5) and the customer
+`LabTestStatus` enum order changed from `completed | scheduled | cancelled`
+to `scheduled | inSession | completed | cancelled` to reflect the real
+lifecycle order (this doesn't affect wire parsing — enum values are
+matched by name, not position — but flagging in case it affects any
+backend-side ordering logic).
 
 49–53 additionally mean **#14 `POST /v1/promo-codes/validate` gains new
 rejection rules** — reject (still `400 invalid_promo_code`, just a different
@@ -478,7 +494,10 @@ No body. The customer cancelling their own order.
   "parameters": ["Hemoglobin", "WBC count", "Platelet count", "RBC count"]
 }
 ```
-- `status`: `completed | scheduled | cancelled`. Freshly created bookings are `scheduled`.
+- `status`: `scheduled | inSession | completed | cancelled`. Freshly created
+  bookings are `scheduled`. **`inSession` — new value** (see §Admin —
+  Pathology below) — set by the admin once the customer's sample is
+  actively being collected/tested, between `scheduled` and `completed`.
 - `bookedOn`: **the customer-chosen sample-collection date** (from `POST /orders`'
   `items[].scheduledDate`, #15) — not the date the order was placed. Kept the same field name for
   continuity, but the *meaning* changed with #15's `scheduledDate`/`timeSlot` addition (previously
@@ -789,7 +808,7 @@ Request:
 
 ---
 
-### Admin — Orders — **proposed, not yet built**
+### Admin — Orders — **live**
 
 Admin's read + write surface for every order across every user. Note the
 DTO here is **richer** than the customer's `Order` (§15) — it also carries
@@ -839,10 +858,78 @@ Request:
 ```
 - `status` — `created | processing | shipped | delivered | cancelled`.
 - Errors: `404 order_not_found`, `403 forbidden_admin_only`.
+- **Client-side behavior change (no request/response shape change here)**:
+  the admin app no longer lets the admin free-pick any status from a list —
+  it only ever sends **the single next status in the linear sequence**
+  (`created→processing→shipped→delivered`, one swipe-confirmed step at a
+  time) via a dedicated "advance" action, or `cancelled` via a separate,
+  always-available Cancel action. The endpoint itself doesn't need to
+  change to support this — the client already only sends valid values. If
+  useful for data integrity, the backend *could* additionally reject a
+  request that skips a step or moves backward (e.g. `created→delivered`,
+  or `delivered→processing`) with `409 invalid_status_transition`, but
+  that's an optional hardening, not required for the client to work.
 
 ---
 
-### Admin — Discounts (promo codes) — **proposed, not yet built**
+### Admin — Pathology (lab-test bookings) — **68–70 proposed, not yet built**
+
+Admin's read + write surface for every lab-test booking across every user —
+brand new, there was no admin-side lab-test management before this. Mirrors
+Admin — Orders (#46–48) almost exactly: same filter shape, same DTO
+pattern (customer's `LabTestBooking` (§19) plus `userId`/`userName`/
+`userPhone`), same one-status-at-a-time client behavior.
+
+#### 68. `GET /v1/admin/lab-test-bookings?…filters` → `200` — `AdminLabTestBooking[]`
+Newest first. All query parameters are optional; combine as needed.
+
+Filter query params:
+- `search` — free-text match against test name, user name **and** phone.
+- `status` — `scheduled | inSession | completed | cancelled` (single value).
+- `dateFrom`, `dateTo` — `yyyy-MM-dd`, inclusive range on `bookedOn`'s date
+  (the scheduled collection date, same field/meaning as §19).
+
+**AdminLabTestBooking object:**
+```json
+{
+  "id": "l1",
+  "userId": "LESzBD8zGdTww6U0HhFsEIGK5Y32",
+  "userName": "Rahul Kumar",
+  "userPhone": "8123456789",
+  "name": "Complete Blood Count (CBC)",
+  "labName": "Sunil Diagnostics",
+  "bookedOn": "2026-07-12",
+  "timeSlot": "10:00 AM – 1:00 PM",
+  "status": "scheduled",
+  "amount": 450,
+  "parameters": ["Hemoglobin", "WBC count", "Platelet count", "RBC count"]
+}
+```
+- `timeSlot` may be `null` for bookings made before time-slot selection
+  existed (see §15/§19's `scheduledDate`/`timeSlot` addition) — same as the
+  customer-facing shape.
+
+#### 69. `GET /v1/admin/lab-test-bookings/{id}` → `200` — `AdminLabTestBooking`
+`404 lab_test_booking_not_found` if missing.
+
+#### 70. `PUT /v1/admin/lab-test-bookings/{id}` → `200` — updated `AdminLabTestBooking`
+Change the booking's status — advance the lab-test lifecycle or cancel.
+
+Request:
+```json
+{ "status": "inSession" }
+```
+- `status` — `scheduled | inSession | completed | cancelled`.
+- Errors: `404 lab_test_booking_not_found`, `403 forbidden_admin_only`.
+- Same client behavior as #48: the admin app only ever sends the single
+  next status in the linear sequence (`scheduled→inSession→completed`, one
+  swipe-confirmed step at a time) via "advance", or `cancelled` via a
+  separate, always-available Cancel action. Same optional
+  `409 invalid_status_transition` hardening applies here if useful.
+
+---
+
+### Admin — Discounts (promo codes) — **live**
 
 Full CRUD over promo codes, admin-only. #14 `POST /v1/promo-codes/validate`
 is the customer-facing read-only validation surface; these are the admin
@@ -1173,7 +1260,7 @@ with #15), `prescription_not_found` (proposed, with #54–59).
 | `gender` | `male`, `female`, `other` |
 | address `type` | `home`, `work`, `other` |
 | order `status` | `created`, `processing`, `shipped`, `delivered`, `cancelled` |
-| lab-booking `status` | `completed`, `scheduled`, `cancelled` |
+| lab-booking `status` | `scheduled`, `inSession`, `completed`, `cancelled` |
 | appointment `status` | `completed`, `cancelled`, `upcoming` |
 | order item `kind` | `medicine`, `labTest` |
 | promo `type` | `percentage`, `flat` |

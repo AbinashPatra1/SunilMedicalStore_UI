@@ -1,33 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:sunil_medical_store/core/models/order.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
-import 'package:sunil_medical_store/features/admin/orders/domain/admin_order.dart';
-import 'package:sunil_medical_store/features/admin/orders/presentation/providers/admin_order_providers.dart';
+import 'package:sunil_medical_store/features/admin/pathology/domain/admin_lab_test_booking.dart';
+import 'package:sunil_medical_store/features/admin/pathology/presentation/providers/admin_lab_test_providers.dart';
 import 'package:sunil_medical_store/features/admin/presentation/widgets/status_swipe_bar.dart';
+import 'package:sunil_medical_store/features/profile/domain/lab_test.dart';
 import 'package:sunil_medical_store/features/profile/presentation/widgets/status_chip.dart';
 
-/// Admin views an order and can change its status — advance the fulfilment
-/// lifecycle (`created → processing → shipped → delivered`) or cancel it.
-class AdminOrderDetailScreen extends ConsumerWidget {
-  const AdminOrderDetailScreen({super.key, required this.orderId});
+/// Admin views a lab-test booking and can advance its status
+/// (`scheduled → inSession → completed`) or cancel it.
+class AdminLabTestBookingDetailScreen extends ConsumerWidget {
+  const AdminLabTestBookingDetailScreen({super.key, required this.bookingId});
 
-  final String orderId;
+  final String bookingId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final async = ref.watch(adminOrderByIdProvider(orderId));
+    final async = ref.watch(adminLabTestBookingByIdProvider(bookingId));
     return async.when(
       loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (error, _) => Scaffold(
-        appBar: AppBar(title: const Text('Order')),
+        appBar: AppBar(title: const Text('Lab Test')),
         body: Center(
-          child: Text(error is ApiException ? error.message : 'Could not load order.'),
+          child: Text(error is ApiException ? error.message : 'Could not load booking.'),
         ),
       ),
-      data: (order) => _DetailForm(existing: order),
+      data: (booking) => _DetailForm(existing: booking),
     );
   }
 }
@@ -35,32 +35,32 @@ class AdminOrderDetailScreen extends ConsumerWidget {
 class _DetailForm extends ConsumerStatefulWidget {
   const _DetailForm({required this.existing});
 
-  final AdminOrder existing;
+  final AdminLabTestBooking existing;
 
   @override
   ConsumerState<_DetailForm> createState() => _DetailFormState();
 }
 
 class _DetailFormState extends ConsumerState<_DetailForm> {
-  late AdminOrder _order = widget.existing;
+  late AdminLabTestBooking _booking = widget.existing;
   bool _busy = false;
   String? _error;
 
   Future<void> _advance() async {
-    final next = _order.status.next;
+    final next = _booking.status.next;
     if (next == null) return;
     setState(() {
       _busy = true;
       _error = null;
     });
     try {
-      final updated = await ref.read(adminOrderRepositoryProvider).updateStatus(_order.id, next);
-      ref.invalidate(adminOrdersProvider);
+      final updated = await ref.read(adminLabTestRepositoryProvider).updateStatus(_booking.id, next);
+      ref.invalidate(adminLabTestBookingsProvider);
       if (mounted) {
-        setState(() => _order = updated);
+        setState(() => _booking = updated);
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(content: Text('Order marked ${next.label}')));
+          ..showSnackBar(SnackBar(content: Text('Booking marked ${next.label}')));
       }
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
@@ -73,12 +73,12 @@ class _DetailFormState extends ConsumerState<_DetailForm> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Cancel order?'),
-        content: Text('This will cancel order ${_order.orderNumber}. This can\'t be undone.'),
+        title: const Text('Cancel booking?'),
+        content: Text('This will cancel ${_booking.name} for ${_booking.userName}. This can\'t be undone.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Keep order'),
+            child: const Text('Keep booking'),
           ),
           FilledButton.tonal(
             style: FilledButton.styleFrom(
@@ -86,7 +86,7 @@ class _DetailFormState extends ConsumerState<_DetailForm> {
               backgroundColor: Theme.of(dialogContext).colorScheme.errorContainer,
             ),
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Cancel order'),
+            child: const Text('Cancel booking'),
           ),
         ],
       ),
@@ -98,13 +98,15 @@ class _DetailFormState extends ConsumerState<_DetailForm> {
       _error = null;
     });
     try {
-      final updated = await ref.read(adminOrderRepositoryProvider).updateStatus(_order.id, OrderStatus.cancelled);
-      ref.invalidate(adminOrdersProvider);
+      final updated = await ref
+          .read(adminLabTestRepositoryProvider)
+          .updateStatus(_booking.id, LabTestStatus.cancelled);
+      ref.invalidate(adminLabTestBookingsProvider);
       if (mounted) {
-        setState(() => _order = updated);
+        setState(() => _booking = updated);
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
-          ..showSnackBar(const SnackBar(content: Text('Order cancelled')));
+          ..showSnackBar(const SnackBar(content: Text('Booking cancelled')));
       }
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
@@ -116,11 +118,11 @@ class _DetailFormState extends ConsumerState<_DetailForm> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final o = _order;
-    final advanceLabel = o.status.advanceLabel;
+    final b = _booking;
+    final advanceLabel = b.status.advanceLabel;
 
     return Scaffold(
-      appBar: AppBar(title: Text(o.orderNumber)),
+      appBar: AppBar(title: Text(b.name)),
       body: ListView(
         padding: const EdgeInsets.all(AppConstants.spacingLg),
         children: [
@@ -130,38 +132,38 @@ class _DetailFormState extends ConsumerState<_DetailForm> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(o.userName, style: theme.textTheme.titleSmall),
+                  Text(b.userName, style: theme.textTheme.titleSmall),
                   Text(
-                    o.userPhone,
+                    b.userPhone,
                     style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                   ),
                   const SizedBox(height: AppConstants.spacingSm),
                   Text(
-                    'Placed on ${DateFormat('EEE, d MMM yyyy').format(o.placedOn)}',
+                    'Scheduled for ${DateFormat('EEE, d MMM yyyy').format(b.bookedOn)}'
+                    '${b.timeSlot != null ? ' • ${b.timeSlot}' : ''}',
                     style: theme.textTheme.bodySmall,
                   ),
-                  if (o.paymentMethod != null)
-                    Text('Payment: ${o.paymentMethod}', style: theme.textTheme.bodySmall),
+                  Text(b.labName, style: theme.textTheme.bodySmall),
                 ],
               ),
             ),
           ),
           const SizedBox(height: AppConstants.spacingLg),
-          Text('Items', style: theme.textTheme.titleMedium),
+          Text('Parameters', style: theme.textTheme.titleMedium),
           const SizedBox(height: AppConstants.spacingSm),
           Card(
             child: Column(
               children: [
-                for (final item in o.items)
+                for (final parameter in b.parameters)
                   ListTile(
-                    title: Text(item.name),
-                    subtitle: Text('Qty ${item.quantity} × ₹${item.price}'),
-                    trailing: Text('₹${item.lineTotal}', style: theme.textTheme.titleSmall),
+                    dense: true,
+                    leading: Icon(Icons.check_circle_outline, color: theme.colorScheme.primary),
+                    title: Text(parameter),
                   ),
                 const Divider(height: 1),
                 ListTile(
-                  title: Text('Total', style: theme.textTheme.titleMedium),
-                  trailing: Text('₹${o.total}', style: theme.textTheme.titleMedium),
+                  title: Text('Amount', style: theme.textTheme.titleMedium),
+                  trailing: Text('₹${b.amount}', style: theme.textTheme.titleMedium),
                 ),
               ],
             ),
@@ -171,7 +173,7 @@ class _DetailFormState extends ConsumerState<_DetailForm> {
             children: [
               Text('Status', style: theme.textTheme.titleMedium),
               const SizedBox(width: AppConstants.spacingSm),
-              StatusChip(label: o.status.label, positive: o.status != OrderStatus.cancelled),
+              StatusChip(label: b.status.label, positive: b.status != LabTestStatus.cancelled),
             ],
           ),
           const SizedBox(height: AppConstants.spacingSm),
@@ -187,10 +189,10 @@ class _DetailFormState extends ConsumerState<_DetailForm> {
           ],
           const SizedBox(height: AppConstants.spacingLg),
           OutlinedButton.icon(
-            onPressed: (_busy || o.status == OrderStatus.cancelled) ? null : _cancel,
+            onPressed: (_busy || b.status == LabTestStatus.cancelled) ? null : _cancel,
             style: OutlinedButton.styleFrom(foregroundColor: theme.colorScheme.error),
             icon: const Icon(Icons.cancel_outlined),
-            label: const Text('Cancel order'),
+            label: const Text('Cancel booking'),
           ),
         ],
       ),

@@ -390,19 +390,28 @@ over Dio — no mock repositories remain.
       input was removed and replaced with a read-only info tile on Edit
       showing `"{rating} ({ratingCount})"` or "No ratings yet"; `DoctorInput`
       (create/update payload) no longer carries a `rating` field at all.
-  - **Orders** — a `DefaultTabController` shell with **two sub-tabs**
+  - **Orders** — a `DefaultTabController` shell with **three sub-tabs**
     (mirrors the Appointments/Doctors pattern):
-    - _Orders sub-tab_ (`AdminOrdersListScreen`) — search by order
-      #/user/phone + filter sheet: status, date range → tap a row →
-      `AdminOrderDetailScreen` (read-only user/items/total, status
-      `ChoiceChip`s covering the full lifecycle —
-      `created → processing → shipped → delivered`, plus `cancelled` —
-      Save applies via a single status-change PUT). Backed by
-      `AdminOrderRepository` (`domain`) + `ApiAdminOrderRepository`
-      (`data`) against `/v1/admin/orders`. This also widens `OrderStatus`
-      (`core/models/order.dart`) from `processing | delivered | cancelled`
-      to `created | processing | shipped | delivered | cancelled`. **Live**
-      against Azure as of this writing.
+    - _Pharmacy sub-tab_ (`AdminOrdersListScreen`, renamed from "Orders")
+      — search by order #/user/phone + filter sheet: status, date range →
+      tap a row → `AdminOrderDetailScreen`: read-only user/items/total,
+      then a **status swipe bar** (`StatusSwipeBar`,
+      `admin/presentation/widgets/` — shared with Pathology below, and
+      built for future reuse by Appointments too) that advances one linear
+      step at a time (`created → processing → shipped → delivered`) with a
+      per-step label ("Process Order" / "Mark as Shipped" / "Mark as
+      Delivered"), applying immediately on drag-confirm — no separate Save
+      step, no free-choice status jumping. A standalone red **"Cancel
+      order"** button sits below, always enabled unless already
+      `cancelled` (admin's explicit call — unlike the customer's
+      pre-shipment-only self-cancel). Backed by `AdminOrderRepository`
+      (`domain`) + `ApiAdminOrderRepository` (`data`) against
+      `/v1/admin/orders` — same endpoint as before, just a different client
+      access pattern (`OrderStatus.next`/`.advanceLabel` in
+      `core/models/order.dart` drive the linear sequence). **Live** —
+      swiped a real order all the way `created→processing→shipped→
+      delivered` against Azure, confirmed by the real "Order delivered"
+      push notification firing correctly too.
     - _Prescriptions sub-tab_ (`AdminPrescriptionsListScreen`) — Rx review
       queue, status filter chips (defaults to **Pending review**) → tap a
       row → `AdminPrescriptionDetailScreen` (full-size image +
@@ -410,11 +419,25 @@ over Dio — no mock repositories remain.
       customer). Backed by `AdminPrescriptionRepository` (`domain`) +
       `ApiAdminPrescriptionRepository` (`data`) against
       `/v1/admin/prescriptions`.
-    **Orders backend is live**; **Prescriptions (54–59) endpoints in
-    `docs/API_ENDPOINTS.md` are implemented server-side but prescription
-    uploads still fail** — see the Prescriptions feature note below (Firebase
-    Storage isn't enabled for this project yet, a separate manual step from
-    the backend deploy).
+    - _Pathology sub-tab_ (`AdminLabTestBookingsListScreen`,
+      `admin/pathology/`, brand new) — lab-test-booking management, since
+      none existed before. File-for-file mirror of the Pharmacy sub-tab:
+      search/filter list → `AdminLabTestBookingDetailScreen` with the same
+      `StatusSwipeBar` pattern advancing `scheduled → inSession →
+      completed` (`LabTestStatus` gained `inSession`, between `scheduled`
+      and `completed`) plus a standalone "Cancel booking" button. Backed by
+      `AdminLabTestRepository` (`domain`) + `ApiAdminLabTestRepository`
+      (`data`) against new endpoints `/v1/admin/lab-test-bookings`
+      (#68–70). **Built ahead of the backend** — verified live that it
+      degrades cleanly (`GET .../lab-test-bookings` 404s → "Something went
+      wrong" + Retry, no crash) since the backend doesn't have these
+      endpoints yet.
+    **Orders (Pharmacy) backend is live**; **Prescriptions (54–59)
+    endpoints in `docs/API_ENDPOINTS.md` are implemented server-side but
+    prescription uploads still fail** — see the Prescriptions feature note
+    below (Firebase Storage isn't enabled for this project yet, a separate
+    manual step from the backend deploy). **Pathology (68–70) not yet
+    implemented server-side.**
   - **Discounts** — full CRUD over promo codes, mirroring the Inventory
     pattern. `DiscountsListScreen` (code, label, value, active/expired/
     exhausted status badge) → tap a row → `AddOrEditPromoCodeScreen`
@@ -502,7 +525,7 @@ ranking, new items) as items are picked up, finished, or reprioritized.
 | 5 | Cancel appointment | New feature | **Backend deployed, live re-verification deferred** | Inline **Cancel** action on each upcoming appointment card in Profile → Appointments (`AppointmentStatus.isCustomerCancellable`, true only while `upcoming`), mirroring the order-cancel pattern: confirm dialog → `AppointmentRepository.cancel(id)` → `PUT /appointments/{id}/cancel` → invalidate `pastOrdersProvider`. Client-side verified live against a real appointment before the backend existed (confirm dialog copy, cancellable-only gating, clean error with no crash against the missing endpoint — endpoint #66). User confirmed 2026-09-07 the backend is now deployed; a full live pass (actually cancelling a real appointment end-to-end) is intentionally deferred to a later session |
 | 6 | Doctor ratings from customers | New feature | **Done (client)** | Customer can rate a doctor 1–5 stars after a `completed` appointment (`AppointmentRepository.rate(id, stars)` → `POST /appointments/{id}/rating`, endpoint #67), once per appointment, via a "Rate doctor" button + star-picker dialog on Profile → Appointments; already-rated appointments show "Your rating: ★★★★☆" read-only. `Doctor.rating` becomes a server-computed average with a new `ratingCount` field — admin's manual "Rating" input is removed from the doctor form (now a read-only info tile), and `DoctorCard` shows "New" instead of a fabricated number when `ratingCount == 0`. **Decided**: server-computed average replaces the admin field; one rating per completed appointment. Verified live: doctor cards correctly show "New" (0 ratings from real backend data); hit and fixed a real bug during testing — `PastAppointment` briefly had a non-nullable `doctorId` field that broke the *entire* appointments list against the current backend (crashed on missing field) — removed it since it turned out unused (the rating endpoint takes the appointment id, not the doctor's). The "Rate doctor" trigger itself wasn't exercised live (no completed appointment in the test account, and getting one needs admin access) — code-reviewed and pattern-matches the already-proven Cancel button exactly, so verification is deferred, not skipped for cause |
 | 7 | Statistics date filters: `6 months` / `1 year` + custom year/month picker | Improvement | **Done** | Added `sixMonths`/`oneYear` to the `StatsRange` pills, plus a "More filters" icon (fixed at the row's right end, doesn't scroll off) opening `StatsPeriodSheet` (year dropdown, required + month dropdown, optional — "whole year" when omitted). New sealed `StatsFilter` (`StatsRangeFilter \| StatsPeriodFilter`) replaces the old bare `StatsRange` as the provider's state shape; custom periods send `range=custom&year=&month=`. Backend deployed and **user-confirmed working live** (e.g. "Jan 2026" custom period) |
-| 8 | Admin order-status flow: swipe-to-advance + separate cancel; Orders gains 3 tabs (Pharmacy / Prescriptions / Pathology) | New feature | Not started | Replaces the free-choice `ChoiceChip` status picker with a linear swipe ("Process Order" → processing → shipped → delivered) + a standalone red Cancel button (disabled once already cancelled) |
+| 8 | Admin order-status flow: swipe-to-advance + separate cancel; Orders gains 3 tabs (Pharmacy / Prescriptions / Pathology) | New feature | **Done** | New shared `StatusSwipeBar` (`admin/presentation/widgets/`) replaces the free-choice `ChoiceChip` picker on Order detail — drag-to-confirm one linear step at a time (`created→processing→shipped→delivered`, label changes per step: "Process Order" / "Mark as Shipped" / "Mark as Delivered"), plus a standalone red "Cancel order" button (always enabled unless already cancelled — admin's explicit call, unlike the customer's pre-shipment-only self-cancel). Orders tab renamed **Pharmacy**, gained a 3rd **Pathology** sub-tab — a brand-new admin lab-test-booking management surface (list + detail, same swipe pattern, `scheduled→inSession→completed`), built from scratch since no admin lab-test screen existed before (`admin/pathology/`, mirrors `admin/orders/` file-for-file). `LabTestStatus` gained `inSession`. **Verified fully live** — swiped a real order through `created→processing→shipped→delivered` against the real backend, each step updating in place with no navigation between steps, confirmed by the real "Order delivered" push notification firing correctly too (proves the swipe flow uses the same trigger path as before). Pathology confirmed cleanly degrading (`GET /admin/lab-test-bookings` 404s, shows "Something went wrong" + Retry, no crash) since its 3 new endpoints (#68–70) aren't deployed yet |
 | 9 | Lab test / appointment status flow: `Scheduled → InSession → Completed`, `Cancelled` | New feature | Not started | Same swipe-to-advance + separate cancel pattern as #8. Depends on #8's swipe UI being built first |
 | 10 | Order ID format standardization — `PHSMS-<mmyy>-<seq>` / `PLSMS-<mmyy>-<seq>` / `DASMS-<mmyy>-<seq>` | New feature | Not started | Backend-heavy (per-type sequence generation). **Decided**: new orders only, existing `SMS-<seq>` orders keep their numbers, no backfill |
 | 11 | Location integration — capture address location, derive read-only area/pincode, home-screen area display, admin-configurable order-radius gating | New feature | Not started | Pharmacy orders blocked outside the radius; lab tests/appointments always allowed. **Decided**: device-only `Geocoder` + Haversine distance, no Maps API billing |

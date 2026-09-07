@@ -16,6 +16,28 @@ enum OrderStatus {
 
   /// The customer can self-cancel only before the order ships.
   bool get isCustomerCancellable => this == created || this == processing;
+
+  /// The next status in the linear pharmacy fulfilment flow — admin can
+  /// only ever advance one step at a time (via a swipe action), never jump
+  /// straight to an arbitrary status. `null` once there's no next step
+  /// (already `delivered`, or `cancelled` — cancelling exits the flow).
+  OrderStatus? get next => switch (this) {
+    OrderStatus.created => OrderStatus.processing,
+    OrderStatus.processing => OrderStatus.shipped,
+    OrderStatus.shipped => OrderStatus.delivered,
+    OrderStatus.delivered => null,
+    OrderStatus.cancelled => null,
+  };
+
+  /// Swipe-bar label for advancing from this status to [next]. `null` when
+  /// [next] is `null` (nothing to advance to).
+  String? get advanceLabel => switch (this) {
+    OrderStatus.created => 'Process Order',
+    OrderStatus.processing => 'Mark as Shipped',
+    OrderStatus.shipped => 'Mark as Delivered',
+    OrderStatus.delivered => null,
+    OrderStatus.cancelled => null,
+  };
 }
 
 /// A single line item within an [Order].

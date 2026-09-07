@@ -261,6 +261,7 @@ class AdminStatisticsScreen extends ConsumerWidget {
         value: byStatus[status.name] ?? 0,
         color: switch (status) {
           LabTestStatus.scheduled => Colors.indigo,
+          LabTestStatus.inSession => Colors.amber,
           LabTestStatus.completed => Colors.green,
           LabTestStatus.cancelled => Colors.red,
         },
