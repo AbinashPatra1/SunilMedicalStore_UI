@@ -415,64 +415,28 @@ over Dio — no mock repositories remain.
 
 ## Backlog (prioritized, not started)
 
-Numbered by intended pickup order — the user confirms which one to start
-explicitly, this list is a plan, not a queue being worked automatically.
-Items marked (needs discussion) require scoping before estimation/build.
+The single tracked list — every open item lives here, ranked by intended
+pickup order. The user confirms which one to start explicitly; this table
+is a plan, not a queue being worked automatically. Update it (status,
+ranking, new items) as items are picked up, finished, or reprioritized.
 
-1. **Fix: order status doesn't refresh immediately for the customer** after
-   an admin changes it — investigate the provider-invalidation/polling gap
-   in the customer order-detail flow.
-2. **Fix: bottom nav "Appointments" label wraps to 2 lines** on some device
-   widths — make the customer/admin `NavigationBar` responsive.
-3. **Cancel appointment** — customer-facing cancel action, mirrors the
-   existing order-cancel pattern (`PUT` to a cancel endpoint, hidden once
-   the appointment isn't cancellable).
-4. **Statistics date filters** — add `6 months` / `1 year` range pills plus
-   a "more filters" icon opening a year/month picker for a custom period.
-5. **Admin order-status flow: swipe-to-advance + separate cancel** —
-   replace the free-choice `ChoiceChip` status picker with a linear swipe
-   action ("Process Order" → processing → shipped → delivered) plus a
-   standalone red Cancel button (disabled once already cancelled). Admin →
-   Orders also gains 3 top tabs: **Pharmacy**, **Prescriptions**,
-   **Pathology (Lab Tests)**.
-6. **Lab test / appointment status flow** — new lifecycle distinct from
-   orders: `Scheduled → InSession → Completed`, `Cancelled`; same
-   swipe-to-advance + separate cancel pattern as #5. Depends on #5's swipe
-   UI pattern being built first.
-7. **Order ID format standardization** — `PHSMS-<mmyy>-<5-digit seq>`
-   (pharmacy), `PLSMS-<mmyy>-<5-digit seq>` (lab tests),
-   `DASMS-<mmyy>-<5-digit seq>` (appointments), replacing the current
-   `SMS-<seq>` scheme. Backend-heavy (per-type sequence generation).
-   **Decided**: new orders only — existing `SMS-<seq>` orders keep their
-   current numbers, no backfill/migration.
-8. **Location integration** — capture the customer's device location when
-   adding an address (with a permission prompt), derive area/pincode from
-   it (read-only, not user-editable), show it on the home screen. Admin
-   gets a new **Location configuration** menu (under More) to set an
-   allowed order-placement radius from a fixed store location — outside it,
-   pharmacy orders are blocked but lab tests/appointments still allowed
-   (they require an in-person visit anyway). **Decided**: device-only
-   geocoding (Android's built-in `Geocoder`, no new API key/billing) for
-   area/pincode, straight-line Haversine distance for the radius check —
-   matches the user's own "approx" framing, no Google Maps Platform or
-   Nominatim dependency.
-9. **Dynamic delivery & platform fees** — admin-configurable fee tiers
-   under a new More menu, replacing the hardcoded delivery fee. Multiple
-   distance-based delivery-fee tiers (e.g. free ≤3km on orders ≥₹299) with
-   a "mark as free" toggle that strikes through the real fee instead of
-   showing ₹0; platform fee is a single configurable value with the same
-   free-toggle treatment. Applies to pharmacy orders only, not lab
-   tests/appointments. Depends on #8's distance-calculation infrastructure.
-10. **Inventory bulk import (needs discussion)** — add products via Excel
-    upload and/or barcode scanning (or both combined). Scope not yet
-    defined — discuss format/flow before estimating.
-11. **UI beautification (needs discussion)** — full app redesign:
-    modern/minimal visual language, new stylish components, new app logo,
-    redesigned in-app notification style. Reference image provided by the
-    user. **Decided**: user will supply the logo asset (not designed by
-    Claude); scheduled last, after functional work (1–10) stabilizes, so
-    screens changing functionally (admin status UI, location/fee screens)
-    aren't restyled twice.
+| # | Item | Type | Status | Notes |
+|---|------|------|--------|-------|
+| 1 | Order status doesn't refresh immediately for the customer after an admin changes it | Bug | Not started | Investigate provider-invalidation/polling gap in the customer order-detail flow |
+| 2 | Bottom nav "Appointments" label wraps to 2 lines on some device widths | UI bug | Not started | Make the customer/admin `NavigationBar` responsive |
+| 3 | Lab-test booking notifications show `{date}` only, no time-of-day | Minor bug | Not started | Backend-flagged (`LabTestBooking.BookedOn` is date-only); fix if it matters — no decision yet |
+| 4 | Enable Firebase Storage (Blaze plan) to unblock Prescriptions | Blocked — user action | Waiting on you | Prescriptions is fully built client + backend (endpoints 54–59 live); blocked on this one manual Firebase Console step (Console → Storage → Get started, then Blaze plan) |
+| 5 | Cancel appointment | New feature | Not started | Customer-facing cancel action, mirrors the existing order-cancel pattern (`PUT` to a cancel endpoint, hidden once not cancellable) |
+| 6 | Doctor ratings from customers | New feature | Not started | Suggested earlier, not yet scoped |
+| 7 | Statistics date filters: `6 months` / `1 year` + custom year/month picker | Improvement | Not started | Add range pills + a "more filters" icon opening a year/month selector |
+| 8 | Admin order-status flow: swipe-to-advance + separate cancel; Orders gains 3 tabs (Pharmacy / Prescriptions / Pathology) | New feature | Not started | Replaces the free-choice `ChoiceChip` status picker with a linear swipe ("Process Order" → processing → shipped → delivered) + a standalone red Cancel button (disabled once already cancelled) |
+| 9 | Lab test / appointment status flow: `Scheduled → InSession → Completed`, `Cancelled` | New feature | Not started | Same swipe-to-advance + separate cancel pattern as #8. Depends on #8's swipe UI being built first |
+| 10 | Order ID format standardization — `PHSMS-<mmyy>-<seq>` / `PLSMS-<mmyy>-<seq>` / `DASMS-<mmyy>-<seq>` | New feature | Not started | Backend-heavy (per-type sequence generation). **Decided**: new orders only, existing `SMS-<seq>` orders keep their numbers, no backfill |
+| 11 | Location integration — capture address location, derive read-only area/pincode, home-screen area display, admin-configurable order-radius gating | New feature | Not started | Pharmacy orders blocked outside the radius; lab tests/appointments always allowed. **Decided**: device-only `Geocoder` + Haversine distance, no Maps API billing |
+| 12 | Dynamic delivery & platform fees, admin-configurable under new More menu | New feature | Not started | Distance-tiered delivery fee + single platform fee, both with a "mark as free" strike-through toggle. Pharmacy orders only. Depends on #11's distance calc |
+| 13 | Inventory bulk import (Excel upload and/or barcode scan) | New feature | Needs discussion | Scope not yet defined — discuss format/flow before estimating |
+| 14 | UI beautification — full app redesign, modern/minimal style, new logo, redesigned in-app notifications | New feature | Needs discussion | **Decided**: user supplies the logo asset; scheduled last, after items 1–13 stabilize, so screens don't get restyled twice |
+| 15 | Image search | New feature | Backlogged | Explicitly deprioritized earlier — don't start unless asked |
 
 ## Android / build notes
 
