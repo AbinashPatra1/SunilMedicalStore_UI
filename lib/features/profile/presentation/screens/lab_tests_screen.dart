@@ -84,6 +84,13 @@ class _LabTestCard extends StatelessWidget {
                   StatusChip(label: test.status.label, positive: test.status != LabTestStatus.cancelled),
                 ],
               ),
+              if (test.bookingNumber != null) ...[
+                const SizedBox(height: AppConstants.spacingXs),
+                Text(
+                  test.bookingNumber!,
+                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
+              ],
               const SizedBox(height: AppConstants.spacingXs),
               Text(
                 '${test.labName} • ${DateFormat('d MMM yyyy').format(test.bookedOn)}'

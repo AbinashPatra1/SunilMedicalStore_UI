@@ -36,6 +36,11 @@ class AdminAppointmentTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    if (appointment.appointmentNumber != null)
+                      Text(
+                        appointment.appointmentNumber!,
+                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      ),
                     Text(
                       appointment.userName,
                       style: theme.textTheme.titleSmall,

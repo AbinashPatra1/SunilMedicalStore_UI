@@ -17,9 +17,14 @@ class AdminLabTestBooking {
     required this.amount,
     required this.parameters,
     this.timeSlot,
+    this.bookingNumber,
   });
 
   final String id;
+
+  /// Human-readable booking number (`PLSMS-<mmyy>-<seq>`). `null` for
+  /// bookings made before this numbering existed — no backfill.
+  final String? bookingNumber;
 
   final String userId;
   final String userName;

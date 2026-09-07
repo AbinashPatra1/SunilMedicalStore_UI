@@ -66,5 +66,6 @@ class ApiAdminLabTestRepository implements AdminLabTestRepository {
     amount: json['amount'] as int,
     parameters: ((json['parameters'] as List?) ?? const []).cast<String>(),
     timeSlot: json['timeSlot'] as String?,
+    bookingNumber: json['bookingNumber'] as String?,
   );
 }

@@ -152,6 +152,11 @@ class _EditFormState extends ConsumerState<_EditForm> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (a.appointmentNumber != null)
+                    Text(
+                      a.appointmentNumber!,
+                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    ),
                   Text(a.userName, style: theme.textTheme.titleSmall),
                   Text(
                     a.userPhone,

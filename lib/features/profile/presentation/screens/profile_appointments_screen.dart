@@ -213,6 +213,11 @@ class _AppointmentCardState extends ConsumerState<_AppointmentCard> {
                         appointment.specialization,
                         style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                       ),
+                      if (appointment.appointmentNumber != null)
+                        Text(
+                          appointment.appointmentNumber!,
+                          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                        ),
                       const SizedBox(height: AppConstants.spacingXs),
                       Text(
                         DateFormat('d MMM yyyy, h:mm a').format(appointment.dateTime),

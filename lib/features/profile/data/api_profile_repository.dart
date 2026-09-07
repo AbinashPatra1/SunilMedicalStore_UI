@@ -133,6 +133,7 @@ class ApiProfileRepository implements ProfileRepository {
     status: AppointmentStatus.values.byName(json['status'] as String),
     fee: json['fee'] as int,
     myRating: json['myRating'] as int?,
+    appointmentNumber: json['appointmentNumber'] as String?,
   );
 
   Order _orderFromJson(Map<String, dynamic> json) => Order(
@@ -167,5 +168,6 @@ class ApiProfileRepository implements ProfileRepository {
     amount: json['amount'] as int,
     parameters: ((json['parameters'] as List?) ?? const []).cast<String>(),
     timeSlot: json['timeSlot'] as String?,
+    bookingNumber: json['bookingNumber'] as String?,
   );
 }

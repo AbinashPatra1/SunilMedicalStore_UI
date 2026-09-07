@@ -16,9 +16,14 @@ class AdminAppointment {
     required this.dateTime,
     required this.status,
     required this.fee,
+    this.appointmentNumber,
   });
 
   final String id;
+
+  /// Human-readable appointment number (`DASMS-<mmyy>-<seq>`). `null` for
+  /// appointments booked before this numbering existed — no backfill.
+  final String? appointmentNumber;
 
   final String userId;
   final String userName;

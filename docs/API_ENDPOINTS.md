@@ -183,6 +183,35 @@ Appointments that #48 (Orders) and #70 (Pathology) already got. Appointment
 two. No new endpoint number, no request/response shape change beyond the
 one new enum value.
 
+**⚠ New order/booking/appointment numbering format, not yet implemented on
+the backend** — `Order.orderNumber` (#15/#16/#17, #46/#47) moves from
+`SMS-<seq>` to `PHSMS-<mmyy>-<seq>` for **newly placed orders only** —
+existing orders keep their current `SMS-<seq>` number untouched, no
+backfill/migration (this mirrors the "no backfill" decision already made
+for the other build-ahead-of-backend fields above, e.g. `timeSlot`/
+`ratingCount`). `LabTestBooking` (#19/#20, #68/#69) and `Appointment` (#13,
+#40/#41) each gain a **brand-new field** — `bookingNumber` and
+`appointmentNumber` respectively, since neither had any human-readable
+number before — in the same per-type format (`PLSMS-<mmyy>-<seq>` /
+`DASMS-<mmyy>-<seq>`), populated only for records created after this ships;
+older records simply omit the field (parsed nullable client-side, so a
+mixed old/new list degrades cleanly with no crash — the client just doesn't
+show a number line for older entries).
+- `mmyy` = 2-digit month (`01`–`12`) + 2-digit year, e.g. September 2026 →
+  `0926`.
+- `seq` — suggested: 4-digit zero-padded (`0001`, `0002`, …),
+  **independently tracked per type** (Pharmacy / Pathology / Doctor
+  Appointment don't share a counter) and **reset to `0001` at the start of
+  each calendar month**. This is a suggested width/reset policy, not a hard
+  client requirement — adjust if the backend's sequence generator works
+  differently, just keep the three prefixes (`PHSMS`/`PLSMS`/`DASMS`)
+  stable since nothing else about the format is client-parsed.
+- No client change needed for `orderNumber` itself — it was already an
+  opaque, displayed-verbatim string with zero format assumptions anywhere
+  in the client. `bookingNumber`/`appointmentNumber` are genuinely new
+  fields the client now parses and displays (see §Profile history and
+  §Admin — Pathology/Appointments below for the exact JSON shape).
+
 49–53 additionally mean **#14 `POST /v1/promo-codes/validate` gains new
 rejection rules** — reject (still `400 invalid_promo_code`, just a different
 `message`) when the code is `active: false`, past `expiresAt`, at
@@ -367,7 +396,8 @@ Response (an `Appointment`, see #13) with `status: "upcoming"`.
   "dateTime": "2026-07-10T11:00:00Z",
   "status": "completed",
   "fee": 400,
-  "myRating": null
+  "myRating": null,
+  "appointmentNumber": "DASMS-0926-0001"
 }
 ```
 - `status`: `completed | cancelled | upcoming`.
@@ -377,6 +407,11 @@ Response (an `Appointment`, see #13) with `status: "upcoming"`.
   its absence from a not-yet-updated backend doesn't break the list (unlike
   a hypothetical `doctorId` field, which was considered and dropped — not
   needed since #67 takes the appointment id, not the doctor's, in its URL).
+- **`appointmentNumber` — new field, not yet implemented.** Human-readable
+  booking number, `DASMS-<mmyy>-<seq>` (see the numbering-format ⚠ note
+  near the top of §2). `null` for appointments booked before this existed —
+  no backfill. Parsed nullable client-side; the appointment card/detail
+  screens simply omit the number line when it's `null`.
 
 #### 66. `PUT /v1/appointments/{id}/cancel` → `200` — updated `Appointment`
 No body. The customer cancelling their own appointment.
@@ -468,6 +503,10 @@ Response:
 - Pricing: `delivery` = ₹40, waived (→ 0) when `subtotal ≥ 500`. Discount: `percentage →
   subtotal*value/100` (integer division), `flat → value`, clamped to subtotal.
 - Placing an order with a `labTest` item also creates a **Lab Test Booking** (#19).
+- **`orderNumber` format is changing, not yet implemented** — from
+  `SMS-<seq>` to `PHSMS-<mmyy>-<seq>` for orders placed after this ships;
+  existing orders keep their current number (no backfill). See the
+  numbering-format ⚠ note near the top of §2.
 - Errors: `400 empty_cart`, `400 address_required`, `404 address_not_found`,
   `404 product_not_found` / `404 lab_test_not_found`, `400 invalid_quantity`,
   `400 invalid_upi_id`, `400 invalid_promo_code`.
@@ -500,9 +539,14 @@ No body. The customer cancelling their own order.
   "timeSlot": "10:00 AM – 1:00 PM",
   "status": "completed",
   "amount": 450,
-  "parameters": ["Hemoglobin", "WBC count", "Platelet count", "RBC count"]
+  "parameters": ["Hemoglobin", "WBC count", "Platelet count", "RBC count"],
+  "bookingNumber": "PLSMS-0926-0001"
 }
 ```
+- **`bookingNumber` — new field, not yet implemented.** Human-readable
+  booking number, `PLSMS-<mmyy>-<seq>` (see the numbering-format ⚠ note
+  near the top of §2). `null` for bookings made before this existed — no
+  backfill. Parsed nullable client-side.
 - `status`: `scheduled | inSession | completed | cancelled`. Freshly created
   bookings are `scheduled`. **`inSession` — new value** (see §Admin —
   Pathology below) — set by the admin once the customer's sample is
@@ -699,9 +743,13 @@ Filter query params:
   "specialization": "General Physician",
   "dateTime": "2026-07-10T11:00:00Z",
   "status": "upcoming",
-  "fee": 400
+  "fee": 400,
+  "appointmentNumber": "DASMS-0926-0001"
 }
 ```
+- **`appointmentNumber` — new field, not yet implemented**, same
+  `DASMS-<mmyy>-<seq>` format/nullability as the customer-facing shape
+  (§13) — see the numbering-format ⚠ note near the top of §2.
 
 #### 41. `GET /v1/admin/appointments/{id}` → `200` — `AdminAppointment`
 `404 appointment_not_found` if missing.
@@ -862,6 +910,11 @@ Filter query params:
   "addressId": "addr-0"
 }
 ```
+- **`orderNumber` format is changing, not yet implemented** — from
+  `SMS-<seq>` to `PHSMS-<mmyy>-<seq>` for orders placed after this ships;
+  existing orders keep their current number (no backfill). See the
+  numbering-format ⚠ note near the top of §2. No client change needed —
+  `orderNumber` was already displayed verbatim with no format assumptions.
 
 #### 47. `GET /v1/admin/orders/{id}` → `200` — `AdminOrder`
 `404 order_not_found` if missing.
@@ -921,12 +974,16 @@ Filter query params:
   "timeSlot": "10:00 AM – 1:00 PM",
   "status": "scheduled",
   "amount": 450,
-  "parameters": ["Hemoglobin", "WBC count", "Platelet count", "RBC count"]
+  "parameters": ["Hemoglobin", "WBC count", "Platelet count", "RBC count"],
+  "bookingNumber": "PLSMS-0926-0001"
 }
 ```
 - `timeSlot` may be `null` for bookings made before time-slot selection
   existed (see §15/§19's `scheduledDate`/`timeSlot` addition) — same as the
   customer-facing shape.
+- **`bookingNumber` — new field, not yet implemented**, same
+  `PLSMS-<mmyy>-<seq>` format/nullability as the customer-facing shape
+  (§19) — see the numbering-format ⚠ note near the top of §2.
 
 #### 69. `GET /v1/admin/lab-test-bookings/{id}` → `200` — `AdminLabTestBooking`
 `404 lab_test_booking_not_found` if missing.

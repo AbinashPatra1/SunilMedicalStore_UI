@@ -66,6 +66,13 @@ class _LabTestDetailScreenState extends ConsumerState<LabTestDetailScreen> {
               StatusChip(label: test.status.label, positive: test.status != LabTestStatus.cancelled),
             ],
           ),
+          if (test.bookingNumber != null) ...[
+            const SizedBox(height: AppConstants.spacingXs),
+            Text(
+              test.bookingNumber!,
+              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            ),
+          ],
           const SizedBox(height: AppConstants.spacingXs),
           Text(
             'Scheduled for ${DateFormat('d MMM yyyy').format(test.bookedOn)}'

@@ -33,6 +33,11 @@ class AdminLabTestTile extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(booking.name, style: theme.textTheme.titleSmall),
+                    if (booking.bookingNumber != null)
+                      Text(
+                        booking.bookingNumber!,
+                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      ),
                     const SizedBox(height: AppConstants.spacingXs),
                     Text(
                       booking.userName,

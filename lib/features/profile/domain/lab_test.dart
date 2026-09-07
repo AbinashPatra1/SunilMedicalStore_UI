@@ -43,11 +43,16 @@ class LabTest {
     required this.amount,
     required this.parameters,
     this.timeSlot,
+    this.bookingNumber,
   });
 
   final String id;
   final String name;
   final String labName;
+
+  /// Human-readable booking number (`PLSMS-<mmyy>-<seq>`). `null` for
+  /// bookings made before this numbering existed — no backfill.
+  final String? bookingNumber;
 
   /// The scheduled sample-collection date (customer-chosen at booking).
   final DateTime bookedOn;

@@ -132,6 +132,11 @@ class _DetailFormState extends ConsumerState<_DetailForm> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  if (b.bookingNumber != null)
+                    Text(
+                      b.bookingNumber!,
+                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    ),
                   Text(b.userName, style: theme.textTheme.titleSmall),
                   Text(
                     b.userPhone,
