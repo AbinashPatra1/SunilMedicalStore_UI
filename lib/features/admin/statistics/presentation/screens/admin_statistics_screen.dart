@@ -248,6 +248,7 @@ class AdminStatisticsScreen extends ConsumerWidget {
         value: byStatus[status.name] ?? 0,
         color: switch (status) {
           AppointmentStatus.upcoming => Colors.indigo,
+          AppointmentStatus.inSession => Colors.amber,
           AppointmentStatus.completed => Colors.green,
           AppointmentStatus.cancelled => Colors.red,
         },

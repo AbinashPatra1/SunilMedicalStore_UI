@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/admin/appointments/domain/admin_appointment.dart';
 import 'package:sunil_medical_store/features/admin/appointments/presentation/providers/admin_appointment_providers.dart';
+import 'package:sunil_medical_store/features/admin/presentation/widgets/status_swipe_bar.dart';
 import 'package:sunil_medical_store/features/profile/domain/past_appointment.dart';
+import 'package:sunil_medical_store/features/profile/presentation/widgets/status_chip.dart';
 
-/// Admin edits an existing appointment: change status and/or reschedule the
-/// date. Doctor and user stay the same (per product decision).
+/// Admin edits an existing appointment: reschedule the date (applies
+/// immediately once picked), advance status one linear step at a time
+/// (`upcoming → inSession → completed`, swipe-confirmed), or cancel via a
+/// separate always-available action. Doctor and user stay the same (per
+/// product decision).
 class EditAppointmentScreen extends ConsumerWidget {
   const EditAppointmentScreen({super.key, required this.appointmentId});
 
@@ -41,77 +45,100 @@ class _EditForm extends ConsumerStatefulWidget {
 }
 
 class _EditFormState extends ConsumerState<_EditForm> {
-  late AppointmentStatus _status;
-  late DateTime _date;
-  bool _saving = false;
+  late AdminAppointment _appointment = widget.existing;
+  bool _busy = false;
   String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _status = widget.existing.status;
-    _date = widget.existing.dateTime;
-  }
-
-  bool get _statusChanged => _status != widget.existing.status;
-  bool get _dateChanged => !_sameDate(_date, widget.existing.dateTime);
-
-  static bool _sameDate(DateTime a, DateTime b) =>
-      a.year == b.year && a.month == b.month && a.day == b.day;
 
   Future<void> _pickDate() async {
     final now = DateTime.now();
     final picked = await showDatePicker(
       context: context,
-      initialDate: _date,
+      initialDate: _appointment.dateTime,
       firstDate: DateTime(now.year - 1),
       lastDate: DateTime(now.year + 2),
     );
-    if (picked != null) {
-      setState(() {
-        // Preserve time-of-day from original.
-        _date = DateTime(picked.year, picked.month, picked.day,
-            _date.hour, _date.minute);
-      });
-    }
+    if (picked == null) return;
+    // Preserve time-of-day from the current appointment — only the date
+    // itself is being moved, not the doctor's slot time.
+    final newDate = DateTime(
+      picked.year,
+      picked.month,
+      picked.day,
+      _appointment.dateTime.hour,
+      _appointment.dateTime.minute,
+    );
+    await _apply(newDate: newDate, successMessage: 'Appointment rescheduled');
   }
 
-  Future<void> _save() async {
-    if (!_statusChanged && !_dateChanged) {
-      context.pop();
-      return;
-    }
+  Future<void> _advance() async {
+    final next = _appointment.status.next;
+    if (next == null) return;
+    await _apply(status: next, successMessage: 'Appointment marked ${next.label}');
+  }
+
+  Future<void> _cancel() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Cancel appointment?'),
+        content: Text(
+          "This will cancel ${_appointment.userName}'s appointment with "
+          '${_appointment.doctorName}. This can\'t be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Keep appointment'),
+          ),
+          FilledButton.tonal(
+            style: FilledButton.styleFrom(
+              foregroundColor: Theme.of(dialogContext).colorScheme.onErrorContainer,
+              backgroundColor: Theme.of(dialogContext).colorScheme.errorContainer,
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Cancel appointment'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await _apply(status: AppointmentStatus.cancelled, successMessage: 'Appointment cancelled');
+  }
+
+  Future<void> _apply({
+    AppointmentStatus? status,
+    DateTime? newDate,
+    required String successMessage,
+  }) async {
     setState(() {
-      _saving = true;
+      _busy = true;
       _error = null;
     });
     try {
-      await ref.read(adminAppointmentRepositoryProvider).update(
-        widget.existing.id,
-        status: _statusChanged ? _status : null,
-        newDate: _dateChanged ? _date : null,
-      );
-      ref.invalidate(adminAppointmentByIdProvider(widget.existing.id));
+      final updated = await ref
+          .read(adminAppointmentRepositoryProvider)
+          .update(_appointment.id, status: status, newDate: newDate);
       ref.invalidate(adminAppointmentsProvider);
       if (mounted) {
+        setState(() => _appointment = updated);
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
-          ..showSnackBar(const SnackBar(content: Text('Appointment updated')));
-        context.pop();
+          ..showSnackBar(SnackBar(content: Text(successMessage)));
       }
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
     } finally {
-      if (mounted) setState(() => _saving = false);
+      if (mounted) setState(() => _busy = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final a = widget.existing;
-    final formattedDate = DateFormat('EEE, d MMM yyyy').format(_date);
-    final formattedTime = DateFormat('h:mm a').format(_date);
+    final a = _appointment;
+    final formattedDate = DateFormat('EEE, d MMM yyyy').format(a.dateTime);
+    final formattedTime = DateFormat('h:mm a').format(a.dateTime);
+    final advanceLabel = a.status.advanceLabel;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Edit appointment')),
@@ -141,20 +168,6 @@ class _EditFormState extends ConsumerState<_EditForm> {
             ),
           ),
           const SizedBox(height: AppConstants.spacingLg),
-          Text('Status', style: theme.textTheme.titleMedium),
-          const SizedBox(height: AppConstants.spacingSm),
-          Wrap(
-            spacing: AppConstants.spacingSm,
-            children: [
-              for (final s in AppointmentStatus.values)
-                ChoiceChip(
-                  label: Text(s.label),
-                  selected: _status == s,
-                  onSelected: _saving ? null : (_) => setState(() => _status = s),
-                ),
-            ],
-          ),
-          const SizedBox(height: AppConstants.spacingLg),
           Text('Date', style: theme.textTheme.titleMedium),
           const SizedBox(height: AppConstants.spacingSm),
           Card(
@@ -163,21 +176,36 @@ class _EditFormState extends ConsumerState<_EditForm> {
               title: Text(formattedDate),
               subtitle: Text('Time: $formattedTime (from doctor\'s schedule)'),
               trailing: TextButton(
-                onPressed: _saving ? null : _pickDate,
+                onPressed: _busy ? null : _pickDate,
                 child: const Text('Change'),
               ),
             ),
           ),
+          const SizedBox(height: AppConstants.spacingLg),
+          Row(
+            children: [
+              Text('Status', style: theme.textTheme.titleMedium),
+              const SizedBox(width: AppConstants.spacingSm),
+              StatusChip(label: a.status.label, positive: a.status != AppointmentStatus.cancelled),
+            ],
+          ),
+          const SizedBox(height: AppConstants.spacingSm),
+          if (advanceLabel != null)
+            StatusSwipeBar(
+              label: advanceLabel,
+              enabled: !_busy,
+              onConfirm: _advance,
+            ),
           if (_error != null) ...[
             const SizedBox(height: AppConstants.spacingMd),
             Text(_error!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),
           ],
           const SizedBox(height: AppConstants.spacingLg),
-          FilledButton(
-            onPressed: _saving ? null : _save,
-            child: _saving
-                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Text('Save changes'),
+          OutlinedButton.icon(
+            onPressed: (_busy || a.status == AppointmentStatus.cancelled) ? null : _cancel,
+            style: OutlinedButton.styleFrom(foregroundColor: theme.colorScheme.error),
+            icon: const Icon(Icons.cancel_outlined),
+            label: const Text('Cancel appointment'),
           ),
         ],
       ),

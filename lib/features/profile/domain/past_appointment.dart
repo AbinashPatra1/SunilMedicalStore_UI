@@ -1,17 +1,39 @@
 /// Outcome of an appointment.
 enum AppointmentStatus {
+  upcoming,
+  inSession,
   completed,
-  cancelled,
-  upcoming;
+  cancelled;
 
   String get label => switch (this) {
+    AppointmentStatus.upcoming => 'Upcoming',
+    AppointmentStatus.inSession => 'In Session',
     AppointmentStatus.completed => 'Completed',
     AppointmentStatus.cancelled => 'Cancelled',
-    AppointmentStatus.upcoming => 'Upcoming',
   };
 
-  /// Whether the customer can still cancel an appointment in this status.
+  /// Whether the customer can still cancel an appointment in this status —
+  /// only while it hasn't started yet.
   bool get isCustomerCancellable => this == AppointmentStatus.upcoming;
+
+  /// The next status in the linear appointment flow — same one-step-at-a-
+  /// time admin swipe pattern as [OrderStatus.next]/[LabTestStatus.next].
+  /// `null` once there's no next step (already `completed`, or `cancelled`).
+  AppointmentStatus? get next => switch (this) {
+    AppointmentStatus.upcoming => AppointmentStatus.inSession,
+    AppointmentStatus.inSession => AppointmentStatus.completed,
+    AppointmentStatus.completed => null,
+    AppointmentStatus.cancelled => null,
+  };
+
+  /// Swipe-bar label for advancing from this status to [next]. `null` when
+  /// [next] is `null` (nothing to advance to).
+  String? get advanceLabel => switch (this) {
+    AppointmentStatus.upcoming => 'Start Session',
+    AppointmentStatus.inSession => 'Mark Completed',
+    AppointmentStatus.completed => null,
+    AppointmentStatus.cancelled => null,
+  };
 }
 
 /// An appointment the customer booked (past, or upcoming).

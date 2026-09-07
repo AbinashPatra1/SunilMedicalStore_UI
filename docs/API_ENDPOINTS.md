@@ -174,6 +174,15 @@ lifecycle order (this doesn't affect wire parsing — enum values are
 matched by name, not position — but flagging in case it affects any
 backend-side ordering logic).
 
+**⚠ #43 gains a new `inSession` status value, not yet implemented on the
+backend** — completes the same swipe-to-advance conversion for Admin →
+Appointments that #48 (Orders) and #70 (Pathology) already got. Appointment
+`status` goes from `upcoming | completed | cancelled` to
+`upcoming | inSession | completed | cancelled`, same reasoning and same
+"backend could optionally enforce linear-only transitions" note as those
+two. No new endpoint number, no request/response shape change beyond the
+one new enum value.
+
 49–53 additionally mean **#14 `POST /v1/promo-codes/validate` gains new
 rejection rules** — reject (still `400 invalid_promo_code`, just a different
 `message`) when the code is `active: false`, past `expiresAt`, at
@@ -723,13 +732,23 @@ Request:
 ```json
 { "status": "completed", "date": "2026-08-05" }
 ```
-- `status` — `upcoming | completed | cancelled`.
+- `status` — `upcoming | inSession | completed | cancelled`. **`inSession`
+  — new value**, between `upcoming` and `completed` (mirrors lab-booking
+  `status`, see §Admin — Pathology).
 - `date` — `yyyy-MM-dd`. If sent, server keeps the doctor's `timeSlot` and
   updates `dateTime` accordingly.
 - Doctor cannot be reassigned via this endpoint (delete + recreate if
   needed).
 - Errors: `404 appointment_not_found`, `409 slot_unavailable` (rescheduling
   to a date the doctor is already booked on).
+- **Client-side behavior change (no request/response shape change here)**:
+  same as #48/#70 — the admin app only ever sends the single next status
+  in the linear sequence (`upcoming→inSession→completed`, one
+  swipe-confirmed step at a time) via "advance", or `cancelled` via a
+  separate, always-available Cancel action. Reschedule (the `date` field)
+  is independent and unaffected — still sent freely, applied immediately
+  once picked (no more shared "Save" button covering both fields, but the
+  request shape itself hasn't changed: either field, both, or neither).
 
 ---
 
@@ -1261,7 +1280,7 @@ with #15), `prescription_not_found` (proposed, with #54–59).
 | address `type` | `home`, `work`, `other` |
 | order `status` | `created`, `processing`, `shipped`, `delivered`, `cancelled` |
 | lab-booking `status` | `scheduled`, `inSession`, `completed`, `cancelled` |
-| appointment `status` | `completed`, `cancelled`, `upcoming` |
+| appointment `status` | `upcoming`, `inSession`, `completed`, `cancelled` |
 | order item `kind` | `medicine`, `labTest` |
 | promo `type` | `percentage`, `flat` |
 | `paymentMethod` | `googlePay`, `phonePe`, `bhim`, `upi`, `cod` |
