@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sunil_medical_store/core/widgets/app_bottom_nav_bar.dart';
 
 /// App shell for the admin console: hosts the five bottom-navigation tabs.
 ///
@@ -25,31 +26,31 @@ class AdminScaffoldWithNavBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return Scaffold(
       body: navigationShell,
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: AppBottomNavBar(
         selectedIndex: navigationShell.currentIndex,
         onDestinationSelected: _onTap,
         destinations: const [
-          NavigationDestination(
+          AppNavDestination(
             icon: Icon(Icons.inventory_2_outlined),
             selectedIcon: Icon(Icons.inventory_2),
             label: 'Inventory',
           ),
-          NavigationDestination(
+          AppNavDestination(
             icon: Icon(Icons.calendar_month_outlined),
             selectedIcon: Icon(Icons.calendar_month),
             label: 'Appointments',
           ),
-          NavigationDestination(
+          AppNavDestination(
             icon: Icon(Icons.receipt_long_outlined),
             selectedIcon: Icon(Icons.receipt_long),
             label: 'Orders',
           ),
-          NavigationDestination(
+          AppNavDestination(
             icon: Icon(Icons.local_offer_outlined),
             selectedIcon: Icon(Icons.local_offer),
             label: 'Discounts',
           ),
-          NavigationDestination(
+          AppNavDestination(
             icon: Icon(Icons.more_horiz_outlined),
             selectedIcon: Icon(Icons.more_horiz),
             label: 'More',

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sunil_medical_store/core/widgets/app_bottom_nav_bar.dart';
 import 'package:sunil_medical_store/features/cart/presentation/providers/cart_providers.dart';
 
 /// App shell for the customer area: hosts the four bottom-navigation tabs.
@@ -26,26 +27,26 @@ class ScaffoldWithNavBar extends ConsumerWidget {
 
     return Scaffold(
       body: navigationShell,
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: AppBottomNavBar(
         selectedIndex: navigationShell.currentIndex,
         onDestinationSelected: _onTap,
         destinations: [
-          const NavigationDestination(
+          const AppNavDestination(
             icon: Icon(Icons.local_pharmacy_outlined),
             selectedIcon: Icon(Icons.local_pharmacy),
             label: 'Pharmacy',
           ),
-          const NavigationDestination(
+          const AppNavDestination(
             icon: Icon(Icons.biotech_outlined),
             selectedIcon: Icon(Icons.biotech),
             label: 'Lab Tests',
           ),
-          const NavigationDestination(
+          const AppNavDestination(
             icon: Icon(Icons.calendar_month_outlined),
             selectedIcon: Icon(Icons.calendar_month),
             label: 'Appointments',
           ),
-          NavigationDestination(
+          AppNavDestination(
             icon: Badge(
               isLabelVisible: cartCount > 0,
               label: Text('$cartCount'),
@@ -58,7 +59,7 @@ class ScaffoldWithNavBar extends ConsumerWidget {
             ),
             label: 'Cart',
           ),
-          const NavigationDestination(
+          const AppNavDestination(
             icon: Icon(Icons.person_outline),
             selectedIcon: Icon(Icons.person),
             label: 'Profile',

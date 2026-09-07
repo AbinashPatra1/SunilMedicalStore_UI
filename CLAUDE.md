@@ -40,7 +40,8 @@ Feature-first. Each feature: `lib/features/<feature>/{domain,data,presentation/{
 - `lib/core/` — cross-cutting: `models/` (`AppUser`, `UserRole`), `routes/`
   (`app_router.dart`, `app_routes.dart`), `theme/` (`AppTheme`, `AppColors`,
   `AppConstants` design tokens, `AppTextTheme`), `utils/` (`week_range.dart`),
-  `widgets/` (`scaffold_with_nav_bar.dart`, `placeholder_screen.dart`).
+  `widgets/` (`scaffold_with_nav_bar.dart`, `admin_scaffold_with_nav_bar.dart`,
+  `app_bottom_nav_bar.dart`, `placeholder_screen.dart`).
 - `lib/app.dart` — `MyApp` (`ConsumerWidget`) → `MaterialApp.router` reading `routerProvider`.
 - `lib/main.dart` — `Firebase.initializeApp` then `runApp(ProviderScope(MyApp))`.
 - Features: `auth`, `splash`, `dashboard` (Pharmacy landing), `medicines`,
@@ -88,6 +89,16 @@ enforces the whole policy, driven by `authControllerProvider` via a
   `/profile/orders/detail` (order passed via `extra`), `/profile/addresses/add`, etc.
 - The Cart tab icon shows a live item-count `Badge` (`ScaffoldWithNavBar` is a
   `ConsumerWidget` watching `cartItemCountProvider`).
+- Both bottom nav bars (`ScaffoldWithNavBar`, `AdminScaffoldWithNavBar`) render
+  via a shared `AppBottomNavBar` (`core/widgets/app_bottom_nav_bar.dart`) — a
+  from-scratch Material 3 lookalike, not Flutter's built-in `NavigationBar`.
+  `NavigationDestination.label` is a plain `String` with no `maxLines`/
+  `overflow` control, so a longer label ("Appointments") wraps to 2 lines on
+  narrower devices with no way to fix it through the public API; `AppBottomNavBar`
+  wraps each label in a `FittedBox` (shrink-to-fit) instead, so it always
+  stays on one line. Same M3 token values (pill indicator, colors, 80dp
+  height) as `NavigationBar`'s defaults, just reimplemented for control over
+  the label.
 - Redirect policy: `unknown`→splash; `unauthenticated`→login;
   `onboarding`→/onboarding; authenticated→role home
   (admin→`/admin/inventory`, customer→`/pharmacy`); admins blocked from
@@ -430,7 +441,7 @@ ranking, new items) as items are picked up, finished, or reprioritized.
 | # | Item | Type | Status | Notes |
 |---|------|------|--------|-------|
 | 1 | Order status doesn't refresh immediately for the customer after an admin changes it | Bug | **Done** | Root cause: `NotificationService` never invalidated `pastOrdersProvider`/`orderByIdProvider` on push receipt, and `OrderDetailScreen` held a static `extra`-passed `Order` with no live provider binding at all. Fixed both; verified live — changed a real order `created→shipped` via a direct API call while the customer sat on both the Orders list and the Order Detail screen, both updated with no manual refresh |
-| 2 | Bottom nav "Appointments" label wraps to 2 lines on some device widths | UI bug | Not started | Make the customer/admin `NavigationBar` responsive |
+| 2 | Bottom nav "Appointments" label wraps to 2 lines on some device widths | UI bug | **Done** | Root cause: `NavigationDestination.label` is a plain `String` — Flutter renders it as `Text(label, style: textStyle)` with no `maxLines`/`overflow` (confirmed in the Flutter SDK source), so it wraps whenever a destination's column is too narrow. No public hook to fix this through `NavigationBar` itself. Replaced with a custom `AppBottomNavBar` (`core/widgets/app_bottom_nav_bar.dart`) that replicates the same Material 3 look but shrink-to-fits each label via `FittedBox` instead — verified live down to a simulated ~309dp width (narrower than any real device) with "Appointments" staying on one line throughout |
 | 3 | Lab-test booking notifications show `{date}` only, no time-of-day | Minor bug | Not started | Backend-flagged (`LabTestBooking.BookedOn` is date-only); fix if it matters — no decision yet |
 | 4 | Enable Firebase Storage (Blaze plan) to unblock Prescriptions | Blocked — user action | Waiting on you | Prescriptions is fully built client + backend (endpoints 54–59 live); blocked on this one manual Firebase Console step (Console → Storage → Get started, then Blaze plan) |
 | 5 | Cancel appointment | New feature | Not started | Customer-facing cancel action, mirrors the existing order-cancel pattern (`PUT` to a cancel endpoint, hidden once not cancellable) |
