@@ -107,7 +107,7 @@ brief see [`API_SPEC.md`](API_SPEC.md); for backend internals see [`claude.md`](
 | 64 | PUT | `/v1/admin/users/{id}` | ✔ admin | Update fullName/email (phone locked) → 200 |
 | 65 | DELETE | `/v1/admin/users/{id}` | ✔ admin | Delete → 204 (blocked if the user has order/appointment/lab-test history) |
 
-**45–61 are live** (verified against Azure), including the push-notification
+**45–65 are live** (verified against Azure), including the push-notification
 send side described after §3 — real order placement/cancellation triggered
 real pushes end-to-end (Admin SDK send → device delivery → in-app banner),
 confirmed live on the emulator. This also widened the `order status` enum
@@ -117,11 +117,11 @@ order (#15) now comes back with `status: "created"` instead of
 `"processing"`. **61 (Statistics)** was verified live on the emulator against
 real data — revenue/order totals, the revenue trend line, and the
 order-status bar chart all correctly reflected a real cancelled order.
-
-**⚠ 62–65 are not yet implemented on the backend** — proposed by the Flutter
-client for the new Admin → More → Users directory screen (full CRUD over
-walk-in customer records). See the dedicated section below for the full
-request/response shapes and the reconciliation requirement for #62.
+**62–65 (Users CRUD)** were verified live end-to-end on the emulator against
+the real admin account: created a walk-in user (`Ramesh Gupta`), edited their
+email, and deleted them — each step confirmed via the app's own success
+snackbar ("User added" / "User updated" / "User deleted") and the list
+re-fetching correctly after each mutation.
 
 49–53 additionally mean **#14 `POST /v1/promo-codes/validate` gains new
 rejection rules** — reject (still `400 invalid_promo_code`, just a different
@@ -619,7 +619,7 @@ Request:
 
 ---
 
-### Admin — Users (directory) — **62–65 proposed, not yet built**
+### Admin — Users (directory) — **live**, full CRUD verified end-to-end
 
 #### 44. `GET /v1/admin/users?search={q}` → `200` — `AdminUser[]`
 Directory used by the "book on behalf" user picker and the standalone

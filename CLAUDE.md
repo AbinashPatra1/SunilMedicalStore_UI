@@ -408,9 +408,10 @@ over Dio — no mock repositories remain.
       note), otherwise they'd end up with two separate history-splitting
       records. **Delete is blocked server-side** (not just client-side) if
       the user has any order/appointment/lab-test history, surfaced as a
-      plain error message. **Built ahead of the backend** — endpoints
-      62–65 are drafted but not yet implemented server-side; #44 (list) was
-      already live, reused as-is.
+      plain error message. **Live** — full CRUD verified end-to-end on the
+      emulator against the real admin account: created a walk-in user,
+      edited their email, deleted them, each step confirmed by the app's
+      own success message and the list correctly re-fetching afterward.
 
 ## Android / build notes
 
