@@ -8,4 +8,8 @@ abstract interface class AppointmentRepository {
     required DateTime date,
     required String timeSlot,
   });
+
+  /// Cancels the caller's own appointment [id]. Throws [ApiException] if it's
+  /// not cancellable (already completed/cancelled) or not the caller's.
+  Future<void> cancel(String id);
 }

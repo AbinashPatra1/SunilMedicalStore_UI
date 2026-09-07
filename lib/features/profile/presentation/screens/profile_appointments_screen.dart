@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/core/routes/app_routes.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
+import 'package:sunil_medical_store/features/appointments/presentation/providers/appointment_providers.dart';
 import 'package:sunil_medical_store/features/profile/domain/past_appointment.dart';
 import 'package:sunil_medical_store/features/profile/presentation/providers/profile_providers.dart';
 import 'package:sunil_medical_store/features/profile/presentation/widgets/status_chip.dart';
@@ -74,45 +75,115 @@ class ProfileAppointmentsScreen extends ConsumerWidget {
   }
 }
 
-class _AppointmentCard extends StatelessWidget {
+class _AppointmentCard extends ConsumerStatefulWidget {
   const _AppointmentCard({required this.appointment});
 
   final PastAppointment appointment;
 
   @override
+  ConsumerState<_AppointmentCard> createState() => _AppointmentCardState();
+}
+
+class _AppointmentCardState extends ConsumerState<_AppointmentCard> {
+  bool _cancelling = false;
+
+  Future<void> _cancel() async {
+    final appointment = widget.appointment;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Cancel appointment?'),
+        content: Text(
+          'This will cancel your appointment with ${appointment.doctorName}. This can\'t be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Keep appointment'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Cancel appointment'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _cancelling = true);
+    try {
+      await ref.read(appointmentRepositoryProvider).cancel(appointment.id);
+      ref.invalidate(pastAppointmentsProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(const SnackBar(content: Text('Appointment cancelled')));
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } finally {
+      if (mounted) setState(() => _cancelling = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final appointment = widget.appointment;
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(AppConstants.spacingMd),
-        child: Row(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            CircleAvatar(
-              backgroundColor: theme.colorScheme.primaryContainer,
-              child: Icon(Icons.medical_services_outlined, color: theme.colorScheme.onPrimaryContainer),
+            Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: theme.colorScheme.primaryContainer,
+                  child: Icon(Icons.medical_services_outlined, color: theme.colorScheme.onPrimaryContainer),
+                ),
+                const SizedBox(width: AppConstants.spacingMd),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(appointment.doctorName, style: theme.textTheme.titleSmall),
+                      Text(
+                        appointment.specialization,
+                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                      const SizedBox(height: AppConstants.spacingXs),
+                      Text(
+                        DateFormat('d MMM yyyy, h:mm a').format(appointment.dateTime),
+                        style: theme.textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ),
+                StatusChip(
+                  label: appointment.status.label,
+                  positive: appointment.status != AppointmentStatus.cancelled,
+                ),
+              ],
             ),
-            const SizedBox(width: AppConstants.spacingMd),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(appointment.doctorName, style: theme.textTheme.titleSmall),
-                  Text(
-                    appointment.specialization,
-                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                  ),
-                  const SizedBox(height: AppConstants.spacingXs),
-                  Text(
-                    DateFormat('d MMM yyyy, h:mm a').format(appointment.dateTime),
-                    style: theme.textTheme.bodySmall,
-                  ),
-                ],
+            if (appointment.status.isCustomerCancellable) ...[
+              const SizedBox(height: AppConstants.spacingSm),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: _cancelling ? null : _cancel,
+                  style: TextButton.styleFrom(foregroundColor: theme.colorScheme.error),
+                  icon: _cancelling
+                      ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.cancel_outlined, size: 18),
+                  label: const Text('Cancel'),
+                ),
               ),
-            ),
-            StatusChip(
-              label: appointment.status.label,
-              positive: appointment.status != AppointmentStatus.cancelled,
-            ),
+            ],
           ],
         ),
       ),

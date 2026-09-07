@@ -106,6 +106,7 @@ brief see [`API_SPEC.md`](API_SPEC.md); for backend internals see [`claude.md`](
 | 63 | GET | `/v1/admin/users/{id}` | ✔ admin | Single user for edit |
 | 64 | PUT | `/v1/admin/users/{id}` | ✔ admin | Update fullName/email (phone locked) → 200 |
 | 65 | DELETE | `/v1/admin/users/{id}` | ✔ admin | Delete → 204 (blocked if the user has order/appointment/lab-test history) |
+| 66 | PUT | `/v1/appointments/{id}/cancel` | ✔ | Customer cancels their own appointment → 200 |
 
 **45–65 are live** (verified against Azure), including the push-notification
 send side described after §3 — real order placement/cancellation triggered
@@ -122,6 +123,10 @@ the real admin account: created a walk-in user (`Ramesh Gupta`), edited their
 email, and deleted them — each step confirmed via the app's own success
 snackbar ("User added" / "User updated" / "User deleted") and the list
 re-fetching correctly after each mutation.
+
+**⚠ 66 is not yet implemented on the backend** — proposed by the Flutter
+client for a new "Cancel appointment" action on Profile → Appointments,
+mirroring the existing `PUT /orders/{id}/cancel` (#45).
 
 49–53 additionally mean **#14 `POST /v1/promo-codes/validate` gains new
 rejection rules** — reject (still `400 invalid_promo_code`, just a different
@@ -306,6 +311,12 @@ Response (an `Appointment`, see #13) with `status: "upcoming"`.
 ```
 - `status`: `completed | cancelled | upcoming`.
 
+#### 66. `PUT /v1/appointments/{id}/cancel` → `200` — updated `Appointment`
+No body. The customer cancelling their own appointment.
+- Only valid while `status` is `upcoming` — reject with
+  `409 appointment_not_cancellable` once `completed`/already `cancelled`.
+- `404 appointment_not_found` if missing or not the caller's appointment.
+
 ---
 
 ### Cart / Checkout
@@ -380,7 +391,7 @@ Response:
 ```
 - Placeholder URL (no PDF generated yet); client just opens the URL.
 
-#### 45. `PUT /v1/orders/{id}/cancel` → `200` — updated `Order` — **proposed, not yet built**
+#### 45. `PUT /v1/orders/{id}/cancel` → `200` — updated `Order` — **live**
 No body. The customer cancelling their own order.
 - Only valid while `status` is `created` or `processing` — reject with
   `409 order_not_cancellable` once `shipped`/`delivered`/already `cancelled`.

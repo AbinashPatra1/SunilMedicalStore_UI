@@ -29,4 +29,13 @@ class ApiAppointmentRepository implements AppointmentRepository {
       throw ApiException.fromDioException(e);
     }
   }
+
+  @override
+  Future<void> cancel(String id) async {
+    try {
+      await _dio.put<void>('/appointments/$id/cancel');
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
 }

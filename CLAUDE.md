@@ -280,7 +280,14 @@ over Dio — no mock repositories remain.
 - **Profile** — header + 6 menus + Sign Out:
   - **Account** — gender-based avatar, personal details, medical records
     (real backend data, read-only — see the Account note below).
-  - **Appointments** — past appointments + "Book Appointment" → Appointments tab.
+  - **Appointments** — past appointments + "Book Appointment" → Appointments
+    tab. Each `upcoming` appointment shows a **Cancel** action
+    (`AppointmentStatus.isCustomerCancellable`) → confirm dialog →
+    `AppointmentRepository.cancel(id)` (`PUT /appointments/{id}/cancel`,
+    endpoint #66) → `pastAppointmentsProvider` invalidated to refresh the
+    list. **Built ahead of the backend** — client-verified (correct
+    cancellable-only gating, correct confirm-dialog copy, clean error
+    surfaced with no crash against the not-yet-deployed endpoint).
   - **Orders** — history list → detail (items, total, **Download invoice**).
   - **Lab Tests** — history list → detail (parameters, **Download invoice**).
   - **Invoice download** (Orders + Lab Tests detail) — real: fetches
@@ -444,7 +451,7 @@ ranking, new items) as items are picked up, finished, or reprioritized.
 | 2 | Bottom nav "Appointments" label wraps to 2 lines on some device widths | UI bug | **Done** | Root cause: `NavigationDestination.label` is a plain `String` — Flutter renders it as `Text(label, style: textStyle)` with no `maxLines`/`overflow` (confirmed in the Flutter SDK source), so it wraps whenever a destination's column is too narrow. No public hook to fix this through `NavigationBar` itself. Replaced with a custom `AppBottomNavBar` (`core/widgets/app_bottom_nav_bar.dart`) that replicates the same Material 3 look but shrink-to-fits each label via `FittedBox` instead — verified live down to a simulated ~309dp width (narrower than any real device) with "Appointments" staying on one line throughout |
 | 3 | Lab-test booking notifications show `{date}` only, no time-of-day | Minor bug | Not started | Backend-flagged (`LabTestBooking.BookedOn` is date-only); fix if it matters — no decision yet |
 | 4 | Enable Firebase Storage (Blaze plan) to unblock Prescriptions | Blocked — user action | Waiting on you | Prescriptions is fully built client + backend (endpoints 54–59 live); blocked on this one manual Firebase Console step (Console → Storage → Get started, then Blaze plan) |
-| 5 | Cancel appointment | New feature | Not started | Customer-facing cancel action, mirrors the existing order-cancel pattern (`PUT` to a cancel endpoint, hidden once not cancellable) |
+| 5 | Cancel appointment | New feature | **Done (client)** | Inline **Cancel** action on each upcoming appointment card in Profile → Appointments (`AppointmentStatus.isCustomerCancellable`, true only while `upcoming`), mirroring the order-cancel pattern: confirm dialog → `AppointmentRepository.cancel(id)` → `PUT /appointments/{id}/cancel` → invalidate `pastAppointmentsProvider`. Verified live against a real appointment (confirm dialog shows the doctor's name correctly, cancellable-only gating correct); backend endpoint not deployed yet, so confirming currently surfaces a clean "Something went wrong" snackbar with no crash — added as endpoint #66 in `docs/API_ENDPOINTS.md` for the backend session to pick up |
 | 6 | Doctor ratings from customers | New feature | Not started | Suggested earlier, not yet scoped |
 | 7 | Statistics date filters: `6 months` / `1 year` + custom year/month picker | Improvement | Not started | Add range pills + a "more filters" icon opening a year/month selector |
 | 8 | Admin order-status flow: swipe-to-advance + separate cancel; Orders gains 3 tabs (Pharmacy / Prescriptions / Pathology) | New feature | Not started | Replaces the free-choice `ChoiceChip` status picker with a linear swipe ("Process Order" → processing → shipped → delivered) + a standalone red Cancel button (disabled once already cancelled) |

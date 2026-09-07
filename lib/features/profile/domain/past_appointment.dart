@@ -9,6 +9,9 @@ enum AppointmentStatus {
     AppointmentStatus.cancelled => 'Cancelled',
     AppointmentStatus.upcoming => 'Upcoming',
   };
+
+  /// Whether the customer can still cancel an appointment in this status.
+  bool get isCustomerCancellable => this == AppointmentStatus.upcoming;
 }
 
 /// An appointment the customer booked (past, or upcoming).
