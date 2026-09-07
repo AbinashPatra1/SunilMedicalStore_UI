@@ -5,11 +5,21 @@ import 'package:sunil_medical_store/features/cart/domain/cart_item.dart';
 /// and quantity, **not** a price. The server prices authoritatively from its
 /// own catalog data; the client never sends prices at checkout.
 class OrderRequestItem {
-  const OrderRequestItem({required this.kind, required this.catalogId, required this.quantity});
+  const OrderRequestItem({
+    required this.kind,
+    required this.catalogId,
+    required this.quantity,
+    this.scheduledDate,
+    this.timeSlot,
+  });
 
   final CartItemKind kind;
   final String catalogId;
   final int quantity;
+
+  /// Sample-collection date/time window, only set when [kind] is [CartItemKind.labTest].
+  final DateTime? scheduledDate;
+  final String? timeSlot;
 }
 
 /// Places orders, implemented by the data layer.

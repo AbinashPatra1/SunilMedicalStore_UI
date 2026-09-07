@@ -6,6 +6,7 @@ import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/cart/presentation/providers/cart_providers.dart';
 import 'package:sunil_medical_store/features/lab_tests/domain/lab_test.dart';
 import 'package:sunil_medical_store/features/lab_tests/presentation/providers/lab_test_providers.dart';
+import 'package:sunil_medical_store/features/lab_tests/presentation/widgets/schedule_lab_test_sheet.dart';
 
 /// Details of a bookable lab test, with an Add-to-cart action.
 class LabTestCatalogDetailScreen extends ConsumerWidget {
@@ -45,8 +46,16 @@ class _Detail extends ConsumerWidget {
 
   final LabTest test;
 
-  void _addToCart(BuildContext context, WidgetRef ref) {
-    ref.read(cartProvider.notifier).addLabTest(test);
+  Future<void> _addToCart(BuildContext context, WidgetRef ref) async {
+    final result = await showModalBottomSheet<(DateTime, String)>(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => const ScheduleLabTestSheet(),
+    );
+    if (result == null || !context.mounted) return;
+    final (scheduledDate, timeSlot) = result;
+
+    ref.read(cartProvider.notifier).addLabTest(test, scheduledDate: scheduledDate, timeSlot: timeSlot);
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(

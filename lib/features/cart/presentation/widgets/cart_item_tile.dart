@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/cart/domain/cart_item.dart';
 
@@ -49,6 +50,13 @@ class CartItemTile extends StatelessWidget {
                     item.subtitle,
                     style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                   ),
+                  if (item.kind == CartItemKind.labTest && item.scheduledDate != null && item.timeSlot != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      '${DateFormat('d MMM').format(item.scheduledDate!)} • ${item.timeSlot}',
+                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.primary),
+                    ),
+                  ],
                   const SizedBox(height: AppConstants.spacingSm),
                   Row(
                     children: [

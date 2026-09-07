@@ -165,5 +165,6 @@ class ApiProfileRepository implements ProfileRepository {
     status: LabTestStatus.values.byName(json['status'] as String),
     amount: json['amount'] as int,
     parameters: ((json['parameters'] as List?) ?? const []).cast<String>(),
+    timeSlot: json['timeSlot'] as String?,
   );
 }

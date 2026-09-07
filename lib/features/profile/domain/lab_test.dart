@@ -21,13 +21,20 @@ class LabTest {
     required this.status,
     required this.amount,
     required this.parameters,
+    this.timeSlot,
   });
 
   final String id;
   final String name;
   final String labName;
+
+  /// The scheduled sample-collection date (customer-chosen at booking).
   final DateTime bookedOn;
   final LabTestStatus status;
+
+  /// Customer-chosen collection window (e.g. `10:00 AM – 1:00 PM`). `null`
+  /// for bookings made before time-slot selection existed.
+  final String? timeSlot;
 
   /// Amount in rupees.
   final int amount;

@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:intl/intl.dart';
 import 'package:sunil_medical_store/core/models/order.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/features/cart/domain/cart_item.dart';
@@ -9,6 +10,7 @@ class ApiOrderRepository implements OrderRepository {
   ApiOrderRepository(this._dio);
 
   final Dio _dio;
+  static final _dateFormat = DateFormat('yyyy-MM-dd');
 
   @override
   Future<Order> placeOrder({
@@ -30,6 +32,9 @@ class ApiOrderRepository implements OrderRepository {
                 if (item.kind == CartItemKind.medicine) 'productId': item.catalogId,
                 if (item.kind == CartItemKind.labTest) 'testId': item.catalogId,
                 'quantity': item.quantity,
+                if (item.kind == CartItemKind.labTest && item.scheduledDate != null)
+                  'scheduledDate': _dateFormat.format(item.scheduledDate!),
+                if (item.kind == CartItemKind.labTest && item.timeSlot != null) 'timeSlot': item.timeSlot,
               },
           ],
           'addressId': addressId,

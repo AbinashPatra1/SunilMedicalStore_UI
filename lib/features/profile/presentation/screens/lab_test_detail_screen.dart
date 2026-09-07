@@ -68,7 +68,8 @@ class _LabTestDetailScreenState extends ConsumerState<LabTestDetailScreen> {
           ),
           const SizedBox(height: AppConstants.spacingXs),
           Text(
-            'Booked on ${DateFormat('d MMM yyyy').format(test.bookedOn)}',
+            'Scheduled for ${DateFormat('d MMM yyyy').format(test.bookedOn)}'
+            '${test.timeSlot != null ? ' • ${test.timeSlot}' : ''}',
             style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
           ),
           const SizedBox(height: AppConstants.spacingLg),

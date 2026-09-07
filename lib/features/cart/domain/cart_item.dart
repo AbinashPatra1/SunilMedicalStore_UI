@@ -14,6 +14,8 @@ class CartItem {
     required this.kind,
     required this.quantity,
     this.requiresPrescription = false,
+    this.scheduledDate,
+    this.timeSlot,
   });
 
   /// Unique within the cart (kind-prefixed, e.g. `medicine-p1`, `labtest-lt2`).
@@ -37,9 +39,16 @@ class CartItem {
   /// tests, mirrors `Product.requiresPrescription` for medicines.
   final bool requiresPrescription;
 
+  /// Customer-chosen sample-collection date. Only set for [CartItemKind.labTest].
+  final DateTime? scheduledDate;
+
+  /// Customer-chosen collection window, one of `kLabTestTimeSlots`. Only set
+  /// for [CartItemKind.labTest].
+  final String? timeSlot;
+
   int get lineTotal => price * quantity;
 
-  CartItem copyWith({int? quantity}) => CartItem(
+  CartItem copyWith({int? quantity, DateTime? scheduledDate, String? timeSlot}) => CartItem(
     id: id,
     catalogId: catalogId,
     title: title,
@@ -48,5 +57,7 @@ class CartItem {
     kind: kind,
     quantity: quantity ?? this.quantity,
     requiresPrescription: requiresPrescription,
+    scheduledDate: scheduledDate ?? this.scheduledDate,
+    timeSlot: timeSlot ?? this.timeSlot,
   );
 }

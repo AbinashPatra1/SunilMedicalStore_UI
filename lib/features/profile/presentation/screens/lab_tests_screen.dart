@@ -86,7 +86,8 @@ class _LabTestCard extends StatelessWidget {
               ),
               const SizedBox(height: AppConstants.spacingXs),
               Text(
-                '${test.labName} • ${DateFormat('d MMM yyyy').format(test.bookedOn)}',
+                '${test.labName} • ${DateFormat('d MMM yyyy').format(test.bookedOn)}'
+                '${test.timeSlot != null ? ' • ${test.timeSlot}' : ''}',
                 style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
               const SizedBox(height: AppConstants.spacingSm),

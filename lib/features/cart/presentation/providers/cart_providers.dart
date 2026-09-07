@@ -37,14 +37,17 @@ class CartController extends Notifier<List<CartItem>> {
     );
   }
 
-  /// Adds one unit of a lab test.
-  void addLabTest(LabTest test) => _add(
+  /// Adds one unit of a lab test, scheduled for [scheduledDate] in the
+  /// customer-chosen [timeSlot] (one of `kLabTestTimeSlots`).
+  void addLabTest(LabTest test, {required DateTime scheduledDate, required String timeSlot}) => _add(
     id: 'labtest-${test.id}',
     catalogId: test.id,
     title: test.name,
     subtitle: test.labName,
     price: test.price,
     kind: CartItemKind.labTest,
+    scheduledDate: scheduledDate,
+    timeSlot: timeSlot,
   );
 
   void _add({
@@ -55,10 +58,24 @@ class CartController extends Notifier<List<CartItem>> {
     required int price,
     required CartItemKind kind,
     bool requiresPrescription = false,
+    DateTime? scheduledDate,
+    String? timeSlot,
   }) {
     final index = state.indexWhere((i) => i.id == id);
     if (index >= 0) {
-      _setQuantity(index, state[index].quantity + 1);
+      // Re-adding an already-in-cart lab test updates its schedule to the
+      // newly chosen date/slot (most-recent-wins) alongside the quantity bump.
+      state = [
+        for (var i = 0; i < state.length; i++)
+          if (i == index)
+            state[i].copyWith(
+              quantity: state[i].quantity + 1,
+              scheduledDate: scheduledDate,
+              timeSlot: timeSlot,
+            )
+          else
+            state[i],
+      ];
     } else {
       state = [
         ...state,
@@ -71,6 +88,8 @@ class CartController extends Notifier<List<CartItem>> {
           kind: kind,
           quantity: 1,
           requiresPrescription: requiresPrescription,
+          scheduledDate: scheduledDate,
+          timeSlot: timeSlot,
         ),
       ];
     }

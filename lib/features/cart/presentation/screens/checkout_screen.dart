@@ -214,7 +214,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       final order = await ref.read(orderRepositoryProvider).placeOrder(
         items: [
           for (final item in items)
-            OrderRequestItem(kind: item.kind, catalogId: item.catalogId, quantity: item.quantity),
+            OrderRequestItem(
+              kind: item.kind,
+              catalogId: item.catalogId,
+              quantity: item.quantity,
+              scheduledDate: item.scheduledDate,
+              timeSlot: item.timeSlot,
+            ),
         ],
         addressId: address.id,
         promoCode: promoCode,

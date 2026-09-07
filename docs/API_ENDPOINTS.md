@@ -128,6 +128,16 @@ re-fetching correctly after each mutation.
 client for a new "Cancel appointment" action on Profile → Appointments,
 mirroring the existing `PUT /orders/{id}/cancel` (#45).
 
+**⚠ #15/#19 gain new fields, not yet implemented on the backend** — the
+client now collects a sample-collection `scheduledDate`/`timeSlot` when
+adding a lab test to cart, and sends them as new fields on `POST /orders`'
+`labTest` items (#15). These need to land on the resulting Lab Test
+Booking as `bookedOn`/`timeSlot` (#19, `GET /lab-test-bookings`) — note
+`bookedOn`'s *meaning* changes here, see #19 for why. This is also what
+finally makes the daily reminder job's `"...at {timeSlot}"` message (see
+below) buildable — previously nothing captured a real time anywhere in the
+system. No new endpoint numbers, just new fields on #15/#19.
+
 49–53 additionally mean **#14 `POST /v1/promo-codes/validate` gains new
 rejection rules** — reject (still `400 invalid_promo_code`, just a different
 `message`) when the code is `active: false`, past `expiresAt`, at
@@ -341,7 +351,7 @@ Request:
 {
   "items": [
     { "kind": "medicine", "productId": "p1", "quantity": 2 },
-    { "kind": "labTest", "testId": "lt1", "quantity": 1 }
+    { "kind": "labTest", "testId": "lt1", "quantity": 1, "scheduledDate": "2026-08-05", "timeSlot": "10:00 AM – 1:00 PM" }
   ],
   "addressId": "addr-0",
   "promoCode": "SAVE10",
@@ -350,6 +360,12 @@ Request:
 }
 ```
 - `items[].kind`: `medicine | labTest`. Send `productId` for medicines, `testId` for lab tests.
+- `items[].scheduledDate` / `items[].timeSlot`: **only present when `kind` is `labTest`** — the
+  customer's chosen sample-collection date (`yyyy-MM-dd`) and time window (free-text, one of a
+  fixed client-side list, e.g. `"7:00 AM – 10:00 AM"`). Store these on the resulting Lab Test
+  Booking (#19) as `bookedOn`/`timeSlot` — see that section for why (`bookedOn` is the *scheduled*
+  date, not the date the order was placed). Required for `labTest` items; reject a missing one
+  with `400 scheduled_date_required` / `400 time_slot_required`.
 - `promoCode`: optional (`null`/omit for none).
 - `prescriptionId`: optional/omit unless the cart has an Rx item (see §54–59
   below) — required and server-validated in that case.
@@ -408,12 +424,25 @@ No body. The customer cancelling their own order.
   "name": "Complete Blood Count (CBC)",
   "labName": "Sunil Diagnostics",
   "bookedOn": "2026-07-12",
+  "timeSlot": "10:00 AM – 1:00 PM",
   "status": "completed",
   "amount": 450,
   "parameters": ["Hemoglobin", "WBC count", "Platelet count", "RBC count"]
 }
 ```
 - `status`: `completed | scheduled | cancelled`. Freshly created bookings are `scheduled`.
+- `bookedOn`: **the customer-chosen sample-collection date** (from `POST /orders`'
+  `items[].scheduledDate`, #15) — not the date the order was placed. Kept the same field name for
+  continuity, but the *meaning* changed with #15's `scheduledDate`/`timeSlot` addition (previously
+  the client never sent a date, so this was presumably just stamped as "today" server-side).
+- `timeSlot`: the customer-chosen collection window (from `items[].timeSlot`, #15), verbatim —
+  free text, no server-side validation against a fixed list needed since the client only ever
+  sends one of its own known slot values. **New field.** `null` for any bookings that predate this
+  (there shouldn't be many, if any, given the backend isn't live long) — the client renders those
+  without a time-slot line.
+- This is also what fixes the daily reminder job described in §Push notifications below — it
+  previously had no real time to put in `"Your lab test is due today at {time}"` since nothing
+  captured one; now `bookedOn` + `timeSlot` are both real.
 
 #### 20. `GET /v1/lab-test-bookings/{id}` → `200` — `LabTestBooking` — `404 lab_test_booking_not_found`
 #### 21. `GET /v1/lab-test-bookings/{id}/invoice` → `200` — `{ "invoiceUrl": "…" }` (placeholder)
@@ -895,7 +924,7 @@ Request:
 
 ---
 
-### Push notifications — **proposed, endpoint 60 + send-side not yet built**
+### Push notifications — **live**
 
 The client side is fully wired (`firebase_messaging`): requests
 `POST_NOTIFICATIONS` permission on sign-in, fetches the FCM token, PUTs it
@@ -903,10 +932,9 @@ to #60 (and again on every `onTokenRefresh`), shows an in-app banner for
 foreground messages (`FirebaseMessaging.onMessage` — Android never shows
 its own tray notification while the app is foregrounded), and deep-links on
 tap (`onMessageOpenedApp` / `getInitialMessage()`) using the `data` payload
-below. All verified live against Azure except the parts that need the
-backend: #60 currently 404s (swallowed silently, retried on next app open
-or token refresh — not surfaced to the user), and no push has actually been
-sent yet since nothing server-side triggers one.
+below. **Verified live end-to-end** — a real order placement/cancellation
+triggered real pushes (Admin SDK send → device delivery → in-app banner),
+confirmed on the emulator with the exact spec'd wording.
 
 #### 60. `PUT /v1/users/me/fcm-token` → `200`
 Request:
@@ -951,7 +979,7 @@ route:
   server-side) — the client always expects a single-recipient message, no
   multicast/topic assumptions on its end.
 
-#### Event triggers (server-side, none built yet)
+#### Event triggers (server-side, live)
 | Event | Recipient(s) | `data` | Message |
 |---|---|---|---|
 | `POST /orders` succeeds | All admins | `{type: "order", id}` | `"{userName} placed an order {orderNumber} for ₹{total}"` |
@@ -960,7 +988,7 @@ route:
 | Order status → `delivered` | All admins | `{type: "order", id}` | `"{orderNumber} was delivered at {time}"` |
 | Order status → `cancelled` | The customer | `{type: "order", id}` | `"Your order has been cancelled."` |
 | `POST /appointments` succeeds (customer books) | All admins | `{type: "appointment", id}` | `"{userName} scheduled an appointment with Dr. {doctorName} on {date time}"` |
-| Lab-test booking created (via `POST /orders` with a `labTest` item) | All admins | `{type: "labTest", id}` | `"{userName} scheduled a lab test for {testName} on {date time}"` |
+| Lab-test booking created (via `POST /orders` with a `labTest` item) | All admins | `{type: "labTest", id}` | `"{userName} scheduled a lab test for {testName} on {date} at {timeSlot}"` |
 
 Per the product decision, order `processing` does **not** notify the
 customer (only `shipped`/`delivered`/`cancelled` do) — admin already sees
@@ -975,9 +1003,11 @@ A timer-triggered job, **once daily at 8:00 AM IST**, that:
 - Finds appointments with `status: "upcoming"` and a `dateTime` falling
   today → push the customer `{type: "appointment", id}` /
   `"Your appointment is scheduled today at {time}"`.
-- Finds lab-test bookings with `status: "scheduled"` and a date falling
-  today → push the customer `{type: "labTest", id}` /
-  `"Your lab test is due today at {time}"`.
+- Finds lab-test bookings with `status: "scheduled"` and a `bookedOn` date
+  falling today → push the customer `{type: "labTest", id}` /
+  `"Your lab test is due today at {timeSlot}"`. `bookedOn` is now the real
+  customer-chosen collection date and `timeSlot` a real value (see #19) —
+  previously neither existed, so this message couldn't be built at all.
 
 ---
 

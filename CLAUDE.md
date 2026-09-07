@@ -241,9 +241,19 @@ over Dio — no mock repositories remain.
   (`features/lab_tests`, `LabTest` model + `ApiLabTestRepository` +
   `labTestCatalogProvider`), backed by `GET /catalog/lab-tests` /
   `GET /catalog/lab-tests/{id}`. List → detail (`/lab-tests/<testId>`) with
-  sample type / report time / fasting / parameters → **Add to cart**. Note:
-  distinct from **Profile → Lab Tests** (booked history); this tab is the
-  storefront.
+  sample type / report time / fasting / parameters → **Add to cart** opens
+  `ScheduleLabTestSheet` (`presentation/widgets/`) first — a bottom sheet to
+  pick a sample-collection date (today onwards, `showDatePicker`) and a
+  preferred time window (`kLabTestTimeSlots`, `domain/lab_test_slots.dart`:
+  4 fixed ranges e.g. `7:00 AM – 10:00 AM`) — before the item is actually
+  added; both are stored on the `CartItem` and shown on its cart-screen line
+  (`"10 Sep • 1:00 PM – 4:00 PM"`). **Built ahead of the backend** — sent as
+  `scheduledDate`/`timeSlot` on `labTest` items in `POST /orders` (endpoint
+  #15 in `docs/API_ENDPOINTS.md`), verified live that the existing endpoint
+  accepts them without error (order placement still succeeds), but the
+  backend doesn't store/return them yet, so Profile → Lab Tests shows no
+  time slot for now — degrades cleanly, no crash. Note: distinct from
+  **Profile → Lab Tests** (booked history); this tab is the storefront.
 - **Appointments** — doctors available this week, real via
   `ApiDoctorRepository` (`GET /doctors`, `weeklyDoctorsProvider`); doctor
   cards with a Mon–Sun availability strip; **Book** is real —
@@ -290,6 +300,11 @@ over Dio — no mock repositories remain.
     surfaced with no crash against the not-yet-deployed endpoint).
   - **Orders** — history list → detail (items, total, **Download invoice**).
   - **Lab Tests** — history list → detail (parameters, **Download invoice**).
+    `LabTest.bookedOn` is the customer-chosen scheduled collection date (not
+    the date the order was placed — see the Lab Tests tab note above and
+    `docs/API_ENDPOINTS.md` §19); list/detail show it as "Scheduled for
+    {date} • {timeSlot}" when `timeSlot` is present, date-only otherwise
+    (`null` until the backend lands the new fields).
   - **Invoice download** (Orders + Lab Tests detail) — real: fetches
     `{ invoiceUrl }` from `GET /orders/{id}/invoice` /
     `GET /lab-test-bookings/{id}/invoice` via `ProfileRepository`, opens it
@@ -449,7 +464,7 @@ ranking, new items) as items are picked up, finished, or reprioritized.
 |---|------|------|--------|-------|
 | 1 | Order status doesn't refresh immediately for the customer after an admin changes it | Bug | **Done** | Root cause: `NotificationService` never invalidated `pastOrdersProvider`/`orderByIdProvider` on push receipt, and `OrderDetailScreen` held a static `extra`-passed `Order` with no live provider binding at all. Fixed both; verified live — changed a real order `created→shipped` via a direct API call while the customer sat on both the Orders list and the Order Detail screen, both updated with no manual refresh |
 | 2 | Bottom nav "Appointments" label wraps to 2 lines on some device widths | UI bug | **Done** | Root cause: `NavigationDestination.label` is a plain `String` — Flutter renders it as `Text(label, style: textStyle)` with no `maxLines`/`overflow` (confirmed in the Flutter SDK source), so it wraps whenever a destination's column is too narrow. No public hook to fix this through `NavigationBar` itself. Replaced with a custom `AppBottomNavBar` (`core/widgets/app_bottom_nav_bar.dart`) that replicates the same Material 3 look but shrink-to-fits each label via `FittedBox` instead — verified live down to a simulated ~309dp width (narrower than any real device) with "Appointments" staying on one line throughout |
-| 3 | Lab-test booking notifications show `{date}` only, no time-of-day | Minor bug | Not started | Backend-flagged (`LabTestBooking.BookedOn` is date-only); fix if it matters — no decision yet |
+| 3 | Lab-test booking notifications show `{date}` only, no time-of-day | Minor bug | **Done (client)** | Turned out bigger than a copy fix: no part of the system ever captured a lab-test time at all (`bookedOn` being date-only was a symptom, not the cause) — decided to add real time-slot selection rather than just drop the claim. Customer now picks a date + fixed time-range slot (`kLabTestTimeSlots`) via a new `ScheduleLabTestSheet` bottom sheet on "Add to cart"; threaded through `CartItem`/`OrderRequestItem` to `POST /orders`' `labTest` items as `scheduledDate`/`timeSlot`. Verified live end-to-end (schedule sheet → cart line shows "10 Sep • 1:00 PM – 4:00 PM" → real order placed → Lab Tests history renders cleanly with no time shown, since the backend doesn't store/return the new fields yet). Backend needs to land these on the Lab Test Booking (`bookedOn`'s *meaning* changes — see `docs/API_ENDPOINTS.md` §19) before the reminder job can use them |
 | 4 | Enable Firebase Storage (Blaze plan) to unblock Prescriptions | Blocked — user action | Waiting on you | Prescriptions is fully built client + backend (endpoints 54–59 live); blocked on this one manual Firebase Console step (Console → Storage → Get started, then Blaze plan) |
 | 5 | Cancel appointment | New feature | **Done (client)** | Inline **Cancel** action on each upcoming appointment card in Profile → Appointments (`AppointmentStatus.isCustomerCancellable`, true only while `upcoming`), mirroring the order-cancel pattern: confirm dialog → `AppointmentRepository.cancel(id)` → `PUT /appointments/{id}/cancel` → invalidate `pastAppointmentsProvider`. Verified live against a real appointment (confirm dialog shows the doctor's name correctly, cancellable-only gating correct); backend endpoint not deployed yet, so confirming currently surfaces a clean "Something went wrong" snackbar with no crash — added as endpoint #66 in `docs/API_ENDPOINTS.md` for the backend session to pick up |
 | 6 | Doctor ratings from customers | New feature | Not started | Suggested earlier, not yet scoped |
