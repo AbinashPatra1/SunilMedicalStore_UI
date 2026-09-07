@@ -12,14 +12,14 @@ abstract interface class DoctorAdminRepository {
 }
 
 /// Value object for create/update requests. Server assigns [Doctor.id] on
-/// create; the client never sets it.
+/// create; the client never sets it. No `rating`/`ratingCount` here — those
+/// are server-computed from customer ratings, not admin-editable.
 class DoctorInput {
   const DoctorInput({
     required this.name,
     required this.specialization,
     required this.qualification,
     required this.experienceYears,
-    required this.rating,
     required this.consultationFee,
     required this.availableWeekdays,
     required this.availableTime,
@@ -30,7 +30,6 @@ class DoctorInput {
   final String specialization;
   final String qualification;
   final int experienceYears;
-  final double rating;
   final int consultationFee;
   final List<int> availableWeekdays;
   final String availableTime;

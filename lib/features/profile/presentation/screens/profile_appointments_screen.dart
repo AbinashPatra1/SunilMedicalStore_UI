@@ -8,6 +8,7 @@ import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/appointments/presentation/providers/appointment_providers.dart';
 import 'package:sunil_medical_store/features/profile/domain/past_appointment.dart';
 import 'package:sunil_medical_store/features/profile/presentation/providers/profile_providers.dart';
+import 'package:sunil_medical_store/features/profile/presentation/widgets/star_rating.dart';
 import 'package:sunil_medical_store/features/profile/presentation/widgets/status_chip.dart';
 
 /// Profile > Appointments: the customer's past appointments plus a button to
@@ -86,6 +87,7 @@ class _AppointmentCard extends ConsumerStatefulWidget {
 
 class _AppointmentCardState extends ConsumerState<_AppointmentCard> {
   bool _cancelling = false;
+  bool _rating = false;
 
   Future<void> _cancel() async {
     final appointment = widget.appointment;
@@ -127,6 +129,61 @@ class _AppointmentCardState extends ConsumerState<_AppointmentCard> {
       }
     } finally {
       if (mounted) setState(() => _cancelling = false);
+    }
+  }
+
+  Future<void> _rateDoctor() async {
+    final appointment = widget.appointment;
+    var selected = 0;
+    final stars = await showDialog<int>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (dialogContext, setDialogState) => AlertDialog(
+          title: Text('Rate ${appointment.doctorName}'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('How was your appointment?'),
+              const SizedBox(height: AppConstants.spacingMd),
+              StarRating(
+                value: selected,
+                size: 36,
+                onChanged: (v) => setDialogState(() => selected = v),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: selected == 0 ? null : () => Navigator.of(dialogContext).pop(selected),
+              child: const Text('Submit'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (stars == null || !mounted) return;
+
+    setState(() => _rating = true);
+    try {
+      await ref.read(appointmentRepositoryProvider).rate(appointment.id, stars);
+      ref.invalidate(pastAppointmentsProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(const SnackBar(content: Text('Thanks for rating!')));
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } finally {
+      if (mounted) setState(() => _rating = false);
     }
   }
 
@@ -183,6 +240,30 @@ class _AppointmentCardState extends ConsumerState<_AppointmentCard> {
                   label: const Text('Cancel'),
                 ),
               ),
+            ] else if (appointment.status == AppointmentStatus.completed) ...[
+              const SizedBox(height: AppConstants.spacingSm),
+              if (appointment.myRating != null)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      'Your rating: ',
+                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    ),
+                    StarRating(value: appointment.myRating!, size: 16),
+                  ],
+                )
+              else
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton.icon(
+                    onPressed: _rating ? null : _rateDoctor,
+                    icon: _rating
+                        ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.star_outline, size: 18),
+                    label: const Text('Rate doctor'),
+                  ),
+                ),
             ],
           ],
         ),

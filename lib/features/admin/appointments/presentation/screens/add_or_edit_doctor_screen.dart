@@ -52,7 +52,6 @@ class _DoctorFormState extends ConsumerState<_DoctorForm> {
   late final TextEditingController _specialization;
   late final TextEditingController _qualification;
   late final TextEditingController _experience;
-  late final TextEditingController _rating;
   late final TextEditingController _fee;
   late final TextEditingController _hours;
   late final TextEditingController _photoUrl;
@@ -70,7 +69,6 @@ class _DoctorFormState extends ConsumerState<_DoctorForm> {
     _specialization = TextEditingController(text: d?.specialization ?? '');
     _qualification = TextEditingController(text: d?.qualification ?? '');
     _experience = TextEditingController(text: d?.experienceYears.toString() ?? '');
-    _rating = TextEditingController(text: d?.rating.toStringAsFixed(1) ?? '');
     _fee = TextEditingController(text: d?.consultationFee.toString() ?? '');
     _hours = TextEditingController(text: d?.availableTime ?? '');
     _photoUrl = TextEditingController(text: d?.photoUrl ?? '');
@@ -83,7 +81,6 @@ class _DoctorFormState extends ConsumerState<_DoctorForm> {
     _specialization.dispose();
     _qualification.dispose();
     _experience.dispose();
-    _rating.dispose();
     _fee.dispose();
     _hours.dispose();
     _photoUrl.dispose();
@@ -101,20 +98,11 @@ class _DoctorFormState extends ConsumerState<_DoctorForm> {
     return null;
   }
 
-  String? _requiredRating(String? value) {
-    if (value == null || value.trim().isEmpty) return 'Required';
-    final parsed = double.tryParse(value.trim());
-    if (parsed == null) return 'Enter a number';
-    if (parsed < 0 || parsed > 5) return 'Between 0 and 5';
-    return null;
-  }
-
   DoctorInput _buildInput() => DoctorInput(
     name: _name.text.trim(),
     specialization: _specialization.text.trim(),
     qualification: _qualification.text.trim(),
     experienceYears: int.parse(_experience.text.trim()),
-    rating: double.parse(_rating.text.trim()),
     consultationFee: int.parse(_fee.text.trim()),
     availableWeekdays: _weekdays.toList()..sort(),
     availableTime: _hours.text.trim(),
@@ -252,31 +240,30 @@ class _DoctorFormState extends ConsumerState<_DoctorForm> {
               validator: _required,
             ),
             const SizedBox(height: AppConstants.spacingMd),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: _experience,
-                    enabled: !busy,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: const InputDecoration(labelText: 'Experience (yrs)'),
-                    validator: (v) => _requiredInt(v),
-                  ),
-                ),
-                const SizedBox(width: AppConstants.spacingMd),
-                Expanded(
-                  child: TextFormField(
-                    controller: _rating,
-                    enabled: !busy,
-                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                    inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d{0,1}(\.\d{0,1})?'))],
-                    decoration: const InputDecoration(labelText: 'Rating (0–5)'),
-                    validator: _requiredRating,
-                  ),
-                ),
-              ],
+            TextFormField(
+              controller: _experience,
+              enabled: !busy,
+              keyboardType: TextInputType.number,
+              inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              decoration: const InputDecoration(labelText: 'Experience (yrs)'),
+              validator: (v) => _requiredInt(v),
             ),
+            if (widget.isEdit) ...[
+              const SizedBox(height: AppConstants.spacingMd),
+              Card(
+                child: ListTile(
+                  leading: const Icon(Icons.star_rounded),
+                  title: const Text('Rating'),
+                  subtitle: const Text("Set by customers, not editable here"),
+                  trailing: Text(
+                    widget.existing!.ratingCount > 0
+                        ? '${widget.existing!.rating.toStringAsFixed(1)} (${widget.existing!.ratingCount})'
+                        : 'No ratings yet',
+                    style: theme.textTheme.titleSmall,
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: AppConstants.spacingMd),
             TextFormField(
               controller: _fee,

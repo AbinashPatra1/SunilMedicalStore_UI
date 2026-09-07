@@ -132,6 +132,7 @@ class ApiProfileRepository implements ProfileRepository {
     dateTime: DateTime.parse(json['dateTime'] as String),
     status: AppointmentStatus.values.byName(json['status'] as String),
     fee: json['fee'] as int,
+    myRating: json['myRating'] as int?,
   );
 
   Order _orderFromJson(Map<String, dynamic> json) => Order(

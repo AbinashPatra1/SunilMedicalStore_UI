@@ -10,6 +10,7 @@ class Doctor {
     required this.qualification,
     required this.experienceYears,
     required this.rating,
+    this.ratingCount = 0,
     required this.consultationFee,
     required this.availableWeekdays,
     required this.availableTime,
@@ -21,7 +22,14 @@ class Doctor {
   final String specialization;
   final String qualification;
   final int experienceYears;
+
+  /// Server-computed average of customer ratings (see [ratingCount]) — not
+  /// admin-editable, unlike every other field here.
   final double rating;
+
+  /// How many customers have rated this doctor. `0` means [rating] has no
+  /// real signal behind it yet.
+  final int ratingCount;
 
   /// Consultation fee in rupees.
   final int consultationFee;

@@ -38,4 +38,13 @@ class ApiAppointmentRepository implements AppointmentRepository {
       throw ApiException.fromDioException(e);
     }
   }
+
+  @override
+  Future<void> rate(String id, int stars) async {
+    try {
+      await _dio.post<void>('/appointments/$id/rating', data: {'stars': stars});
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
 }

@@ -107,8 +107,9 @@ brief see [`API_SPEC.md`](API_SPEC.md); for backend internals see [`claude.md`](
 | 64 | PUT | `/v1/admin/users/{id}` | ✔ admin | Update fullName/email (phone locked) → 200 |
 | 65 | DELETE | `/v1/admin/users/{id}` | ✔ admin | Delete → 204 (blocked if the user has order/appointment/lab-test history) |
 | 66 | PUT | `/v1/appointments/{id}/cancel` | ✔ | Customer cancels their own appointment → 200 |
+| 67 | POST | `/v1/appointments/{id}/rating` | ✔ | Customer rates their doctor for a completed appointment → 200 |
 
-**45–65 are live** (verified against Azure), including the push-notification
+**45–66 are live** (verified against Azure), including the push-notification
 send side described after §3 — real order placement/cancellation triggered
 real pushes end-to-end (Admin SDK send → device delivery → in-app banner),
 confirmed live on the emulator. This also widened the `order status` enum
@@ -124,9 +125,21 @@ email, and deleted them — each step confirmed via the app's own success
 snackbar ("User added" / "User updated" / "User deleted") and the list
 re-fetching correctly after each mutation.
 
-**⚠ 66 is not yet implemented on the backend** — proposed by the Flutter
-client for a new "Cancel appointment" action on Profile → Appointments,
-mirroring the existing `PUT /orders/{id}/cancel` (#45).
+**66 was deployed 2026-09-07** — the "Cancel appointment" action on
+Profile → Appointments, mirroring the existing `PUT /orders/{id}/cancel`
+(#45). Client-side was already verified live before the backend existed
+(confirm-dialog copy, cancellable-only gating, clean error against the
+missing endpoint); a full live pass (actually cancelling a real
+appointment against the deployed endpoint) is intentionally deferred to a
+later session.
+
+**⚠ 67 is not yet implemented on the backend** — proposed by the Flutter
+client for a "Rate doctor" action on completed appointments (Profile →
+Appointments). This also means **#11 `GET /v1/doctors` gains a new
+`ratingCount` field**, `rating` becomes server-computed (average of
+customer ratings) instead of admin-entered, and **#37/#38 (Admin —
+Doctors, create/update) drop `rating` from the request body** — see those
+sections.
 
 **⚠ #15/#19 gain new fields, not yet implemented on the backend** — the
 client now collects a sample-collection `scheduledDate`/`timeSlot` when
@@ -292,6 +305,7 @@ before this was implemented. **Product object:**
   "qualification": "MBBS, MD (Internal Medicine)",
   "experienceYears": 12,
   "rating": 4.8,
+  "ratingCount": 23,
   "consultationFee": 400,
   "availableWeekdays": [1, 3, 5],
   "availableTime": "10:00 AM – 1:00 PM",
@@ -299,6 +313,10 @@ before this was implemented. **Product object:**
 }
 ```
 - `availableWeekdays`: ISO **1 (Mon) – 7 (Sun)**. `photoUrl` may be `null` (fall back to initials).
+- **`ratingCount` — new field.** `rating` is now the **server-computed average** of
+  customer ratings (see #67) — `0.0`/`0` for a doctor nobody has rated yet.
+  Previously `rating` was a plain admin-entered number; admin no longer sets
+  it directly (see §Admin — Doctors, #37/#38).
 
 #### 12. `POST /v1/appointments` → `201`
 Request:
@@ -316,16 +334,39 @@ Response (an `Appointment`, see #13) with `status: "upcoming"`.
   "specialization": "General Physician",
   "dateTime": "2026-07-10T11:00:00Z",
   "status": "completed",
-  "fee": 400
+  "fee": 400,
+  "myRating": null
 }
 ```
 - `status`: `completed | cancelled | upcoming`.
+- **`myRating` — new field**, the caller's own 1–5 rating of this
+  appointment if they've already rated it, `null` otherwise — only ever
+  non-null while `status` is `completed`. Parsed nullable client-side, so
+  its absence from a not-yet-updated backend doesn't break the list (unlike
+  a hypothetical `doctorId` field, which was considered and dropped — not
+  needed since #67 takes the appointment id, not the doctor's, in its URL).
 
 #### 66. `PUT /v1/appointments/{id}/cancel` → `200` — updated `Appointment`
 No body. The customer cancelling their own appointment.
 - Only valid while `status` is `upcoming` — reject with
   `409 appointment_not_cancellable` once `completed`/already `cancelled`.
 - `404 appointment_not_found` if missing or not the caller's appointment.
+
+#### 67. `POST /v1/appointments/{id}/rating` → `200` — updated `Appointment`
+Request:
+```json
+{ "stars": 5 }
+```
+The customer rating the doctor for their own completed appointment.
+- `stars`: integer 1–5, required.
+- Only valid while `status` is `completed` **and** `myRating` is currently
+  `null` — one rating per appointment, no editing. Reject with
+  `409 already_rated` if `myRating` is already set, `409 appointment_not_completed`
+  if `status` isn't `completed`.
+- `404 appointment_not_found` if missing or not the caller's appointment.
+- **Side effect**: recompute the doctor's `rating` (average) and
+  `ratingCount` (see #11) as part of the same request — synchronously, so a
+  subsequent `GET /doctors` reflects it immediately, no batch job.
 
 ---
 
@@ -562,7 +603,6 @@ Request:
   "specialization": "General Physician",
   "qualification": "MBBS, MD (Internal Medicine)",
   "experienceYears": 12,
-  "rating": 4.8,
   "consultationFee": 400,
   "availableWeekdays": [1, 3, 5],
   "availableTime": "10:00 AM – 1:00 PM",
@@ -570,13 +610,21 @@ Request:
 }
 ```
 - Client-mandatory: `name`, `specialization`, `qualification`,
-  `experienceYears`, `rating` (0–5), `consultationFee`, `availableWeekdays`
-  (non-empty; ISO Mon=1..Sun=7), `availableTime`.
+  `experienceYears`, `consultationFee`, `availableWeekdays` (non-empty; ISO
+  Mon=1..Sun=7), `availableTime`.
 - Optional: `photoUrl`.
+- **No `rating`/`ratingCount` in the request** (changed with #67) — a new
+  doctor starts at `rating: 0.0`, `ratingCount: 0` server-side; both only
+  ever change as a side effect of `POST /appointments/{id}/rating` (#67),
+  never admin-settable. The response still includes both (read-only),
+  matching #11's shape — the admin edit screen shows them but doesn't let
+  admin type into them.
 - Errors: `400 validation_error`, `403 forbidden_admin_only`.
 
 #### 38. `PUT /v1/admin/doctors/{id}` → `200` — updated `Doctor`
-Same request shape as #37 (full replace). `404 doctor_not_found` if missing.
+Same request shape as #37 (full replace, still no `rating`/`ratingCount` —
+a `PUT` must not reset either back to zero, only #67 ever changes them).
+`404 doctor_not_found` if missing.
 
 #### 39. `DELETE /v1/admin/doctors/{id}` → `204`
 The client warns that existing appointments will be preserved. If the backend

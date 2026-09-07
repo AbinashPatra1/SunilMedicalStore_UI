@@ -259,7 +259,11 @@ over Dio — no mock repositories remain.
   cards with a Mon–Sun availability strip; **Book** is real —
   `ApiAppointmentRepository.book()` (`POST /appointments`), confirmed live
   with a booking confirmation snackbar. Current-week math in
-  `core/utils/week_range.dart`.
+  `core/utils/week_range.dart`. The rating chip shows `doctor.rating`
+  (`"4.8 (23)"` with `ratingCount`) once customers have rated the doctor
+  (see Profile → Appointments), or **"New"** while `ratingCount == 0` —
+  verified live showing "New" for both seed doctors, since neither has any
+  ratings yet against the real backend.
 - **Cart** — functional, in-memory (`cartProvider` Notifier), holds **both
   medicines and lab tests**. `CartItem` stores neutral fields (`id`, `title`,
   `subtitle`, `price`, `kind` = `CartItemKind.medicine|labTest`) — a snapshot of
@@ -295,9 +299,20 @@ over Dio — no mock repositories remain.
     (`AppointmentStatus.isCustomerCancellable`) → confirm dialog →
     `AppointmentRepository.cancel(id)` (`PUT /appointments/{id}/cancel`,
     endpoint #66) → `pastAppointmentsProvider` invalidated to refresh the
-    list. **Built ahead of the backend** — client-verified (correct
-    cancellable-only gating, correct confirm-dialog copy, clean error
-    surfaced with no crash against the not-yet-deployed endpoint).
+    list. **Live** — backend deployed 2026-09-07 (client-side was already
+    verified before that: correct cancellable-only gating, correct
+    confirm-dialog copy, clean error against the missing endpoint; a full
+    live re-pass against the now-deployed endpoint is intentionally
+    deferred). Each `completed` appointment instead shows either **Rate
+    doctor** (a `StarRating` picker dialog, `presentation/widgets/`) if not
+    yet rated, or the given rating read-only ("Your rating: ★★★★☆") if it
+    is — `AppointmentRepository.rate(id, stars)` → `POST
+    /appointments/{id}/rating` (endpoint #67), one rating per appointment,
+    1–5 stars only (no written review). **Built ahead of the backend** —
+    `PastAppointment.myRating` parses nullable so an unrated/not-yet-updated
+    backend degrades cleanly. The rate-doctor trigger itself hasn't been
+    exercised live yet (no completed appointment in the test account) but
+    is code-identical in structure to the proven Cancel flow.
   - **Orders** — history list → detail (items, total, **Download invoice**).
   - **Lab Tests** — history list → detail (parameters, **Download invoice**).
     `LabTest.bookedOn` is the customer-chosen scheduled collection date (not
@@ -367,9 +382,14 @@ over Dio — no mock repositories remain.
       `/v1/admin/appointments`, plus `AdminUsersRepository` for the picker.
     - _Doctors sub-tab_ (`AdminDoctorsListScreen`) — full CRUD via
       `DoctorAdminRepository` on `/v1/admin/doctors`. Tap a row →
-      `AddOrEditDoctorScreen` (all `Doctor` fields; weekday multi-select
-      via shared `WeekdaySelector`; free-text consulting hours; delete-with-
-      confirm on edit). Reuses the customer `Doctor` domain model.
+      `AddOrEditDoctorScreen` (all `Doctor` fields *except* rating; weekday
+      multi-select via shared `WeekdaySelector`; free-text consulting hours;
+      delete-with-confirm on edit). Reuses the customer `Doctor` domain
+      model. **Rating is no longer admin-editable** (since customer ratings
+      landed, see Profile → Appointments) — the form's manual "Rating"
+      input was removed and replaced with a read-only info tile on Edit
+      showing `"{rating} ({ratingCount})"` or "No ratings yet"; `DoctorInput`
+      (create/update payload) no longer carries a `rating` field at all.
   - **Orders** — a `DefaultTabController` shell with **two sub-tabs**
     (mirrors the Appointments/Doctors pattern):
     - _Orders sub-tab_ (`AdminOrdersListScreen`) — search by order
@@ -467,7 +487,7 @@ ranking, new items) as items are picked up, finished, or reprioritized.
 | 3 | Lab-test booking notifications show `{date}` only, no time-of-day | Minor bug | **Done (client)** | Turned out bigger than a copy fix: no part of the system ever captured a lab-test time at all (`bookedOn` being date-only was a symptom, not the cause) — decided to add real time-slot selection rather than just drop the claim. Customer now picks a date + fixed time-range slot (`kLabTestTimeSlots`) via a new `ScheduleLabTestSheet` bottom sheet on "Add to cart"; threaded through `CartItem`/`OrderRequestItem` to `POST /orders`' `labTest` items as `scheduledDate`/`timeSlot`. Verified live end-to-end (schedule sheet → cart line shows "10 Sep • 1:00 PM – 4:00 PM" → real order placed → Lab Tests history renders cleanly with no time shown, since the backend doesn't store/return the new fields yet). Backend needs to land these on the Lab Test Booking (`bookedOn`'s *meaning* changes — see `docs/API_ENDPOINTS.md` §19) before the reminder job can use them |
 | 4 | Enable Firebase Storage (Blaze plan) to unblock Prescriptions | Blocked — user action | Waiting on you | Prescriptions is fully built client + backend (endpoints 54–59 live); blocked on this one manual Firebase Console step (Console → Storage → Get started, then Blaze plan) |
 | 5 | Cancel appointment | New feature | **Backend deployed, live re-verification deferred** | Inline **Cancel** action on each upcoming appointment card in Profile → Appointments (`AppointmentStatus.isCustomerCancellable`, true only while `upcoming`), mirroring the order-cancel pattern: confirm dialog → `AppointmentRepository.cancel(id)` → `PUT /appointments/{id}/cancel` → invalidate `pastOrdersProvider`. Client-side verified live against a real appointment before the backend existed (confirm dialog copy, cancellable-only gating, clean error with no crash against the missing endpoint — endpoint #66). User confirmed 2026-09-07 the backend is now deployed; a full live pass (actually cancelling a real appointment end-to-end) is intentionally deferred to a later session |
-| 6 | Doctor ratings from customers | New feature | Not started | Suggested earlier, not yet scoped |
+| 6 | Doctor ratings from customers | New feature | **Done (client)** | Customer can rate a doctor 1–5 stars after a `completed` appointment (`AppointmentRepository.rate(id, stars)` → `POST /appointments/{id}/rating`, endpoint #67), once per appointment, via a "Rate doctor" button + star-picker dialog on Profile → Appointments; already-rated appointments show "Your rating: ★★★★☆" read-only. `Doctor.rating` becomes a server-computed average with a new `ratingCount` field — admin's manual "Rating" input is removed from the doctor form (now a read-only info tile), and `DoctorCard` shows "New" instead of a fabricated number when `ratingCount == 0`. **Decided**: server-computed average replaces the admin field; one rating per completed appointment. Verified live: doctor cards correctly show "New" (0 ratings from real backend data); hit and fixed a real bug during testing — `PastAppointment` briefly had a non-nullable `doctorId` field that broke the *entire* appointments list against the current backend (crashed on missing field) — removed it since it turned out unused (the rating endpoint takes the appointment id, not the doctor's). The "Rate doctor" trigger itself wasn't exercised live (no completed appointment in the test account, and getting one needs admin access) — code-reviewed and pattern-matches the already-proven Cancel button exactly, so verification is deferred, not skipped for cause |
 | 7 | Statistics date filters: `6 months` / `1 year` + custom year/month picker | Improvement | Not started | Add range pills + a "more filters" icon opening a year/month selector |
 | 8 | Admin order-status flow: swipe-to-advance + separate cancel; Orders gains 3 tabs (Pharmacy / Prescriptions / Pathology) | New feature | Not started | Replaces the free-choice `ChoiceChip` status picker with a linear swipe ("Process Order" → processing → shipped → delivered) + a standalone red Cancel button (disabled once already cancelled) |
 | 9 | Lab test / appointment status flow: `Scheduled → InSession → Completed`, `Cancelled` | New feature | Not started | Same swipe-to-advance + separate cancel pattern as #8. Depends on #8's swipe UI being built first |

@@ -73,7 +73,9 @@ class DoctorCard extends StatelessWidget {
                 const SizedBox(width: AppConstants.spacingSm),
                 _MetaChip(
                   icon: Icons.star_rounded,
-                  label: doctor.rating.toStringAsFixed(1),
+                  label: doctor.ratingCount > 0
+                      ? '${doctor.rating.toStringAsFixed(1)} (${doctor.ratingCount})'
+                      : 'New',
                 ),
                 const SizedBox(width: AppConstants.spacingSm),
                 _MetaChip(

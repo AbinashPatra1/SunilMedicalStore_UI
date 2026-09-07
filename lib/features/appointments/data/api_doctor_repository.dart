@@ -30,6 +30,7 @@ class ApiDoctorRepository implements DoctorRepository {
     qualification: json['qualification'] as String,
     experienceYears: json['experienceYears'] as int,
     rating: (json['rating'] as num).toDouble(),
+    ratingCount: json['ratingCount'] as int? ?? 0,
     consultationFee: json['consultationFee'] as int,
     availableWeekdays: ((json['availableWeekdays'] as List?) ?? const []).cast<int>(),
     availableTime: json['availableTime'] as String,

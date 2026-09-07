@@ -12,4 +12,9 @@ abstract interface class AppointmentRepository {
   /// Cancels the caller's own appointment [id]. Throws [ApiException] if it's
   /// not cancellable (already completed/cancelled) or not the caller's.
   Future<void> cancel(String id);
+
+  /// Rates the doctor for the caller's own completed appointment [id] with
+  /// [stars] (1–5). Throws [ApiException] if the appointment isn't
+  /// completed, isn't the caller's, or has already been rated.
+  Future<void> rate(String id, int stars);
 }
