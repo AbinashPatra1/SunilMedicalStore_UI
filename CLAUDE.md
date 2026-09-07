@@ -413,6 +413,61 @@ over Dio — no mock repositories remain.
       edited their email, deleted them, each step confirmed by the app's
       own success message and the list correctly re-fetching afterward.
 
+## Backlog (prioritized, not started)
+
+Numbered by intended pickup order — the user confirms which one to start
+explicitly, this list is a plan, not a queue being worked automatically.
+Items marked (needs discussion) require scoping before estimation/build.
+
+1. **Fix: order status doesn't refresh immediately for the customer** after
+   an admin changes it — investigate the provider-invalidation/polling gap
+   in the customer order-detail flow.
+2. **Fix: bottom nav "Appointments" label wraps to 2 lines** on some device
+   widths — make the customer/admin `NavigationBar` responsive.
+3. **Cancel appointment** — customer-facing cancel action, mirrors the
+   existing order-cancel pattern (`PUT` to a cancel endpoint, hidden once
+   the appointment isn't cancellable).
+4. **Statistics date filters** — add `6 months` / `1 year` range pills plus
+   a "more filters" icon opening a year/month picker for a custom period.
+5. **Admin order-status flow: swipe-to-advance + separate cancel** —
+   replace the free-choice `ChoiceChip` status picker with a linear swipe
+   action ("Process Order" → processing → shipped → delivered) plus a
+   standalone red Cancel button (disabled once already cancelled). Admin →
+   Orders also gains 3 top tabs: **Pharmacy**, **Prescriptions**,
+   **Pathology (Lab Tests)**.
+6. **Lab test / appointment status flow** — new lifecycle distinct from
+   orders: `Scheduled → InSession → Completed`, `Cancelled`; same
+   swipe-to-advance + separate cancel pattern as #5. Depends on #5's swipe
+   UI pattern being built first.
+7. **Order ID format standardization** — `PHSMS-<mmyy>-<5-digit seq>`
+   (pharmacy), `PLSMS-<mmyy>-<5-digit seq>` (lab tests),
+   `DASMS-<mmyy>-<5-digit seq>` (appointments), replacing the current
+   `SMS-<seq>` scheme. Backend-heavy (per-type sequence generation) — needs
+   a decision on whether existing orders get renumbered or only new ones
+   use the new format.
+8. **Location integration** — capture the customer's device location when
+   adding an address (with a permission prompt), derive area/pincode from
+   it (read-only, not user-editable), show it on the home screen. Admin
+   gets a new **Location configuration** menu (under More) to set an
+   allowed order-placement radius from a fixed store location — outside it,
+   pharmacy orders are blocked but lab tests/appointments still allowed
+   (they require an in-person visit anyway). Needs a geocoding/maps
+   provider decision.
+9. **Dynamic delivery & platform fees** — admin-configurable fee tiers
+   under a new More menu, replacing the hardcoded delivery fee. Multiple
+   distance-based delivery-fee tiers (e.g. free ≤3km on orders ≥₹299) with
+   a "mark as free" toggle that strikes through the real fee instead of
+   showing ₹0; platform fee is a single configurable value with the same
+   free-toggle treatment. Applies to pharmacy orders only, not lab
+   tests/appointments. Depends on #8's distance-calculation infrastructure.
+10. **Inventory bulk import (needs discussion)** — add products via Excel
+    upload and/or barcode scanning (or both combined). Scope not yet
+    defined — discuss format/flow before estimating.
+11. **UI beautification (needs discussion)** — full app redesign:
+    modern/minimal visual language, new stylish components, new app logo,
+    redesigned in-app notification style. Reference image provided by the
+    user. Scope (all-at-once vs. phased) and logo sourcing to be confirmed.
+
 ## Android / build notes
 
 - Firebase project: **sunil-medical-store**. `google-services.json` present.
