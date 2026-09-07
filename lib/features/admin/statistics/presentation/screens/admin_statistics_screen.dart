@@ -48,35 +48,41 @@ class AdminStatisticsScreen extends ConsumerWidget {
               horizontal: AppConstants.spacingLg,
               vertical: AppConstants.spacingSm,
             ),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  for (final r in StatsRange.values) ...[
-                    ChoiceChip(
-                      label: Text(r.label),
-                      selected: filter is StatsRangeFilter && filter.range == r,
-                      onSelected: (_) => ref.read(statsFilterProvider.notifier).setRange(r),
+            child: Row(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        for (final r in StatsRange.values) ...[
+                          ChoiceChip(
+                            label: Text(r.label),
+                            selected: filter is StatsRangeFilter && filter.range == r,
+                            onSelected: (_) => ref.read(statsFilterProvider.notifier).setRange(r),
+                          ),
+                          const SizedBox(width: AppConstants.spacingSm),
+                        ],
+                        if (filter is StatsPeriodFilter)
+                          InputChip(
+                            label: Text(filter.label),
+                            selected: true,
+                            showCheckmark: false,
+                            onDeleted: () => ref.read(statsFilterProvider.notifier).setRange(StatsRange.sevenDays),
+                            onPressed: () => _pickCustomPeriod(context, ref, filter),
+                          ),
+                      ],
                     ),
-                    const SizedBox(width: AppConstants.spacingSm),
-                  ],
-                  if (filter is StatsPeriodFilter) ...[
-                    InputChip(
-                      label: Text(filter.label),
-                      selected: true,
-                      showCheckmark: false,
-                      onDeleted: () => ref.read(statsFilterProvider.notifier).setRange(StatsRange.sevenDays),
-                      onPressed: () => _pickCustomPeriod(context, ref, filter),
-                    ),
-                    const SizedBox(width: AppConstants.spacingSm),
-                  ],
-                  IconButton(
-                    tooltip: 'More filters',
-                    onPressed: () => _pickCustomPeriod(context, ref, filter),
-                    icon: const Icon(Icons.tune),
                   ),
-                ],
-              ),
+                ),
+                // Fixed at the row's right end (outside the scroll view)
+                // so it's always visible without scrolling the pills.
+                IconButton(
+                  tooltip: 'More filters',
+                  onPressed: () => _pickCustomPeriod(context, ref, filter),
+                  icon: const Icon(Icons.tune),
+                ),
+              ],
             ),
           ),
           Expanded(

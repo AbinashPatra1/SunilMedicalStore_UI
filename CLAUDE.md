@@ -436,9 +436,12 @@ over Dio — no mock repositories remain.
       aggregate call per filter change (`GET /v1/admin/stats?range=`, not
       one endpoint per widget). `StatsRange` pills
       (`today | 7d | 30d | 6m | 1y | all`) as `ChoiceChip`s at the top,
-      plus a **"More filters"** icon (`Icons.tune`) opening
-      `StatsPeriodSheet` — pick a specific year, optionally narrowed to one
-      month — sent as `range=custom&year=&month=`. The active selection is
+      horizontally scrollable, with a **"More filters"** icon (`Icons.tune`)
+      fixed at the row's right end *outside* the scroll area (`Row` +
+      `Expanded(SingleChildScrollView(...))` + a sibling `IconButton`) so
+      it's always visible without scrolling — opens `StatsPeriodSheet` to
+      pick a specific year, optionally narrowed to one month — sent as
+      `range=custom&year=&month=`. The active selection is
       `StatsFilter` (`domain/stats_filter.dart`, a sealed
       `StatsRangeFilter | StatsPeriodFilter`), backed by
       `statsFilterProvider`; a custom period shows as its own `InputChip`
