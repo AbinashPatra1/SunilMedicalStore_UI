@@ -93,6 +93,22 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // This screen is seeded once from a static `Order` (via `extra` from the
+    // list, or from `OrderDetailByIdScreen`'s one-time fetch) rather than
+    // watching a provider directly, so it would otherwise never notice a
+    // status change made elsewhere (the admin console). Listening here lets
+    // it pick up whatever `NotificationService` invalidates — silently, no
+    // loading spinner — without coupling this screen's initial render to a
+    // fresh network round-trip.
+    final initialOrder = widget.order;
+    if (initialOrder != null) {
+      ref.listen<AsyncValue<Order>>(orderByIdProvider(initialOrder.id), (previous, next) {
+        next.whenData((updated) {
+          if (mounted) setState(() => _order = updated);
+        });
+      });
+    }
+
     final order = _order;
     if (order == null) {
       return Scaffold(

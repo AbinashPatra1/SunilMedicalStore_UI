@@ -7,6 +7,7 @@ import 'package:sunil_medical_store/core/notifications/in_app_notification_banne
 import 'package:sunil_medical_store/core/notifications/notification_payload.dart';
 import 'package:sunil_medical_store/core/routes/app_router.dart';
 import 'package:sunil_medical_store/features/auth/presentation/providers/auth_controller.dart';
+import 'package:sunil_medical_store/features/profile/presentation/providers/profile_providers.dart';
 
 final fcmTokenRepositoryProvider = Provider<FcmTokenRepository>((ref) {
   return ApiFcmTokenRepository(ref.watch(dioProvider));
@@ -64,6 +65,7 @@ class NotificationService {
     final notification = message.notification;
     if (notification == null) return;
     final payload = NotificationPayload.fromData(message.data);
+    if (payload != null) _invalidateForPayload(payload);
     showInAppNotificationBanner(
       title: notification.title ?? '',
       body: notification.body ?? '',
@@ -77,8 +79,22 @@ class NotificationService {
   }
 
   void _navigate(NotificationPayload payload) {
+    _invalidateForPayload(payload);
     final isAdmin = _ref.read(authControllerProvider).user?.role.isAdmin ?? false;
     final location = payload.resolveRoute(isAdmin: isAdmin);
     if (location != null) _ref.read(routerProvider).push(location);
+  }
+
+  /// Invalidates the providers backing the customer order screens so a
+  /// status change made elsewhere (the admin console) shows up immediately
+  /// instead of only after a manual pull-to-refresh. Called from both the
+  /// foreground path (so an already-open Orders list/detail updates live,
+  /// even without the user tapping the banner) and the tap/deep-link path
+  /// (background/terminated delivery) — invalidating twice for a tapped
+  /// foreground banner is a harmless redundant re-fetch, not a bug.
+  void _invalidateForPayload(NotificationPayload payload) {
+    if (payload.type != NotificationEntityType.order) return;
+    _ref.invalidate(pastOrdersProvider);
+    _ref.invalidate(orderByIdProvider(payload.id));
   }
 }

@@ -197,7 +197,14 @@ over Dio — no mock repositories remain.
   normally gets via `extra`); admin order/appointment taps reuse the
   existing `getById` providers. Admin lab-test-booking notifications have
   nowhere dedicated to deep-link to yet (no admin lab-test screen exists) —
-  they land on Admin → Orders as the closest related surface.
+  they land on Admin → Orders as the closest related surface. On receipt of
+  an `order`-type payload (both the foreground path and the tap/deep-link
+  path), `NotificationService` also invalidates `pastOrdersProvider` and
+  `orderByIdProvider(id)` so an already-open Orders list or Order Detail
+  screen reflects an admin-made status change live, without a manual
+  pull-to-refresh — `OrderDetailScreen` itself uses `ref.listen` on
+  `orderByIdProvider` for this (it's seeded from a static `extra`-passed
+  `Order`, so without this it would never notice a change made elsewhere).
   **Fully live end-to-end, verified with real devices** — placed and
   cancelled a real order and watched both the admin "order placed" push and
   the customer "order cancelled" push arrive as in-app banners with the
@@ -422,7 +429,7 @@ ranking, new items) as items are picked up, finished, or reprioritized.
 
 | # | Item | Type | Status | Notes |
 |---|------|------|--------|-------|
-| 1 | Order status doesn't refresh immediately for the customer after an admin changes it | Bug | Not started | Investigate provider-invalidation/polling gap in the customer order-detail flow |
+| 1 | Order status doesn't refresh immediately for the customer after an admin changes it | Bug | **Done** | Root cause: `NotificationService` never invalidated `pastOrdersProvider`/`orderByIdProvider` on push receipt, and `OrderDetailScreen` held a static `extra`-passed `Order` with no live provider binding at all. Fixed both; verified live — changed a real order `created→shipped` via a direct API call while the customer sat on both the Orders list and the Order Detail screen, both updated with no manual refresh |
 | 2 | Bottom nav "Appointments" label wraps to 2 lines on some device widths | UI bug | Not started | Make the customer/admin `NavigationBar` responsive |
 | 3 | Lab-test booking notifications show `{date}` only, no time-of-day | Minor bug | Not started | Backend-flagged (`LabTestBooking.BookedOn` is date-only); fix if it matters — no decision yet |
 | 4 | Enable Firebase Storage (Blaze plan) to unblock Prescriptions | Blocked — user action | Waiting on you | Prescriptions is fully built client + backend (endpoints 54–59 live); blocked on this one manual Firebase Console step (Console → Storage → Get started, then Blaze plan) |
