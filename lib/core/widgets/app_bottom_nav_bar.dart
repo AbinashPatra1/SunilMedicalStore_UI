@@ -10,6 +10,11 @@ class AppNavDestination {
   final String label;
 }
 
+/// Below this shared shrink factor, a label is no longer legible enough to
+/// keep — every label is hidden instead (icon-only) rather than let text
+/// keep shrinking towards illegibility.
+const double _kMinLegibleLabelScale = 0.75;
+
 /// Material 3 styled bottom navigation bar — a drop-in visual replacement
 /// for [NavigationBar] that never wraps a label to a second line.
 ///
@@ -17,13 +22,21 @@ class AppNavDestination {
 /// `Text(label, style: textStyle)` with no `maxLines`/`overflow` (see
 /// `navigation_bar.dart`'s `_NavigationDestinationBuilder.buildLabel`), so a
 /// longer label like "Appointments" wraps to two lines whenever a device is
-/// narrow enough (or the user's text-scale setting is large enough — labels
-/// are clamped to 1.3x, not 1.0x) that it doesn't fit the destination's
-/// column width. There's no public hook to fix that through `NavigationBar`
-/// itself, so this reimplements the same look (M3 token values below) with
-/// each label wrapped in a [FittedBox] that shrinks-to-fit instead of
-/// wrapping or truncating — the label always stays on one line, in full,
-/// on every device.
+/// narrow enough that it doesn't fit the destination's column width. There's
+/// no public hook to fix that through `NavigationBar` itself, so this
+/// reimplements the same look (M3 token values below).
+///
+/// The first version of this fix wrapped each label in its own independent
+/// `FittedBox`, which stopped the wrapping but introduced a subtler bug:
+/// every tab shrank to fit *its own* label, so "Appointments" (the longest
+/// label) rendered visibly smaller than "Cart" or "Orders" on the same bar —
+/// inconsistent, not just non-wrapping. This version instead measures every
+/// destination's label up front and applies **one shared shrink factor**
+/// (the minimum needed by the longest label) across all of them, so every
+/// label in the bar is always the same size. If even that shared factor
+/// drops below [_kMinLegibleLabelScale], labels are dropped entirely and the
+/// bar falls back to icon-only — shrinking text indefinitely stops being
+/// readable long before it stops fitting.
 class AppBottomNavBar extends StatelessWidget {
   const AppBottomNavBar({
     super.key,
@@ -39,6 +52,12 @@ class AppBottomNavBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final textTheme = Theme.of(context).textTheme;
+    final baseStyle = textTheme.labelMedium ?? const TextStyle(fontSize: 12);
+    // Match NavigationBar's own accessibility clamp so this doesn't grow
+    // unboundedly at large system font-scale settings.
+    final scaler = MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.3);
+    final scaledBaseFontSize = scaler.scale(baseStyle.fontSize ?? 12);
 
     return Material(
       color: colors.surfaceContainer,
@@ -46,17 +65,44 @@ class AppBottomNavBar extends StatelessWidget {
         top: false,
         child: SizedBox(
           height: 80,
-          child: Row(
-            children: [
-              for (var i = 0; i < destinations.length; i++)
-                Expanded(
-                  child: _NavItem(
-                    destination: destinations[i],
-                    selected: i == selectedIndex,
-                    onTap: () => onDestinationSelected(i),
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final columnWidth = constraints.maxWidth / destinations.length;
+              // 4px padding on each side of the label (see _NavItem).
+              final availableLabelWidth = columnWidth - 8;
+
+              var sharedScale = 1.0;
+              for (final destination in destinations) {
+                final painter = TextPainter(
+                  text: TextSpan(
+                    text: destination.label,
+                    style: baseStyle.copyWith(fontSize: scaledBaseFontSize),
                   ),
-                ),
-            ],
+                  textDirection: Directionality.of(context),
+                  maxLines: 1,
+                )..layout();
+                if (painter.width > 0) {
+                  final needed = availableLabelWidth / painter.width;
+                  if (needed < sharedScale) sharedScale = needed;
+                }
+              }
+              sharedScale = sharedScale.clamp(0.0, 1.0);
+              final showLabels = sharedScale >= _kMinLegibleLabelScale;
+
+              return Row(
+                children: [
+                  for (var i = 0; i < destinations.length; i++)
+                    Expanded(
+                      child: _NavItem(
+                        destination: destinations[i],
+                        selected: i == selectedIndex,
+                        onTap: () => onDestinationSelected(i),
+                        labelFontSize: showLabels ? scaledBaseFontSize * sharedScale : null,
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
         ),
       ),
@@ -65,11 +111,20 @@ class AppBottomNavBar extends StatelessWidget {
 }
 
 class _NavItem extends StatelessWidget {
-  const _NavItem({required this.destination, required this.selected, required this.onTap});
+  const _NavItem({
+    required this.destination,
+    required this.selected,
+    required this.onTap,
+    required this.labelFontSize,
+  });
 
   final AppNavDestination destination;
   final bool selected;
   final VoidCallback onTap;
+
+  /// Pre-computed, shared across every destination in the bar. `null` means
+  /// the label is hidden entirely (icon-only fallback).
+  final double? labelFontSize;
 
   @override
   Widget build(BuildContext context) {
@@ -102,19 +157,20 @@ class _NavItem extends StatelessWidget {
                   child: selected ? destination.selectedIcon : destination.icon,
                 ),
               ),
-              const SizedBox(height: 4),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
+              if (labelFontSize != null) ...[
+                const SizedBox(height: 4),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
                   child: Text(
                     destination.label,
                     maxLines: 1,
                     softWrap: false,
-                    style: textTheme.labelMedium?.copyWith(color: labelColor),
+                    overflow: TextOverflow.clip,
+                    textScaler: TextScaler.noScaling,
+                    style: textTheme.labelMedium?.copyWith(color: labelColor, fontSize: labelFontSize),
                   ),
                 ),
-              ),
+              ],
             ],
           ),
         ),
