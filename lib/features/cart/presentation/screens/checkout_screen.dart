@@ -47,7 +47,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final _upiPattern = RegExp(r'^[\w.\-]{2,}@[a-zA-Z]{2,}$');
   final _customUpiController = TextEditingController();
 
-  String? _selectedAddressId;
   _PaymentChoice? _payment;
   String? _upiError;
   bool _placing = false;
@@ -61,23 +60,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     super.dispose();
   }
 
-  Address? _defaultAddress(List<Address> list) {
-    for (final a in list) {
-      if (a.isDefault) return a;
-    }
-    return list.isEmpty ? null : list.first;
-  }
-
-  Address? _selectedAddress(List<Address> list) {
-    if (_selectedAddressId != null) {
-      for (final a in list) {
-        if (a.id == _selectedAddressId) return a;
-      }
-    }
-    return _defaultAddress(list);
-  }
-
   void _changeAddress(List<Address> addresses) {
+    final selectedId = ref.read(selectedAddressIdProvider);
     showModalBottomSheet<void>(
       context: context,
       builder: (_) => SafeArea(
@@ -92,11 +76,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 leading: Icon(_addressIcon(address.type)),
                 title: Text(address.type.label),
                 subtitle: Text(address.formatted),
-                trailing: address.id == _selectedAddressId
+                trailing: address.id == selectedId
                     ? Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary)
                     : null,
                 onTap: () {
-                  setState(() => _selectedAddressId = address.id);
+                  ref.read(selectedAddressIdProvider.notifier).select(address.id);
                   Navigator.of(context).pop();
                 },
               ),
@@ -303,7 +287,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     // by the time _orderNow's radius check reads it via ref.read.
     ref.watch(deliverySettingsProvider);
     final addresses = ref.watch(addressesProvider).value ?? const <Address>[];
-    final address = _selectedAddress(addresses);
+    final address = ref.watch(selectedAddressProvider);
     final total = ref.watch(cartTotalProvider);
     final needsPrescription = ref.watch(cartRequiresPrescriptionProvider);
     final prescriptions = ref.watch(prescriptionsProvider).value ?? const <Prescription>[];

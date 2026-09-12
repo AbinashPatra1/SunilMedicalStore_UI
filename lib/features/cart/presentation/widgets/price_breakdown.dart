@@ -3,7 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/cart/presentation/providers/cart_providers.dart';
 
-/// Order price breakdown: subtotal, discount, delivery, and total.
+/// Order price breakdown: subtotal, discount, delivery, platform fee (if
+/// applicable), and total.
 class PriceBreakdown extends ConsumerWidget {
   const PriceBreakdown({super.key});
 
@@ -11,7 +12,8 @@ class PriceBreakdown extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final subtotal = ref.watch(cartSubtotalProvider);
     final discount = ref.watch(cartDiscountProvider);
-    final delivery = ref.watch(cartDeliveryProvider);
+    final delivery = ref.watch(cartDeliveryFeeLineProvider);
+    final platformFee = ref.watch(cartPlatformFeeLineProvider);
     final total = ref.watch(cartTotalProvider);
 
     return Card(
@@ -25,7 +27,11 @@ class PriceBreakdown extends ConsumerWidget {
               _Row(label: 'Discount', value: '−₹$discount', highlight: true),
             ],
             const SizedBox(height: AppConstants.spacingSm),
-            _Row(label: 'Delivery', value: delivery == 0 ? 'FREE' : '₹$delivery'),
+            _FeeRow(label: 'Delivery', fee: delivery),
+            if (platformFee.amount > 0) ...[
+              const SizedBox(height: AppConstants.spacingSm),
+              _FeeRow(label: 'Platform fee', fee: platformFee),
+            ],
             const Padding(
               padding: EdgeInsets.symmetric(vertical: AppConstants.spacingSm),
               child: Divider(height: 1),
@@ -62,6 +68,51 @@ class _Row extends StatelessWidget {
       children: [
         Text(label, style: style),
         Text(value, style: valueStyle),
+      ],
+    );
+  }
+}
+
+/// A price row backed by a [CartFeeLine] — shows a plain "FREE"/"₹amount"
+/// normally, or (when the admin has explicitly waived a nonzero fee) the
+/// original amount struck through next to "FREE", mirroring the MRP-vs-price
+/// strikethrough already used on product cards.
+class _FeeRow extends StatelessWidget {
+  const _FeeRow({required this.label, required this.fee});
+
+  final String label;
+  final CartFeeLine fee;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final showStrikethrough = fee.waived && fee.amount > 0;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: theme.textTheme.bodyMedium),
+        Row(
+          children: [
+            if (showStrikethrough) ...[
+              Text(
+                '₹${fee.amount}',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                  decoration: TextDecoration.lineThrough,
+                ),
+              ),
+              const SizedBox(width: AppConstants.spacingXs),
+            ],
+            Text(
+              fee.charged == 0 ? 'FREE' : '₹${fee.charged}',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: showStrikethrough ? theme.colorScheme.primary : null,
+                fontWeight: showStrikethrough ? FontWeight.w600 : null,
+              ),
+            ),
+          ],
+        ),
       ],
     );
   }

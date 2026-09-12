@@ -27,6 +27,10 @@ class ApiDeliverySettingsRepository implements DeliverySettingsRepository {
     required double storeLatitude,
     required double storeLongitude,
     required double radiusKm,
+    required List<DeliveryFeeTier> deliveryFeeTiers,
+    required bool deliveryFeeWaived,
+    required int platformFee,
+    required bool platformFeeWaived,
   }) async {
     try {
       final response = await _dio.put<Map<String, dynamic>>(
@@ -35,6 +39,12 @@ class ApiDeliverySettingsRepository implements DeliverySettingsRepository {
           'storeLatitude': storeLatitude,
           'storeLongitude': storeLongitude,
           'radiusKm': radiusKm,
+          'deliveryFeeTiers': [
+            for (final tier in deliveryFeeTiers) {'maxDistanceKm': tier.maxDistanceKm, 'fee': tier.fee},
+          ],
+          'deliveryFeeWaived': deliveryFeeWaived,
+          'platformFee': platformFee,
+          'platformFeeWaived': platformFeeWaived,
         },
       );
       return _fromJson(response.data!);
@@ -47,5 +57,17 @@ class ApiDeliverySettingsRepository implements DeliverySettingsRepository {
     storeLatitude: (json['storeLatitude'] as num).toDouble(),
     storeLongitude: (json['storeLongitude'] as num).toDouble(),
     radiusKm: (json['radiusKm'] as num).toDouble(),
+    deliveryFeeTiers: ((json['deliveryFeeTiers'] as List?) ?? const [])
+        .cast<Map<String, dynamic>>()
+        .map(
+          (t) => DeliveryFeeTier(
+            maxDistanceKm: (t['maxDistanceKm'] as num).toDouble(),
+            fee: t['fee'] as int,
+          ),
+        )
+        .toList(),
+    deliveryFeeWaived: json['deliveryFeeWaived'] as bool? ?? false,
+    platformFee: json['platformFee'] as int? ?? 0,
+    platformFeeWaived: json['platformFeeWaived'] as bool? ?? false,
   );
 }

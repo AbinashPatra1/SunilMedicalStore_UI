@@ -8,9 +8,26 @@ import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/admin/delivery/domain/delivery_settings.dart';
 import 'package:sunil_medical_store/features/admin/delivery/presentation/providers/delivery_settings_providers.dart';
 
+/// One editable delivery-fee-tier row's text controllers.
+class _TierRow {
+  _TierRow({String? maxDistanceKm, String? fee})
+    : maxDistanceKmController = TextEditingController(text: maxDistanceKm),
+      feeController = TextEditingController(text: fee);
+
+  final TextEditingController maxDistanceKmController;
+  final TextEditingController feeController;
+
+  void dispose() {
+    maxDistanceKmController.dispose();
+    feeController.dispose();
+  }
+}
+
 /// Admin > More > Delivery Settings: capture the store's own location (via
 /// device GPS — no Maps API billing, see backlog #11) and set the delivery
-/// radius that gates pharmacy-only checkout for customers outside it.
+/// radius that gates pharmacy-only checkout for customers outside it, plus
+/// the distance-tiered delivery fee and flat platform fee (backlog #12),
+/// each with a "mark as free" override.
 class AdminDeliverySettingsScreen extends ConsumerStatefulWidget {
   const AdminDeliverySettingsScreen({super.key});
 
@@ -20,10 +37,14 @@ class AdminDeliverySettingsScreen extends ConsumerStatefulWidget {
 
 class _AdminDeliverySettingsScreenState extends ConsumerState<AdminDeliverySettingsScreen> {
   final _radiusController = TextEditingController();
+  final _platformFeeController = TextEditingController();
+  final List<_TierRow> _tierRows = [];
 
   double? _latitude;
   double? _longitude;
   String? _locationPreview;
+  bool _deliveryFeeWaived = false;
+  bool _platformFeeWaived = false;
   bool _locating = false;
   bool _saving = false;
   String? _error;
@@ -32,6 +53,10 @@ class _AdminDeliverySettingsScreenState extends ConsumerState<AdminDeliverySetti
   @override
   void dispose() {
     _radiusController.dispose();
+    _platformFeeController.dispose();
+    for (final row in _tierRows) {
+      row.dispose();
+    }
     super.dispose();
   }
 
@@ -41,7 +66,22 @@ class _AdminDeliverySettingsScreenState extends ConsumerState<AdminDeliverySetti
     _latitude = settings.storeLatitude;
     _longitude = settings.storeLongitude;
     _radiusController.text = settings.radiusKm.toString();
+    _deliveryFeeWaived = settings.deliveryFeeWaived;
+    _platformFeeController.text = settings.platformFee.toString();
+    _platformFeeWaived = settings.platformFeeWaived;
+    for (final tier in settings.deliveryFeeTiers) {
+      _tierRows.add(
+        _TierRow(maxDistanceKm: tier.maxDistanceKm.toString(), fee: tier.fee.toString()),
+      );
+    }
   }
+
+  void _addTierRow() => setState(() => _tierRows.add(_TierRow()));
+
+  void _removeTierRow(int index) => setState(() {
+    _tierRows[index].dispose();
+    _tierRows.removeAt(index);
+  });
 
   Future<void> _captureStoreLocation() async {
     setState(() {
@@ -84,6 +124,23 @@ class _AdminDeliverySettingsScreenState extends ConsumerState<AdminDeliverySetti
       setState(() => _error = 'Enter a valid delivery radius in km.');
       return;
     }
+    final tiers = <DeliveryFeeTier>[];
+    for (final row in _tierRows) {
+      final maxKm = double.tryParse(row.maxDistanceKmController.text.trim());
+      final fee = int.tryParse(row.feeController.text.trim());
+      if (maxKm == null || maxKm <= 0 || fee == null || fee < 0) {
+        setState(() => _error = 'Enter valid values for every delivery fee tier.');
+        return;
+      }
+      tiers.add(DeliveryFeeTier(maxDistanceKm: maxKm, fee: fee));
+    }
+    final platformFeeText = _platformFeeController.text.trim();
+    final platformFee = platformFeeText.isEmpty ? 0 : int.tryParse(platformFeeText);
+    if (platformFee == null || platformFee < 0) {
+      setState(() => _error = 'Enter a valid platform fee.');
+      return;
+    }
+
     setState(() {
       _saving = true;
       _error = null;
@@ -91,7 +148,15 @@ class _AdminDeliverySettingsScreenState extends ConsumerState<AdminDeliverySetti
     try {
       await ref
           .read(deliverySettingsRepositoryProvider)
-          .update(storeLatitude: _latitude!, storeLongitude: _longitude!, radiusKm: radius);
+          .update(
+            storeLatitude: _latitude!,
+            storeLongitude: _longitude!,
+            radiusKm: radius,
+            deliveryFeeTiers: tiers,
+            deliveryFeeWaived: _deliveryFeeWaived,
+            platformFee: platformFee,
+            platformFeeWaived: _platformFeeWaived,
+          );
       ref.invalidate(deliverySettingsProvider);
       if (mounted) {
         ScaffoldMessenger.of(context)
@@ -123,8 +188,8 @@ class _AdminDeliverySettingsScreenState extends ConsumerState<AdminDeliverySetti
             padding: const EdgeInsets.all(AppConstants.spacingLg),
             children: [
               Text(
-                'Pharmacy orders are blocked outside this radius from the store. '
-                'Lab tests and appointments are never affected.',
+                'Pharmacy orders are blocked outside this radius from the store, and priced by '
+                'distance below. Lab tests and appointments are never gated or fee-adjusted.',
                 style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
               ),
               const SizedBox(height: AppConstants.spacingLg),
@@ -165,6 +230,84 @@ class _AdminDeliverySettingsScreenState extends ConsumerState<AdminDeliverySetti
                 enabled: !_saving,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: const InputDecoration(labelText: 'Delivery radius (km)'),
+              ),
+              const SizedBox(height: AppConstants.spacingLg),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Delivery fee tiers', style: theme.textTheme.titleMedium),
+                  TextButton.icon(
+                    onPressed: _saving ? null : _addTierRow,
+                    icon: const Icon(Icons.add),
+                    label: const Text('Add tier'),
+                  ),
+                ],
+              ),
+              Text(
+                'Charged by the customer\'s distance from the store, up to the radius above.',
+                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              ),
+              const SizedBox(height: AppConstants.spacingSm),
+              if (_tierRows.isEmpty)
+                Text(
+                  'No tiers yet — checkout falls back to a flat ₹40 (free above ₹500) until '
+                  'you add one.',
+                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                )
+              else
+                for (var i = 0; i < _tierRows.length; i++)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: AppConstants.spacingSm),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _tierRows[i].maxDistanceKmController,
+                            enabled: !_saving,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            decoration: const InputDecoration(labelText: 'Up to (km)'),
+                          ),
+                        ),
+                        const SizedBox(width: AppConstants.spacingSm),
+                        Expanded(
+                          child: TextField(
+                            controller: _tierRows[i].feeController,
+                            enabled: !_saving,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(labelText: 'Fee (₹)'),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: _saving ? null : () => _removeTierRow(i),
+                          icon: const Icon(Icons.delete_outline),
+                        ),
+                      ],
+                    ),
+                  ),
+              const SizedBox(height: AppConstants.spacingSm),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _deliveryFeeWaived,
+                onChanged: _saving ? null : (v) => setState(() => _deliveryFeeWaived = v),
+                title: const Text('Mark delivery as free'),
+                subtitle: const Text('Shows the tier price struck through instead of charging it'),
+              ),
+              const SizedBox(height: AppConstants.spacingLg),
+              Text('Platform fee', style: theme.textTheme.titleMedium),
+              const SizedBox(height: AppConstants.spacingSm),
+              TextField(
+                controller: _platformFeeController,
+                enabled: !_saving,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Platform fee (₹)'),
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _platformFeeWaived,
+                onChanged: _saving ? null : (v) => setState(() => _platformFeeWaived = v),
+                title: const Text('Mark platform fee as free'),
+                subtitle: const Text('Shows the fee struck through instead of charging it'),
               ),
               if (_error != null) ...[
                 const SizedBox(height: AppConstants.spacingSm),

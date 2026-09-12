@@ -111,8 +111,8 @@ brief see [`API_SPEC.md`](API_SPEC.md); for backend internals see [`claude.md`](
 | 68 | GET | `/v1/admin/lab-test-bookings?…filters` | ✔ admin | All lab-test bookings across all users |
 | 69 | GET | `/v1/admin/lab-test-bookings/{id}` | ✔ admin | Single booking |
 | 70 | PUT | `/v1/admin/lab-test-bookings/{id}` | ✔ admin | Change booking status (advance or cancel) |
-| 71 | GET | `/v1/delivery-settings` | ✔ | Store location + delivery radius (for client-side pharmacy-order gating) |
-| 72 | PUT | `/v1/admin/delivery-settings` | ✔ admin | Set store location + delivery radius |
+| 71 | GET | `/v1/delivery-settings` | ✔ | Store location, delivery radius, fee tiers + platform fee (client-side pharmacy-order gating/pricing) |
+| 72 | PUT | `/v1/admin/delivery-settings` | ✔ admin | Set store location, delivery radius, fee tiers + platform fee |
 
 **45–66 are live** (verified against Azure), including the push-notification
 send side described after §3 — real order placement/cancellation triggered
@@ -228,6 +228,27 @@ layer: a `404` on #71 (not deployed/configured yet) or a `null` lat/lng on
 the address (manual entry, or pre-existing data) both mean "don't gate",
 never "block by default" — verified live that placing a pharmacy order
 today (neither endpoint deployed) behaves exactly as before.
+
+**⚠ #15 gains a new `platformFee` field and a new pricing formula for
+`delivery`, not yet implemented on the backend** — backlog #12, distance-
+tiered delivery fee + flat platform fee, both **pharmacy-only** (a cart with
+no medicine item — lab-test-only — keeps the current flat ₹40/free-over-₹500
+`delivery` rule unchanged and always gets `platformFee: 0`; **decided**,
+matching #11's radius-gate precedent). For a pharmacy cart: look up the
+selected address's stored `latitude`/`longitude` (§22/#23), compute distance
+to `DeliverySettings.storeLatitude/storeLongitude` (§71/#72 — the same
+per-admin config #11 already uses for the radius gate), and charge the
+matching `deliveryFeeTiers` entry; add the flat `platformFee` once. If
+`deliveryFeeWaived`/`platformFeeWaived` is `true`, charge `0` for that fee —
+same as today's "waived" semantics, no new response field needed since the
+client already knows the would-be amount from its own tier lookup (`GET
+/delivery-settings`) and only needs the server's actual charged amount to
+agree. If `deliverySettings` isn't configured, or the tiers list is empty,
+or the address has no stored coordinates, fall back to the same legacy flat
+₹40/free-over-₹500 rule — this must match the client's own fallback
+exactly, or the pre-checkout estimate and the placed order's `total` will
+disagree. No new endpoint number — just the two new fields/formula, plus
+§71/#72's four new fields above.
 
 49–53 additionally mean **#14 `POST /v1/promo-codes/validate` gains new
 rejection rules** — reject (still `400 invalid_promo_code`, just a different
@@ -512,6 +533,7 @@ Response:
   "subtotal": 510,
   "discount": 51,
   "delivery": 0,
+  "platformFee": 0,
   "total": 459,
   "paymentMethod": "googlePay",
   "addressId": "addr-0"
@@ -519,6 +541,9 @@ Response:
 ```
 - Pricing: `delivery` = ₹40, waived (→ 0) when `subtotal ≥ 500`. Discount: `percentage →
   subtotal*value/100` (integer division), `flat → value`, clamped to subtotal.
+- **`platformFee` — new field, not yet implemented.** See the ⚠ note below
+  (backlog #12) for the full pharmacy-only, distance-tiered pricing formula
+  this and `delivery` need to move to.
 - Placing an order with a `labTest` item also creates a **Lab Test Booking** (#19).
 - **`orderNumber` format is changing, not yet implemented** — from
   `SMS-<seq>` to `PHSMS-<mmyy>-<seq>` for orders placed after this ships;
@@ -644,21 +669,62 @@ client-side to gate **pharmacy-only** checkout (lab tests and appointments
 are never gated). #71 is readable by any signed-in user (the customer app
 needs it to compute distance); #72 is admin-only.
 
+**Also backs backlog #12** (distance-tiered delivery fee + flat platform
+fee, both pharmacy-only, both with an admin "mark as free" override) —
+`DeliverySettings` gained four more fields rather than a separate endpoint,
+since they're configured on the same admin screen and read by the same
+client-side pricing calculation. **Decided**: a cart with no pharmacy
+(medicine) item — i.e. lab-test-only — is entirely unaffected by any of
+this; it keeps the pre-#12 flat ₹40/free-over-₹500 delivery rule and never
+gets a platform fee, regardless of what's configured here.
+
 #### 71. `GET /v1/delivery-settings` → `200` — `DeliverySettings`, or `404 delivery_settings_not_configured` if the admin hasn't set one yet
 ```json
-{ "storeLatitude": 20.2961, "storeLongitude": 85.8245, "radiusKm": 8.0 }
+{
+  "storeLatitude": 20.2961,
+  "storeLongitude": 85.8245,
+  "radiusKm": 8.0,
+  "deliveryFeeTiers": [
+    { "maxDistanceKm": 3.0, "fee": 20 },
+    { "maxDistanceKm": 6.0, "fee": 35 },
+    { "maxDistanceKm": 8.0, "fee": 50 }
+  ],
+  "deliveryFeeWaived": false,
+  "platformFee": 10,
+  "platformFeeWaived": false
+}
 ```
 - Client treats **either** a `404` here **or** a missing `latitude`/`longitude`
   on the selected address as "can't verify, allow the order" — this endpoint
   not existing yet must never block every pharmacy checkout.
+- **`deliveryFeeTiers`** — sorted ascending by `maxDistanceKm`; the fee
+  charged is the first tier whose `maxDistanceKm` is `≥` the customer's
+  distance from the store (falls back to the farthest tier's fee if the
+  distance exceeds every tier but is still within `radiusKm` — shouldn't
+  normally happen if the admin sets the last tier's `maxDistanceKm` equal
+  to `radiusKm`). **Empty array** (not yet configured) means the client
+  falls back to the legacy flat ₹40/free-over-₹500 rule for pharmacy carts
+  too, same fail-open reasoning as a missing address lat/lng.
+- **`deliveryFeeWaived`**/**`platformFeeWaived`** — independent admin
+  overrides (not a single combined toggle): when true, that fee is charged
+  as `0` regardless of tiers/amount, but the client still shows the
+  would-be amount struck through next to "FREE" rather than just omitting
+  the line — so these flags don't change what `POST /orders` (#15) should
+  charge, only what it should additionally convey so the client can render
+  the strikethrough (see #15's note below).
+- **`platformFee`** — single flat amount, not distance-tiered, added once
+  per pharmacy order alongside delivery.
 
 #### 72. `PUT /v1/admin/delivery-settings` → `200` — updated `DeliverySettings`
-Request: same shape as #71's response. Admin sets `storeLatitude`/
+Request: same shape as #71's response, all seven fields together (radius/
+location and the four new fee fields are saved as one form on the admin
+screen — no partial-update semantics needed). Admin sets `storeLatitude`/
 `storeLongitude` by standing at (or near) the store and capturing device GPS —
 mirrors the customer's "Use current location" address flow, just without the
 reverse-geocode step (raw coordinates are all that's needed for the
 Haversine check).
-- Errors: `400 validation_error` (missing/invalid fields), `403 forbidden_admin_only`.
+- Errors: `400 validation_error` (missing/invalid fields, including a tier
+  with a non-positive `maxDistanceKm` or negative `fee`), `403 forbidden_admin_only`.
 
 #### 26. `GET /v1/payment-methods` → `200` — `PaymentMethod[]` (default first)
 ```json
