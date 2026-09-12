@@ -18,6 +18,10 @@ every feature talks to it over HTTP — see "Data & backend strategy".
   **fully live end-to-end** — client and backend send-side both verified
   against real devices)
 - `fl_chart` (Statistics dashboard charts — see "Statistics" below)
+- `geolocator` + `geocoding` (device GPS capture + on-device reverse
+  geocoding for the Add Address "Use current location" flow and the admin
+  Delivery Settings store-location capture — see "Location integration"
+  under Addresses/Cart/Admin > More below; deliberately no Maps API/billing)
 - Firebase Storage (prescription image uploads — see "Prescriptions" below;
   `firebase_storage` package, **needs Storage enabled in the Firebase
   console** — not yet done, uploads currently fail with a 404 until it is)
@@ -164,11 +168,14 @@ over Dio — no mock repositories remain.
 ## Features (current state)
 
 - **Splash** — shown while the auth session resolves.
-- **Pharmacy (dashboard)** — greeting; two buttons above search (**Search by
-  image** — placeholder; **Prescription** — real, opens `/pharmacy/prescriptions`);
-  search bar → real, opens `/pharmacy/search` (`SearchScreen`); promo banner;
-  **Shop by category** grid (`homeCategoriesProvider`); **Suggested for you**
-  horizontal products.
+- **Pharmacy (dashboard)** — greeting; a **"Delivering to {area}"** line
+  (falls back to city, or hidden entirely with no default address/no
+  location captured on it) read from the default `Address`; two buttons
+  above search (**Search by image** — placeholder; **Prescription** — real,
+  opens `/pharmacy/prescriptions`); search bar → real, opens
+  `/pharmacy/search` (`SearchScreen`); promo banner; **Shop by category**
+  grid (`homeCategoriesProvider`); **Suggested for you** horizontal
+  products.
 - **Search** (`SearchScreen`, `lib/features/medicines/presentation/screens/search_screen.dart`)
   — plain text field in the app bar (`onSubmitted`, matching the search-on-submit
   convention used by every admin list screen), results as `ProductCard`s
@@ -298,6 +305,13 @@ over Dio — no mock repositories remain.
   Profile → Orders → detail has a **Cancel order** action while
   `status.isCustomerCancellable` (`created`/`processing` — hidden once
   shipped); calls `OrderRepository.cancelOrder` (`PUT /orders/{id}/cancel`).
+  **Order Now** also runs a client-side delivery-radius check
+  (`core/utils/distance.dart`'s Haversine calc) whenever the cart has a
+  `CartItemKind.medicine` item — lab tests/appointments are never gated.
+  Blocks with a clear message if the selected address's captured
+  coordinates put it outside the admin-configured radius (`deliverySettingsProvider`,
+  `features/admin/delivery/`); fails open (no block) if the address has no
+  captured coordinates or delivery settings aren't configured/deployed yet.
 - **Profile** — header + 6 menus + Sign Out:
   - **Account** — gender-based avatar, personal details, medical records
     (real backend data, read-only — see the Account note below).
@@ -339,7 +353,16 @@ over Dio — no mock repositories remain.
     `ApiAddressRepository` (`GET/POST /addresses`,
     `PUT /addresses/{id}/default`, `DELETE /addresses/{id}`), wrapped in an
     `AsyncNotifierProvider` (`addressesProvider`) that re-fetches after each
-    mutation.
+    mutation. Add Address has a **"Use current location"** button
+    (`core/location/`: `geolocator` GPS fix + `geocoding` on-device
+    reverse-geocode, no Maps API billing) that fills `area`/city/state/
+    pincode read-only from the device's location; falls back to editable
+    manual entry if capture fails, with an "Edit manually" override even
+    after a successful capture. **Built ahead of the backend** — `area`/
+    `latitude`/`longitude` are new nullable `Address` fields; existing
+    addresses (and any manually-entered one) simply have `null` coordinates,
+    which the checkout radius check (see Cart below) treats as "can't
+    verify, don't block".
   - **Payment Methods** — list, **Add UPI** dialog — real via
     `ApiPaymentMethodRepository` (`GET/POST /payment-methods`,
     `PUT /payment-methods/{id}/default`, `DELETE /payment-methods/{id}`),
@@ -515,6 +538,13 @@ over Dio — no mock repositories remain.
       emulator against the real admin account: created a walk-in user,
       edited their email, deleted them, each step confirmed by the app's
       own success message and the list correctly re-fetching afterward.
+    - **Delivery Settings** (`/admin/more/delivery-settings`,
+      `lib/features/admin/delivery/`) — captures the store's own lat/lng via
+      the same device-GPS flow as the customer's Add Address "Use current
+      location" (no reverse-geocode needed, just raw coordinates), plus a
+      delivery radius (km); "Save" calls `PUT /v1/admin/delivery-settings`.
+      Backs the checkout radius gate (see Cart above). **Built ahead of the
+      backend** — endpoints #71/#72 aren't deployed yet.
 
 ## Backlog (prioritized, not started)
 
@@ -535,7 +565,7 @@ ranking, new items) as items are picked up, finished, or reprioritized.
 | 8 | Admin order-status flow: swipe-to-advance + separate cancel; Orders gains 3 tabs (Pharmacy / Prescriptions / Pathology) | New feature | **Done** | New shared `StatusSwipeBar` (`admin/presentation/widgets/`) replaces the free-choice `ChoiceChip` picker on Order detail — drag-to-confirm one linear step at a time (`created→processing→shipped→delivered`, label changes per step: "Process Order" / "Mark as Shipped" / "Mark as Delivered"), plus a standalone red "Cancel order" button (always enabled unless already cancelled — admin's explicit call, unlike the customer's pre-shipment-only self-cancel). Orders tab renamed **Pharmacy**, gained a 3rd **Pathology** sub-tab — a brand-new admin lab-test-booking management surface (list + detail, same swipe pattern, `scheduled→inSession→completed`), built from scratch since no admin lab-test screen existed before (`admin/pathology/`, mirrors `admin/orders/` file-for-file). `LabTestStatus` gained `inSession`. **Verified fully live** — swiped a real order through `created→processing→shipped→delivered` against the real backend, each step updating in place with no navigation between steps, confirmed by the real "Order delivered" push notification firing correctly too (proves the swipe flow uses the same trigger path as before). Pathology confirmed cleanly degrading (`GET /admin/lab-test-bookings` 404s, shows "Something went wrong" + Retry, no crash) since its 3 new endpoints (#68–70) aren't deployed yet |
 | 9 | Appointment status flow: `Upcoming → InSession → Completed`, `Cancelled` | New feature | **Backend deployed, live re-verification deferred** | Same `StatusSwipeBar` pattern as #8: `AppointmentStatus` gains `inSession` (between `upcoming` and `completed`) with `.next`/`.advanceLabel`; `EditAppointmentScreen` rewritten to apply reschedule/advance/cancel immediately in place (no more shared Save button). **Reschedule and Cancel verified fully live** against Azure (date-only and status=cancelled PUTs both apply immediately, correct snackbars, correct UI state). **Advance to `inSession` was confirmed cleanly blocked** at the time — real `400 validation_error` ("The request field is required") since the backend didn't recognize the new status value yet; no crash, matched the already-documented ⚠ pending note on endpoint #43. User confirmed 2026-09-12 the backend is now deployed; a full live pass on the swipe-to-`inSession` advance specifically is intentionally deferred to a later session |
 | 10 | Order ID format standardization — `PHSMS-<mmyy>-<seq>` / `PLSMS-<mmyy>-<seq>` / `DASMS-<mmyy>-<seq>` | New feature | **Backend deployed, live re-verification deferred** | Turned out mostly backend-only for Pharmacy: `Order.orderNumber` was already an opaque, displayed-verbatim string with zero client-side format assumptions, so the `PHSMS-<mmyy>-<seq>` swap needed **no client change at all** — purely a backend sequence-generator change. Lab-test bookings and appointments never had a human-readable number before, so those two got genuinely new work: added a nullable `bookingNumber`/`appointmentNumber` field to `LabTest`, `AdminLabTestBooking`, `PastAppointment`, `AdminAppointment`, parsed it, and displayed it on every card/detail screen those entities already have (customer Lab Tests list/detail, customer Profile → Appointments, admin Pathology tile/detail, admin Appointments tile/edit screen). **Decided**: new records only, no backfill — same policy as the original Order decision, extended to all three types for consistency. **Built ahead of the backend** — verified live that every touched screen degraded cleanly with the field absent (`null`): no crash, no visible artifact. User confirmed 2026-09-12 the backend is now deployed; a full live pass (placing a fresh order/booking/appointment and seeing the real `PHSMS`/`PLSMS`/`DASMS` numbers round-trip) is intentionally deferred to a later session |
-| 11 | Location integration — capture address location, derive read-only area/pincode, home-screen area display, admin-configurable order-radius gating | New feature | Not started | Pharmacy orders blocked outside the radius; lab tests/appointments always allowed. **Decided**: device-only `Geocoder` + Haversine distance, no Maps API billing |
+| 11 | Location integration — capture address location, derive read-only area/pincode, home-screen area display, admin-configurable order-radius gating | New feature | **Done (client), backend not deployed** | `Address` gains optional `area`/`latitude`/`longitude`. Add Address gets a "Use current location" button (`geolocator` GPS fix + `geocoding` on-device reverse-geocode, no Maps API billing) that fills area/city/state/pincode read-only; falls back to editable manual entry if capture fails (permission denied, services off, or no geocoder result), with an "Edit manually" override even after a successful capture. **Decided** (asked the user): GPS-first with manual fallback, not GPS-only. Dashboard shows "Delivering to {area}" from the default address (falls back to city when `area` is `null`). New Admin → More → **Delivery Settings** screen captures the store's own location the same way (**decided**: GPS capture, not manual lat/lng entry) plus a radius (km); backed by new endpoints #71 (any signed-in user, for the client-side radius check) / #72 (admin write). Checkout blocks **pharmacy-only** carts (never lab tests/appointments) outside that radius via a client-side Haversine calculation (`core/utils/distance.dart`) — fails open whenever it can't verify: no coordinates on the address (manual entry, or pre-existing data — no backfill) or no delivery settings configured/deployed yet. Also bumped `compileSdk` to 36 project-wide (forced on every library subproject via `android/build.gradle.kts`, not just `:app`) — `geocoding_android`'s own hardcoded compileSdk 33 conflicted with its own transitive androidx deps otherwise. **Verified live**: permission dialog, GPS fix, and the reverse-geocode-failure fallback (this emulator image has no working native Geocoder backend) all worked correctly with no crash; saved a new address end-to-end with the new fields; dashboard's "Delivering to" line confirmed live, including the city-fallback case. Admin Delivery Settings screen not yet exercised live (no admin OTP available in that test session) but follows the proven Statistics/Users screen pattern exactly |
 | 12 | Dynamic delivery & platform fees, admin-configurable under new More menu | New feature | Not started | Distance-tiered delivery fee + single platform fee, both with a "mark as free" strike-through toggle. Pharmacy orders only. Depends on #11's distance calc |
 | 13 | Inventory bulk import (Excel upload and/or barcode scan) | New feature | Needs discussion | Scope not yet defined — discuss format/flow before estimating |
 | 14 | UI beautification — full app redesign, modern/minimal style, new logo, redesigned in-app notifications | New feature | Needs discussion | **Decided**: user supplies the logo asset; scheduled last, after items 1–13 stabilize, so screens don't get restyled twice |
@@ -553,6 +583,14 @@ ranking, new items) as items are picked up, finished, or reprioritized.
   "Could not close incremental caches"). Also `android.newDsl=false`.
 - Known harmless warning: `firebase_storage` applies its own Kotlin Gradle
   Plugin (KGP deprecation notice) — build still succeeds.
+- **compileSdk fix:** `android/build.gradle.kts` forces `compileSdk = 36` on
+  every Android library subproject (`afterEvaluate`, guarded against
+  `evaluationDependsOn(":app")` already having evaluated some subprojects by
+  that point — see the inline comment). Needed because `geocoding_android`
+  hardcodes its own `compileSdk 33`, which conflicts with its own transitive
+  androidx deps (`androidx.core:1.13.1` etc. need 34+) — bumping only
+  `:app`'s `compileSdk` doesn't fix this, since each library module's
+  `compileSdk` is independent.
 
 ## Running & testing on the emulator
 
