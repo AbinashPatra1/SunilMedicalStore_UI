@@ -29,6 +29,9 @@ class AddressController extends AsyncNotifier<List<Address>> {
     required String city,
     required String stateName,
     required String pincode,
+    String? area,
+    double? latitude,
+    double? longitude,
     bool makeDefault = false,
   }) async {
     await _repository.add(
@@ -38,6 +41,9 @@ class AddressController extends AsyncNotifier<List<Address>> {
       city: city,
       state: stateName,
       pincode: pincode,
+      area: area,
+      latitude: latitude,
+      longitude: longitude,
       makeDefault: makeDefault,
     );
     state = await AsyncValue.guard(() => _repository.list());

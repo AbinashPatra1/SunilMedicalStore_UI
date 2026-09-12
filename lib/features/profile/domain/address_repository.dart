@@ -12,6 +12,9 @@ abstract interface class AddressRepository {
     required String city,
     required String state,
     required String pincode,
+    String? area,
+    double? latitude,
+    double? longitude,
     bool makeDefault = false,
   });
 

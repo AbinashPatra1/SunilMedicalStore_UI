@@ -111,6 +111,8 @@ brief see [`API_SPEC.md`](API_SPEC.md); for backend internals see [`claude.md`](
 | 68 | GET | `/v1/admin/lab-test-bookings?…filters` | ✔ admin | All lab-test bookings across all users |
 | 69 | GET | `/v1/admin/lab-test-bookings/{id}` | ✔ admin | Single booking |
 | 70 | PUT | `/v1/admin/lab-test-bookings/{id}` | ✔ admin | Change booking status (advance or cancel) |
+| 71 | GET | `/v1/delivery-settings` | ✔ | Store location + delivery radius (for client-side pharmacy-order gating) |
+| 72 | PUT | `/v1/admin/delivery-settings` | ✔ admin | Set store location + delivery radius |
 
 **45–66 are live** (verified against Azure), including the push-notification
 send side described after §3 — real order placement/cancellation triggered
@@ -211,6 +213,21 @@ show a number line for older entries).
   in the client. `bookingNumber`/`appointmentNumber` are genuinely new
   fields the client now parses and displays (see §Profile history and
   §Admin — Pathology/Appointments below for the exact JSON shape).
+
+**⚠ 71–72 are not yet implemented on the backend** — backlog #11, location
+integration. `Address` (#22/#23) gains new nullable `area`/`latitude`/
+`longitude` fields, populated only when the customer used "Use current
+location" (device GPS + on-device reverse-geocoding, no Maps API billing);
+manually-entered addresses and every address added before this existed
+simply omit them (no backfill). Two brand-new endpoints back an
+admin-configured store location + delivery radius (§Location & Delivery
+Settings below) — the client computes the Haversine distance itself and
+blocks **pharmacy-only** checkout (never lab tests or appointments) when the
+selected address is outside the radius. Designed to fail open at every
+layer: a `404` on #71 (not deployed/configured yet) or a `null` lat/lng on
+the address (manual entry, or pre-existing data) both mean "don't gate",
+never "block by default" — verified live that placing a pharmacy order
+today (neither endpoint deployed) behaves exactly as before.
 
 49–53 additionally mean **#14 `POST /v1/promo-codes/validate` gains new
 rejection rules** — reject (still `400 invalid_promo_code`, just a different
@@ -574,24 +591,74 @@ No body. The customer cancelling their own order.
   "type": "home",
   "line1": "12, Green Park Colony",
   "line2": "Near City Hospital",
+  "area": "Saheed Nagar",
   "city": "Bhubaneswar",
   "state": "Odisha",
   "pincode": "751001",
+  "latitude": 20.2961,
+  "longitude": 85.8245,
   "isDefault": true
 }
 ```
 - `type`: `home | work | other`. `line2` may be `null`.
+- **`area`, `latitude`, `longitude` — new fields, not yet implemented.** See the
+  location-integration ⚠ note near the top of §2. `area` is the locality/
+  neighbourhood (device reverse-geocoded, or left `null` if the customer typed
+  the address manually). `latitude`/`longitude` are only present when the
+  customer used "Use current location" — `null` for manually-entered
+  addresses, and for any address added before this existed (no backfill,
+  same policy as every other build-ahead-of-backend field in this doc).
+  Client treats a `null` lat/lng as "can't verify distance, don't block" —
+  never as "block by default".
 
 #### 23. `POST /v1/addresses` → `201` — created `Address`
 Request:
 ```json
-{ "type": "work", "line1": "Tower B, Tech Park", "line2": null, "city": "Bhubaneswar", "state": "Odisha", "pincode": "751024", "makeDefault": false }
+{
+  "type": "work",
+  "line1": "Tower B, Tech Park",
+  "line2": null,
+  "area": "Patia",
+  "city": "Bhubaneswar",
+  "state": "Odisha",
+  "pincode": "751024",
+  "latitude": 20.3559,
+  "longitude": 85.8188,
+  "makeDefault": false
+}
 ```
 - The **first** address a user adds is always default (regardless of `makeDefault`).
+- **`area`, `latitude`, `longitude` — new, all optional/nullable** (same fields as #22). Omit or send `null` for a manually-entered address with no location capture.
 - Errors: `400 line1_required | city_required | state_required | pincode_required`.
 
 #### 24. `PUT /v1/addresses/{id}/default` → `200` — updated `Address` (clears others' default). No body.
 #### 25. `DELETE /v1/addresses/{id}` → `204`. `404 address_not_found` if not the caller's.
+
+---
+
+### Location & Delivery Settings — **71–72 proposed, not yet built**
+
+Backs backlog #11 (device-only Geocoder + Haversine distance, no Maps API
+billing): the store's own reference point + delivery radius, used entirely
+client-side to gate **pharmacy-only** checkout (lab tests and appointments
+are never gated). #71 is readable by any signed-in user (the customer app
+needs it to compute distance); #72 is admin-only.
+
+#### 71. `GET /v1/delivery-settings` → `200` — `DeliverySettings`, or `404 delivery_settings_not_configured` if the admin hasn't set one yet
+```json
+{ "storeLatitude": 20.2961, "storeLongitude": 85.8245, "radiusKm": 8.0 }
+```
+- Client treats **either** a `404` here **or** a missing `latitude`/`longitude`
+  on the selected address as "can't verify, allow the order" — this endpoint
+  not existing yet must never block every pharmacy checkout.
+
+#### 72. `PUT /v1/admin/delivery-settings` → `200` — updated `DeliverySettings`
+Request: same shape as #71's response. Admin sets `storeLatitude`/
+`storeLongitude` by standing at (or near) the store and capturing device GPS —
+mirrors the customer's "Use current location" address flow, just without the
+reverse-geocode step (raw coordinates are all that's needed for the
+Haversine check).
+- Errors: `400 validation_error` (missing/invalid fields), `403 forbidden_admin_only`.
 
 #### 26. `GET /v1/payment-methods` → `200` — `PaymentMethod[]` (default first)
 ```json

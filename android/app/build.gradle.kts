@@ -9,7 +9,10 @@ plugins {
 
 android {
     namespace = "com.sunilmedical.store"
-    compileSdk = flutter.compileSdkVersion
+    // geocoding's transitive androidx.exifinterface dependency requires
+    // compiling against API 34+; flutter.compileSdkVersion alone isn't
+    // high enough yet, so pin it explicitly rather than waiting on that.
+    compileSdk = maxOf(flutter.compileSdkVersion, 36)
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

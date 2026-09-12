@@ -32,6 +32,12 @@ class AdminMoreScreen extends StatelessWidget {
             subtitle: 'Browse, add, edit and remove customers',
             onTap: () => context.push(AppRoutes.adminUsers),
           ),
+          _MoreMenuTile(
+            icon: Icons.local_shipping_outlined,
+            title: 'Delivery Settings',
+            subtitle: 'Store location and pharmacy delivery radius',
+            onTap: () => context.push('${AppRoutes.adminMore}/delivery-settings'),
+          ),
         ],
       ),
     );

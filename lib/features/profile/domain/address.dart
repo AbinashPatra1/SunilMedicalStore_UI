@@ -21,6 +21,9 @@ class Address {
     required this.city,
     required this.state,
     required this.pincode,
+    this.area,
+    this.latitude,
+    this.longitude,
     this.isDefault = false,
   });
 
@@ -31,6 +34,20 @@ class Address {
   final String city;
   final String state;
   final String pincode;
+
+  /// Locality/neighbourhood, derived via on-device reverse-geocoding when
+  /// this address was added using "Use current location". `null` for
+  /// manually-entered addresses, or ones added before this existed.
+  final String? area;
+
+  /// Device-captured coordinates, present only when added via "Use current
+  /// location" — `null` for manually-entered addresses (no backfill for
+  /// ones added before this existed either). The delivery-radius check
+  /// treats a `null` value as "can't verify, allow the order" rather than
+  /// blocking it.
+  final double? latitude;
+  final double? longitude;
+
   final bool isDefault;
 
   /// Single-line formatted address for display.
@@ -49,6 +66,9 @@ class Address {
       city: city,
       state: state,
       pincode: pincode,
+      area: area,
+      latitude: latitude,
+      longitude: longitude,
       isDefault: isDefault ?? this.isDefault,
     );
   }

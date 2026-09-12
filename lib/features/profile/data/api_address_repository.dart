@@ -27,6 +27,9 @@ class ApiAddressRepository implements AddressRepository {
     required String city,
     required String state,
     required String pincode,
+    String? area,
+    double? latitude,
+    double? longitude,
     bool makeDefault = false,
   }) async {
     try {
@@ -39,6 +42,9 @@ class ApiAddressRepository implements AddressRepository {
           'city': city,
           'state': state,
           'pincode': pincode,
+          'area': area,
+          'latitude': latitude,
+          'longitude': longitude,
           'makeDefault': makeDefault,
         },
       );
@@ -74,6 +80,9 @@ class ApiAddressRepository implements AddressRepository {
     city: json['city'] as String,
     state: json['state'] as String,
     pincode: json['pincode'] as String,
+    area: json['area'] as String?,
+    latitude: (json['latitude'] as num?)?.toDouble(),
+    longitude: (json['longitude'] as num?)?.toDouble(),
     isDefault: json['isDefault'] as bool? ?? false,
   );
 }

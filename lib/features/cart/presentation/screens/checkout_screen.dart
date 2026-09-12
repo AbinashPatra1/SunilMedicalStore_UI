@@ -9,6 +9,9 @@ import 'package:sunil_medical_store/core/models/prescription.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/core/routes/app_routes.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
+import 'package:sunil_medical_store/core/utils/distance.dart';
+import 'package:sunil_medical_store/features/admin/delivery/presentation/providers/delivery_settings_providers.dart';
+import 'package:sunil_medical_store/features/cart/domain/cart_item.dart';
 import 'package:sunil_medical_store/features/cart/domain/order_repository.dart';
 import 'package:sunil_medical_store/features/cart/presentation/providers/cart_providers.dart';
 import 'package:sunil_medical_store/features/cart/presentation/widgets/payment_option_tile.dart';
@@ -200,6 +203,29 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       _snack('Please attach a prescription for the Rx item(s) in your cart.');
       return;
     }
+    final hasPharmacyItems = ref.read(cartProvider).any((item) => item.kind == CartItemKind.medicine);
+    // Fail open when we can't verify distance: an address with no captured
+    // coordinates (manually entered, or added before this existed) or no
+    // configured delivery settings (not deployed yet on the backend) never
+    // blocks the order — only a confirmed out-of-radius address does.
+    if (hasPharmacyItems && address.latitude != null && address.longitude != null) {
+      final settings = ref.read(deliverySettingsProvider).value;
+      if (settings != null) {
+        final distanceKm = haversineKm(
+          address.latitude!,
+          address.longitude!,
+          settings.storeLatitude,
+          settings.storeLongitude,
+        );
+        if (distanceKm > settings.radiusKm) {
+          _snack(
+            'This address is outside our ${settings.radiusKm.toStringAsFixed(0)} km pharmacy delivery '
+            'area. Lab tests and appointments are unaffected.',
+          );
+          return;
+        }
+      }
+    }
     await _placeOrder(address);
   }
 
@@ -273,6 +299,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    // Prefetched here (unused directly in the UI) so it's already resolved
+    // by the time _orderNow's radius check reads it via ref.read.
+    ref.watch(deliverySettingsProvider);
     final addresses = ref.watch(addressesProvider).value ?? const <Address>[];
     final address = _selectedAddress(addresses);
     final total = ref.watch(cartTotalProvider);

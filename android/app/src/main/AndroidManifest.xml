@@ -5,6 +5,10 @@
     <!-- Runtime-requested (via FirebaseMessaging.requestPermission) on
          Android 13+; declaring it here is what makes that request possible. -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- Runtime-requested (via geolocator) for "Use current location" on
+         Add Address and the admin Delivery Settings store-location capture. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
     <application
         android:label="Sunil Medical Store"
         android:name="${applicationName}"

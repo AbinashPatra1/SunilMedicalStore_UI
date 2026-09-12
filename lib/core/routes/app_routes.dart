@@ -25,6 +25,7 @@ abstract final class AppRoutes {
   static const adminDiscountAdd = '/admin/discounts/new';
   static const adminMore = '/admin/more';
   static const adminStatistics = '/admin/more/statistics';
+  static const adminDeliverySettings = '/admin/more/delivery-settings';
   static const adminUsers = '/admin/more/users';
   static const adminUserAdd = '/admin/more/users/new';
   static const adminUserEdit = '/admin/more/users/edit'; // + /<id>

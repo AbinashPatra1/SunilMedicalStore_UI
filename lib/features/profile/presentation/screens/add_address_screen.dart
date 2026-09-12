@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sunil_medical_store/core/location/current_position.dart';
+import 'package:sunil_medical_store/core/location/location_exception.dart';
+import 'package:sunil_medical_store/core/location/reverse_geocode.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/profile/domain/address.dart';
@@ -18,6 +21,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
   final _formKey = GlobalKey<FormState>();
   final _line1 = TextEditingController();
   final _line2 = TextEditingController();
+  final _area = TextEditingController();
   final _city = TextEditingController();
   final _state = TextEditingController();
   final _pincode = TextEditingController();
@@ -27,14 +31,52 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
   bool _saving = false;
   String? _error;
 
+  // Set once "Use current location" succeeds; cleared by "Edit manually".
+  // The captured coordinates themselves persist through a later manual
+  // edit — only the city/state/pincode/area fields flip back to editable.
+  bool _locationCaptured = false;
+  bool _locating = false;
+  String? _locationError;
+  double? _latitude;
+  double? _longitude;
+
   @override
   void dispose() {
     _line1.dispose();
     _line2.dispose();
+    _area.dispose();
     _city.dispose();
     _state.dispose();
     _pincode.dispose();
     super.dispose();
+  }
+
+  Future<void> _captureLocation() async {
+    setState(() {
+      _locating = true;
+      _locationError = null;
+    });
+    try {
+      final position = await getCurrentPosition();
+      final geocoded = await reverseGeocode(position.latitude, position.longitude);
+      setState(() {
+        _latitude = position.latitude;
+        _longitude = position.longitude;
+        _area.text = geocoded.area ?? '';
+        _city.text = geocoded.city;
+        _state.text = geocoded.state;
+        _pincode.text = geocoded.pincode;
+        _locationCaptured = true;
+      });
+    } on LocationException catch (e) {
+      if (mounted) setState(() => _locationError = e.message);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _locationError = 'Could not determine your address from this location.');
+      }
+    } finally {
+      if (mounted) setState(() => _locating = false);
+    }
   }
 
   Future<void> _save() async {
@@ -51,6 +93,9 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
         city: _city.text.trim(),
         stateName: _state.text.trim(),
         pincode: _pincode.text.trim(),
+        area: _area.text.trim().isEmpty ? null : _area.text.trim(),
+        latitude: _latitude,
+        longitude: _longitude,
         makeDefault: _makeDefault,
       );
       if (mounted) context.pop();
@@ -85,6 +130,18 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
               onSelectionChanged: _saving ? null : (s) => setState(() => _type = s.first),
             ),
             const SizedBox(height: AppConstants.spacingLg),
+            OutlinedButton.icon(
+              onPressed: (_saving || _locating) ? null : _captureLocation,
+              icon: _locating
+                  ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.my_location),
+              label: Text(_locationCaptured ? 'Update current location' : 'Use current location'),
+            ),
+            if (_locationError != null) ...[
+              const SizedBox(height: AppConstants.spacingSm),
+              Text(_locationError!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),
+            ],
+            const SizedBox(height: AppConstants.spacingLg),
             TextFormField(
               controller: _line1,
               enabled: !_saving,
@@ -99,26 +156,58 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
             ),
             const SizedBox(height: AppConstants.spacingMd),
             TextFormField(
+              controller: _area,
+              enabled: !_saving,
+              readOnly: _locationCaptured,
+              decoration: InputDecoration(
+                labelText: 'Area / locality (optional)',
+                helperText: _locationCaptured ? 'From your current location' : null,
+              ),
+            ),
+            const SizedBox(height: AppConstants.spacingMd),
+            TextFormField(
               controller: _city,
               enabled: !_saving,
-              decoration: const InputDecoration(labelText: 'City'),
+              readOnly: _locationCaptured,
+              decoration: InputDecoration(
+                labelText: 'City',
+                helperText: _locationCaptured ? 'From your current location' : null,
+              ),
               validator: _required,
             ),
             const SizedBox(height: AppConstants.spacingMd),
             TextFormField(
               controller: _state,
               enabled: !_saving,
-              decoration: const InputDecoration(labelText: 'State'),
+              readOnly: _locationCaptured,
+              decoration: InputDecoration(
+                labelText: 'State',
+                helperText: _locationCaptured ? 'From your current location' : null,
+              ),
               validator: _required,
             ),
             const SizedBox(height: AppConstants.spacingMd),
             TextFormField(
               controller: _pincode,
               enabled: !_saving,
+              readOnly: _locationCaptured,
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'PIN code'),
+              decoration: InputDecoration(
+                labelText: 'PIN code',
+                helperText: _locationCaptured ? 'From your current location' : null,
+              ),
               validator: (v) => (v == null || v.trim().length != 6) ? 'Enter a 6-digit PIN code' : null,
             ),
+            if (_locationCaptured) ...[
+              const SizedBox(height: AppConstants.spacingXs),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: _saving ? null : () => setState(() => _locationCaptured = false),
+                  child: const Text('Edit manually'),
+                ),
+              ),
+            ],
             const SizedBox(height: AppConstants.spacingSm),
             CheckboxListTile(
               contentPadding: EdgeInsets.zero,

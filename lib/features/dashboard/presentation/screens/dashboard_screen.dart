@@ -10,6 +10,8 @@ import 'package:sunil_medical_store/features/dashboard/presentation/widgets/home
 import 'package:sunil_medical_store/features/dashboard/presentation/widgets/pharmacy_action_buttons.dart';
 import 'package:sunil_medical_store/features/dashboard/presentation/widgets/promo_banner.dart';
 import 'package:sunil_medical_store/features/dashboard/presentation/widgets/suggested_products.dart';
+import 'package:sunil_medical_store/features/profile/domain/address.dart';
+import 'package:sunil_medical_store/features/profile/presentation/providers/address_controller.dart';
 
 /// Customer landing page (Pharmacy tab) shown after a non-admin signs in.
 ///
@@ -35,6 +37,16 @@ class DashboardScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final user = ref.watch(authControllerProvider).user;
     final categoriesAsync = ref.watch(homeCategoriesProvider);
+    final addresses = ref.watch(addressesProvider).value ?? const <Address>[];
+    Address? defaultAddress;
+    for (final a in addresses) {
+      if (a.isDefault) {
+        defaultAddress = a;
+        break;
+      }
+    }
+    defaultAddress ??= addresses.isNotEmpty ? addresses.first : null;
+    final deliveringToArea = defaultAddress?.area ?? defaultAddress?.city;
 
     return Scaffold(
       appBar: AppBar(
@@ -52,6 +64,19 @@ class DashboardScreen extends ConsumerWidget {
         children: [
           Text('Hello, ${user?.name ?? 'there'} 👋', style: theme.textTheme.headlineSmall),
           const SizedBox(height: AppConstants.spacingXs),
+          if (deliveringToArea != null) ...[
+            Row(
+              children: [
+                Icon(Icons.location_on_outlined, size: 16, color: theme.colorScheme.primary),
+                const SizedBox(width: AppConstants.spacingXs),
+                Text(
+                  'Delivering to $deliveringToArea',
+                  style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
+              ],
+            ),
+            const SizedBox(height: AppConstants.spacingXs),
+          ],
           Text(
             'How can we help you today?',
             style: theme.textTheme.bodyMedium?.copyWith(
