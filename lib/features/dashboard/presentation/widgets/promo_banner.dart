@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sunil_medical_store/core/illustrations/happy_discount_illustration.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 
 /// Promotional banner on the dashboard landing page (dummy content).
@@ -39,11 +40,7 @@ class PromoBanner extends StatelessWidget {
                 ],
               ),
             ),
-            Icon(
-              Icons.local_offer_outlined,
-              size: 56,
-              color: theme.colorScheme.onPrimaryContainer.withValues(alpha: 0.5),
-            ),
+            const HappyDiscountIllustration(size: 88),
           ],
         ),
       ),

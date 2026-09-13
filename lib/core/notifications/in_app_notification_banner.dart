@@ -65,34 +65,43 @@ class _NotificationBanner extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(AppConstants.spacingSm),
           child: Material(
-            elevation: 6,
-            borderRadius: BorderRadius.circular(AppConstants.radiusMd),
-            color: theme.colorScheme.inverseSurface,
+            elevation: 3,
+            shadowColor: theme.colorScheme.shadow.withValues(alpha: 0.25),
+            borderRadius: BorderRadius.circular(AppConstants.radiusLg),
+            color: theme.colorScheme.surfaceContainerHigh,
+            surfaceTintColor: Colors.transparent,
             child: InkWell(
-              borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+              borderRadius: BorderRadius.circular(AppConstants.radiusLg),
               onTap: onTap,
-              child: Padding(
+              child: Container(
                 padding: const EdgeInsets.all(AppConstants.spacingMd),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(AppConstants.radiusLg),
+                  border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4)),
+                ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.notifications_outlined, color: theme.colorScheme.onInverseSurface),
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundColor: theme.colorScheme.primaryContainer,
+                      child: Icon(
+                        Icons.notifications_outlined,
+                        size: 18,
+                        color: theme.colorScheme.onPrimaryContainer,
+                      ),
+                    ),
                     const SizedBox(width: AppConstants.spacingSm),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            title,
-                            style: theme.textTheme.titleSmall?.copyWith(
-                              color: theme.colorScheme.onInverseSurface,
-                            ),
-                          ),
+                          Text(title, style: theme.textTheme.titleSmall),
                           const SizedBox(height: 2),
                           Text(
                             body,
                             style: theme.textTheme.bodySmall?.copyWith(
-                              color: theme.colorScheme.onInverseSurface,
+                              color: theme.colorScheme.onSurfaceVariant,
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -102,7 +111,8 @@ class _NotificationBanner extends StatelessWidget {
                     ),
                     InkWell(
                       onTap: onDismiss,
-                      child: Icon(Icons.close, size: 18, color: theme.colorScheme.onInverseSurface),
+                      borderRadius: BorderRadius.circular(AppConstants.radiusFull),
+                      child: Icon(Icons.close, size: 18, color: theme.colorScheme.onSurfaceVariant),
                     ),
                   ],
                 ),

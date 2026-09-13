@@ -13,10 +13,12 @@ abstract final class AppConstants {
   static const double spacingXl = 32;
   static const double spacingXxl = 48;
 
-  // Corner radii.
+  // Corner radii — bumped up for the "calm clinical minimal" redesign
+  // (backlog #14): softer, more generous rounding than stock Material.
   static const double radiusSm = 4;
-  static const double radiusMd = 12;
-  static const double radiusLg = 20;
+  static const double radiusMd = 16;
+  static const double radiusLg = 24;
+  static const double radiusXl = 28;
   static const double radiusFull = 999;
 
   // Motion.
