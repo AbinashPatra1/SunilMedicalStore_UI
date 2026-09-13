@@ -36,6 +36,13 @@ every feature talks to it over HTTP — see "Data & backend strategy".
 - Use Material 3. Follow feature-first architecture. Use Riverpod.
 - Keep widgets small. Prefer StatelessWidget. Separate UI and business logic.
 - No mock data inside widgets — repositories/providers supply data.
+- **Every button/action that triggers an API call must show a loading
+  state** (disable the control + swap its label for a small spinner, the
+  `_saving`/`_cancelling`/`_settingDefault`-style local bool pattern used
+  throughout) — **user rule, 2026-09-13**: a tap that silently does nothing
+  for a moment reads as broken/unresponsive, even if it's actually working.
+  Caught first on Addresses/Payment Methods' "Set as default" buttons; check
+  for this whenever adding a new mutation-triggering control.
 - Write production-quality code. Avoid unnecessary packages.
 - Always explain changed files.
 
@@ -379,12 +386,17 @@ over Dio — no mock repositories remain.
     `latitude`/`longitude` are new nullable `Address` fields; existing
     addresses (and any manually-entered one) simply have `null` coordinates,
     which the checkout radius check (see Cart below) treats as "can't
-    verify, don't block".
+    verify, don't block". **Set as default** shows a per-card loading state
+    while its `PUT` is in flight (each address row is its own
+    `ConsumerStatefulWidget`, `_AddressCard` — button disables + swaps its
+    label for a small spinner) — **fixed 2026-09-13**, the button previously
+    gave no feedback during the round-trip and looked unresponsive.
   - **Payment Methods** — list, **Add UPI** dialog — real via
     `ApiPaymentMethodRepository` (`GET/POST /payment-methods`,
     `PUT /payment-methods/{id}/default`, `DELETE /payment-methods/{id}`),
     same `AsyncNotifierProvider` pattern (`paymentMethodsProvider`). Only UPI
-    supported for now.
+    supported for now. **Set default** got the same per-row loading-state fix
+    as Addresses above (`_PaymentMethodCard`), same day, same reason.
   - **Account** data — real via `ApiProfileRepository.customerProfile()`
     (`customerProfileProvider`), which self-heals a missing backend user row
     on first sign-in. Name/phone shown around the app are the real auth

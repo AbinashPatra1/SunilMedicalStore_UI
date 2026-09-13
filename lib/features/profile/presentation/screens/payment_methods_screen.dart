@@ -2,24 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
+import 'package:sunil_medical_store/features/profile/domain/payment_method.dart';
 import 'package:sunil_medical_store/features/profile/presentation/providers/payment_controller.dart';
 
 /// Profile > Payment Methods: list of saved UPI ids with the ability to add
 /// more. Only UPI is supported for now.
 class PaymentMethodsScreen extends ConsumerWidget {
   const PaymentMethodsScreen({super.key});
-
-  Future<void> _setDefault(BuildContext context, WidgetRef ref, String id) async {
-    try {
-      await ref.read(paymentMethodsProvider.notifier).setDefault(id);
-    } on ApiException catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(content: Text(e.message)));
-      }
-    }
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -74,29 +63,67 @@ class PaymentMethodsScreen extends ConsumerWidget {
                 ),
                 itemCount: methods.length,
                 separatorBuilder: (_, _) => const SizedBox(height: AppConstants.spacingMd),
-                itemBuilder: (context, index) {
-                  final method = methods[index];
-                  return Card(
-                    child: ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: theme.colorScheme.primaryContainer,
-                        child: Icon(Icons.account_balance_outlined, color: theme.colorScheme.onPrimaryContainer),
-                      ),
-                      title: Text(method.upiId),
-                      subtitle: const Text('UPI'),
-                      trailing: method.isDefault
-                          ? Chip(
-                              label: const Text('Default'),
-                              visualDensity: VisualDensity.compact,
-                              padding: EdgeInsets.zero,
-                            )
-                          : TextButton(
-                              onPressed: () => _setDefault(context, ref, method.id),
-                              child: const Text('Set default'),
-                            ),
-                    ),
-                  );
-                },
+                itemBuilder: (context, index) => _PaymentMethodCard(method: methods[index]),
+              ),
+      ),
+    );
+  }
+}
+
+/// A single payment-method row — its own [ConsumerStatefulWidget] so that
+/// setting this method as default shows a loading state on just this row's
+/// button (disabled + spinner) while the request is in flight.
+class _PaymentMethodCard extends ConsumerStatefulWidget {
+  const _PaymentMethodCard({required this.method});
+
+  final PaymentMethod method;
+
+  @override
+  ConsumerState<_PaymentMethodCard> createState() => _PaymentMethodCardState();
+}
+
+class _PaymentMethodCardState extends ConsumerState<_PaymentMethodCard> {
+  bool _settingDefault = false;
+
+  Future<void> _setDefault() async {
+    setState(() => _settingDefault = true);
+    try {
+      await ref.read(paymentMethodsProvider.notifier).setDefault(widget.method.id);
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } finally {
+      if (mounted) setState(() => _settingDefault = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final method = widget.method;
+
+    return Card(
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: theme.colorScheme.primaryContainer,
+          child: Icon(Icons.account_balance_outlined, color: theme.colorScheme.onPrimaryContainer),
+        ),
+        title: Text(method.upiId),
+        subtitle: const Text('UPI'),
+        trailing: method.isDefault
+            ? Chip(
+                label: const Text('Default'),
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+              )
+            : TextButton(
+                onPressed: _settingDefault ? null : _setDefault,
+                child: _settingDefault
+                    ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Text('Set default'),
               ),
       ),
     );
