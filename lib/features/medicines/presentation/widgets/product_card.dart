@@ -109,7 +109,7 @@ class _ProductThumb extends StatelessWidget {
         color: theme.colorScheme.primaryContainer,
         borderRadius: BorderRadius.circular(AppConstants.radiusMd),
       ),
-      child: Icon(Icons.medication, size: iconSize, color: theme.colorScheme.onPrimaryContainer),
+      child: Icon(Icons.medication_outlined, size: iconSize, color: theme.colorScheme.onPrimaryContainer),
     );
   }
 }

@@ -81,7 +81,7 @@ class _Detail extends ConsumerWidget {
                     color: theme.colorScheme.primaryContainer,
                     borderRadius: BorderRadius.circular(AppConstants.radiusLg),
                   ),
-                  child: Icon(Icons.medication, size: 72, color: theme.colorScheme.onPrimaryContainer),
+                  child: Icon(Icons.medication_outlined, size: 72, color: theme.colorScheme.onPrimaryContainer),
                 ),
                 const SizedBox(height: AppConstants.spacingLg),
                 Text(product.name, style: theme.textTheme.titleLarge),
@@ -170,8 +170,11 @@ class _Detail extends ConsumerWidget {
               ],
             ),
           ),
-          Material(
-            elevation: 8,
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHigh,
+              border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4))),
+            ),
             child: SafeArea(
               top: false,
               child: Padding(
@@ -180,7 +183,7 @@ class _Detail extends ConsumerWidget {
                   width: double.infinity,
                   child: FilledButton.icon(
                     onPressed: product.isOutOfStock ? null : () => _added(context, ref, product),
-                    icon: const Icon(Icons.add_shopping_cart),
+                    icon: const Icon(Icons.add_shopping_cart_outlined),
                     label: Text(product.isOutOfStock ? 'Out of stock' : 'Add to cart'),
                   ),
                 ),

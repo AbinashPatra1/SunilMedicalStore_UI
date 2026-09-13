@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sunil_medical_store/core/illustrations/search_empty_illustration.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/core/routes/app_routes.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
@@ -62,7 +63,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.search, size: 56, color: theme.colorScheme.primary),
+                    const SearchEmptyIllustration(size: 96),
                     const SizedBox(height: AppConstants.spacingMd),
                     Text(
                       'Search for medicines, health products, and more.',
@@ -106,9 +107,20 @@ class _Results extends ConsumerWidget {
       data: (products) {
         if (products.isEmpty) {
           return Center(
-            child: Text(
-              'No results for "$query".',
-              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            child: Padding(
+              padding: const EdgeInsets.all(AppConstants.spacingXl),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SearchEmptyIllustration(size: 96),
+                  const SizedBox(height: AppConstants.spacingMd),
+                  Text(
+                    'No results for "$query".',
+                    style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
             ),
           );
         }

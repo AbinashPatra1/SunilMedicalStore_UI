@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sunil_medical_store/core/illustrations/search_empty_illustration.dart';
 import 'package:sunil_medical_store/core/routes/app_routes.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/cart/presentation/providers/cart_providers.dart';
@@ -29,7 +30,23 @@ class MedicinesScreen extends ConsumerWidget {
         ),
         data: (products) {
           if (products.isEmpty) {
-            return const Center(child: Text('No products available yet.'));
+            final theme = Theme.of(context);
+            return Center(
+              child: Padding(
+                padding: const EdgeInsets.all(AppConstants.spacingXl),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SearchEmptyIllustration(size: 96),
+                    const SizedBox(height: AppConstants.spacingMd),
+                    Text(
+                      'No products available yet.',
+                      style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
+              ),
+            );
           }
           return ListView.separated(
             padding: const EdgeInsets.all(AppConstants.spacingLg),
