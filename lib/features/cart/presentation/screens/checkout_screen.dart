@@ -447,12 +447,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   width: double.infinity,
                   child: FilledButton(
                     onPressed: _placing ? null : () => _orderNow(address),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: AppConstants.spacingSm),
-                      child: _placing
-                          ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                          : Text('Order Now · ₹$total'),
-                    ),
+                    child: _placing
+                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                        : Text('Order Now · ₹$total'),
                   ),
                 ),
               ),

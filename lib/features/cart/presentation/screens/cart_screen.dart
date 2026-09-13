@@ -116,10 +116,7 @@ class _PaymentBar extends StatelessWidget {
               Expanded(
                 child: FilledButton(
                   onPressed: onPressed,
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(vertical: AppConstants.spacingSm),
-                    child: Text('Payment'),
-                  ),
+                  child: const Text('Payment'),
                 ),
               ),
             ],

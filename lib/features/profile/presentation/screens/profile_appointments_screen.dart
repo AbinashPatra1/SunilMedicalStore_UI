@@ -235,11 +235,6 @@ class _AppointmentCardState extends ConsumerState<_AppointmentCard> {
                           appointment.appointmentNumber!,
                           style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                         ),
-                      const SizedBox(height: AppConstants.spacingXs),
-                      Text(
-                        DateFormat('d MMM yyyy, h:mm a').format(appointment.dateTime),
-                        style: theme.textTheme.bodySmall,
-                      ),
                     ],
                   ),
                 ),
@@ -249,20 +244,34 @@ class _AppointmentCardState extends ConsumerState<_AppointmentCard> {
                 ),
               ],
             ),
-            if (appointment.status.isCustomerCancellable) ...[
-              const SizedBox(height: AppConstants.spacingSm),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton.icon(
-                  onPressed: _cancelling ? null : _cancel,
-                  style: TextButton.styleFrom(foregroundColor: theme.colorScheme.error),
-                  icon: _cancelling
-                      ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.cancel_outlined, size: 18),
-                  label: const Text('Cancel'),
+            const SizedBox(height: AppConstants.spacingXs),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(
+                  child: Text(
+                    DateFormat('d MMM yyyy, h:mm a').format(appointment.dateTime),
+                    style: theme.textTheme.bodySmall,
+                  ),
                 ),
-              ),
-            ] else if (appointment.status == AppointmentStatus.completed) ...[
+                if (appointment.status.isCustomerCancellable)
+                  TextButton.icon(
+                    onPressed: _cancelling ? null : _cancel,
+                    style: TextButton.styleFrom(
+                      foregroundColor: theme.colorScheme.error,
+                      visualDensity: VisualDensity.compact,
+                      padding: const EdgeInsets.symmetric(horizontal: AppConstants.spacingSm),
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                    ),
+                    icon: _cancelling
+                        ? const SizedBox(height: 14, width: 14, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.cancel_outlined, size: 16),
+                    label: const Text('Cancel'),
+                  ),
+              ],
+            ),
+            if (appointment.status == AppointmentStatus.completed) ...[
               const SizedBox(height: AppConstants.spacingSm),
               if (appointment.myRating != null)
                 Row(

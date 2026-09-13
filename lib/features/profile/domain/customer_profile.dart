@@ -7,7 +7,7 @@ enum Gender {
   String get label => switch (this) {
     Gender.male => 'Male',
     Gender.female => 'Female',
-    Gender.other => 'Other',
+    Gender.other => 'Others',
   };
 }
 

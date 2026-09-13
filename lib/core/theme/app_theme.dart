@@ -76,7 +76,7 @@ abstract final class AppTheme {
           elevation: 0,
           padding: const EdgeInsets.symmetric(
             horizontal: AppConstants.spacingLg,
-            vertical: AppConstants.spacingMd,
+            vertical: AppConstants.spacingSm,
           ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppConstants.radiusFull),
@@ -87,7 +87,7 @@ abstract final class AppTheme {
         style: FilledButton.styleFrom(
           padding: const EdgeInsets.symmetric(
             horizontal: AppConstants.spacingLg,
-            vertical: AppConstants.spacingMd,
+            vertical: AppConstants.spacingSm,
           ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppConstants.radiusFull),
@@ -98,7 +98,7 @@ abstract final class AppTheme {
         style: OutlinedButton.styleFrom(
           padding: const EdgeInsets.symmetric(
             horizontal: AppConstants.spacingLg,
-            vertical: AppConstants.spacingMd,
+            vertical: AppConstants.spacingSm,
           ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppConstants.radiusFull),
