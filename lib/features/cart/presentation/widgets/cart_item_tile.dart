@@ -36,7 +36,7 @@ class CartItemTile extends StatelessWidget {
                 borderRadius: BorderRadius.circular(AppConstants.radiusMd),
               ),
               child: Icon(
-                item.kind == CartItemKind.labTest ? Icons.biotech : Icons.medication,
+                item.kind == CartItemKind.labTest ? Icons.biotech_outlined : Icons.medication_outlined,
                 color: theme.colorScheme.onPrimaryContainer,
               ),
             ),

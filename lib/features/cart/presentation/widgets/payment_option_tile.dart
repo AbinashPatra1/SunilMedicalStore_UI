@@ -24,7 +24,14 @@ class PaymentOptionTile extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.only(bottom: AppConstants.spacingSm),
-      color: selected ? theme.colorScheme.primaryContainer.withValues(alpha: 0.4) : null,
+      color: selected ? theme.colorScheme.primaryContainer.withValues(alpha: 0.35) : null,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppConstants.radiusLg),
+        side: BorderSide(
+          color: selected ? theme.colorScheme.primary : theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+          width: selected ? 1.5 : 1,
+        ),
+      ),
       child: ListTile(
         onTap: onTap,
         leading: Icon(icon, color: theme.colorScheme.primary),

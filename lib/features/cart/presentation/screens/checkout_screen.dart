@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:sunil_medical_store/core/illustrations/order_success_illustration.dart';
 import 'package:sunil_medical_store/core/models/prescription.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/core/routes/app_routes.dart';
@@ -248,7 +249,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         context: context,
         barrierDismissible: false,
         builder: (dialogContext) => AlertDialog(
-          icon: Icon(Icons.check_circle, color: Theme.of(dialogContext).colorScheme.primary, size: 48),
+          icon: const OrderSuccessIllustration(size: 88),
           title: const Text('Order placed!'),
           content: Text(
             'Order ${order.orderNumber} for ₹${order.total} will be delivered to your '
@@ -401,8 +402,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               ],
             ),
           ),
-          Material(
-            elevation: 8,
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHigh,
+              border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4))),
+            ),
             child: SafeArea(
               top: false,
               child: Padding(
