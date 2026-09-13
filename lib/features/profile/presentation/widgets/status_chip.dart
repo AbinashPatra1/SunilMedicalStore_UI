@@ -20,7 +20,7 @@ class StatusChip extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: AppConstants.spacingSm, vertical: 2),
       decoration: BoxDecoration(
         color: bg,
-        borderRadius: BorderRadius.circular(AppConstants.radiusSm),
+        borderRadius: BorderRadius.circular(AppConstants.radiusFull),
       ),
       child: Text(label, style: theme.textTheme.labelSmall?.copyWith(color: fg)),
     );

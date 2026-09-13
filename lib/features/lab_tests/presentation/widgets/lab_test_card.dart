@@ -33,7 +33,7 @@ class LabTestCard extends StatelessWidget {
                       color: theme.colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(AppConstants.radiusMd),
                     ),
-                    child: Icon(Icons.biotech, color: theme.colorScheme.onPrimaryContainer),
+                    child: Icon(Icons.biotech_outlined, color: theme.colorScheme.onPrimaryContainer),
                   ),
                   const SizedBox(width: AppConstants.spacingMd),
                   Expanded(

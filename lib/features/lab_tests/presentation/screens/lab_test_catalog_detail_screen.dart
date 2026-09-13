@@ -121,8 +121,11 @@ class _Detail extends ConsumerWidget {
               ],
             ),
           ),
-          Material(
-            elevation: 8,
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHigh,
+              border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4))),
+            ),
             child: SafeArea(
               top: false,
               child: Padding(
@@ -156,7 +159,7 @@ class _Detail extends ConsumerWidget {
                     Expanded(
                       child: FilledButton.icon(
                         onPressed: () => _addToCart(context, ref),
-                        icon: const Icon(Icons.add_shopping_cart),
+                        icon: const Icon(Icons.add_shopping_cart_outlined),
                         label: const Text('Add to cart'),
                       ),
                     ),

@@ -117,6 +117,14 @@ abstract final class AppTheme {
           borderSide: BorderSide.none,
         ),
       ),
+      chipTheme: ChipThemeData(
+        backgroundColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
+        selectedColor: colorScheme.primaryContainer,
+        labelStyle: textTheme.labelLarge,
+        secondaryLabelStyle: textTheme.labelLarge?.copyWith(color: colorScheme.onPrimaryContainer),
+        side: BorderSide.none,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppConstants.radiusFull)),
+      ),
     );
   }
 }
