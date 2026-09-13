@@ -22,9 +22,10 @@ class AppColors {
 
   /// Top-to-bottom app background gradient, applied once in [MyApp]'s
   /// `builder` (behind every screen's now-transparent `Scaffold`) rather
-  /// than per-screen.
-  static const Color gradientLightTop = Color(0xFFE7F5F3);
-  static const Color gradientLightBottom = Color(0xFFFBFCFA);
-  static const Color gradientDarkTop = Color(0xFF0A1615);
-  static const Color gradientDarkBottom = Color(0xFF11201E);
+  /// than per-screen. Deliberately more visible than a bare tint so it
+  /// reads as a gradient rather than a near-solid color.
+  static const Color gradientLightTop = Color(0xFFCFEEE8);
+  static const Color gradientLightBottom = Color(0xFFFFFFFF);
+  static const Color gradientDarkTop = Color(0xFF0A211F);
+  static const Color gradientDarkBottom = Color(0xFF141F1E);
 }

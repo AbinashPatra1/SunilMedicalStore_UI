@@ -7,7 +7,6 @@ import 'package:sunil_medical_store/features/auth/presentation/providers/auth_co
 import 'package:sunil_medical_store/features/dashboard/presentation/providers/dashboard_providers.dart';
 import 'package:sunil_medical_store/features/dashboard/presentation/widgets/category_grid.dart';
 import 'package:sunil_medical_store/features/dashboard/presentation/widgets/home_search_bar.dart';
-import 'package:sunil_medical_store/features/dashboard/presentation/widgets/pharmacy_action_buttons.dart';
 import 'package:sunil_medical_store/features/dashboard/presentation/widgets/promo_banner.dart';
 import 'package:sunil_medical_store/features/dashboard/presentation/widgets/suggested_products.dart';
 import 'package:sunil_medical_store/features/profile/domain/address.dart';
@@ -21,12 +20,6 @@ import 'package:sunil_medical_store/features/profile/presentation/providers/addr
 /// real — see `features/prescriptions` and `SearchScreen`.
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
-
-  void _comingSoon(BuildContext context, String label) {
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(content: Text('$label coming soon')));
-  }
 
   /// Route to the medicines list filtered by [category].
   String _categoryRoute(String category) =>
@@ -84,12 +77,17 @@ class DashboardScreen extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: AppConstants.spacingLg),
-          PharmacyActionButtons(
-            onSearchByImage: () => _comingSoon(context, 'Image search'),
-            onUploadPrescription: () => context.push(AppRoutes.prescriptions),
+          Row(
+            children: [
+              Expanded(child: HomeSearchBar(onTap: () => context.push(AppRoutes.search))),
+              const SizedBox(width: AppConstants.spacingSm),
+              IconButton.filledTonal(
+                onPressed: () => context.push(AppRoutes.prescriptions),
+                tooltip: 'Prescription',
+                icon: const Icon(Icons.upload_file_outlined),
+              ),
+            ],
           ),
-          const SizedBox(height: AppConstants.spacingMd),
-          HomeSearchBar(onTap: () => context.push(AppRoutes.search)),
           const SizedBox(height: AppConstants.spacingLg),
           PromoBanner(onTap: () => context.go(AppRoutes.medicines)),
           const SizedBox(height: AppConstants.spacingLg),
