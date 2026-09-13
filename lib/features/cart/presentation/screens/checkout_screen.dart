@@ -19,7 +19,9 @@ import 'package:sunil_medical_store/features/cart/presentation/widgets/payment_o
 import 'package:sunil_medical_store/features/cart/presentation/widgets/price_breakdown.dart';
 import 'package:sunil_medical_store/features/prescriptions/presentation/providers/prescription_providers.dart';
 import 'package:sunil_medical_store/features/profile/domain/address.dart';
+import 'package:sunil_medical_store/features/profile/domain/payment_method.dart';
 import 'package:sunil_medical_store/features/profile/presentation/providers/address_controller.dart';
+import 'package:sunil_medical_store/features/profile/presentation/providers/payment_controller.dart';
 
 enum _PaymentChoice {
   googlePay('Google Pay', 'googlePay', Icons.account_balance_wallet_outlined),
@@ -49,6 +51,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   final _customUpiController = TextEditingController();
 
   _PaymentChoice? _payment;
+
+  /// A saved UPI id selected instead of one of the generic [_PaymentChoice]
+  /// options — mutually exclusive with [_payment] (see [_select]/[_selectSaved]).
+  PaymentMethod? _savedMethod;
   String? _upiError;
   bool _placing = false;
 
@@ -167,6 +173,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   void _select(_PaymentChoice choice) {
     setState(() {
       _payment = choice;
+      _savedMethod = null;
+      _upiError = null;
+    });
+  }
+
+  void _selectSaved(PaymentMethod method) {
+    setState(() {
+      _savedMethod = method;
+      _payment = null;
       _upiError = null;
     });
   }
@@ -176,7 +191,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       _snack('Please add a delivery address in Profile → Addresses.');
       return;
     }
-    if (_payment == null) {
+    if (_payment == null && _savedMethod == null) {
       _snack('Please select a payment method.');
       return;
     }
@@ -217,7 +232,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   Future<void> _placeOrder(Address address) async {
     setState(() => _placing = true);
 
-    final payment = _payment!;
+    final savedMethod = _savedMethod;
+    final payment = _payment;
+    final wireValue = savedMethod != null ? 'upi' : payment!.wireValue;
+    final upiId = savedMethod?.upiId ?? (payment == _PaymentChoice.otherUpi ? _customUpiController.text.trim() : null);
+    final paymentLabel = savedMethod != null
+        ? 'UPI · ${savedMethod.upiId}'
+        : (payment == _PaymentChoice.otherUpi ? 'UPI · ${_customUpiController.text.trim()}' : payment!.label);
     final items = ref.read(cartProvider);
     final promoCode = ref.read(appliedPromoProvider)?.code;
 
@@ -235,15 +256,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         ],
         addressId: address.id,
         promoCode: promoCode,
-        paymentMethod: payment.wireValue,
-        upiId: payment == _PaymentChoice.otherUpi ? _customUpiController.text.trim() : null,
+        paymentMethod: wireValue,
+        upiId: upiId,
         prescriptionId: _selectedPrescriptionId,
       );
 
       if (!mounted) return;
-      final paymentLabel = payment == _PaymentChoice.otherUpi
-          ? 'UPI · ${_customUpiController.text.trim()}'
-          : payment.label;
 
       await showDialog<void>(
         context: context,
@@ -289,6 +307,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     ref.watch(deliverySettingsProvider);
     final addresses = ref.watch(addressesProvider).value ?? const <Address>[];
     final address = ref.watch(selectedAddressProvider);
+    final savedMethods = ref.watch(paymentMethodsProvider).value ?? const <PaymentMethod>[];
     final total = ref.watch(cartTotalProvider);
     final needsPrescription = ref.watch(cartRequiresPrescriptionProvider);
     final prescriptions = ref.watch(prescriptionsProvider).value ?? const <Prescription>[];
@@ -355,6 +374,19 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             ),
                     ),
                   ),
+                ],
+                if (savedMethods.isNotEmpty) ...[
+                  const SizedBox(height: AppConstants.spacingLg),
+                  Text('Saved UPI', style: theme.textTheme.titleMedium),
+                  const SizedBox(height: AppConstants.spacingSm),
+                  for (final method in savedMethods)
+                    PaymentOptionTile(
+                      icon: Icons.account_balance_outlined,
+                      title: method.upiId,
+                      subtitle: method.isDefault ? 'Default' : null,
+                      selected: _savedMethod?.id == method.id,
+                      onTap: _placing ? () {} : () => _selectSaved(method),
+                    ),
                 ],
                 const SizedBox(height: AppConstants.spacingLg),
                 Text('Pay using UPI', style: theme.textTheme.titleMedium),

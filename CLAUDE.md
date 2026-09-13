@@ -302,7 +302,14 @@ over Dio — no mock repositories remain.
   breakdown (subtotal, discount, delivery — free above ₹500 — total),
   derived via providers in `cart_providers.dart`. **Payment** → **Checkout**
   (`/cart/checkout`): default delivery address + change (bottom-sheet picker
-  from `addressesProvider`); pay via UPI apps (Google Pay / PhonePe / BHIM /
+  from `addressesProvider`); a **"Saved UPI"** section (only shown when
+  non-empty) lists the customer's saved payment methods from
+  `paymentMethodsProvider` (Profile → Payment Methods) as selectable tiles —
+  **fixed 2026-09-13**: previously Checkout never read that provider at all,
+  so anything saved there was invisible/unusable during payment, a real gap
+  since adding one is the whole point of saving it. Selecting a saved method
+  sends `paymentMethod: 'upi'` + its `upiId` straight through, same as typing
+  one manually. Below that, pay via UPI apps (Google Pay / PhonePe / BHIM /
   Other UPI with a custom UPI-id field) or **Cash on Delivery**. When the cart
   holds an Rx-flagged item (`CartItem.requiresPrescription`, set from
   `Product.requiresPrescription` in `addProduct`;
