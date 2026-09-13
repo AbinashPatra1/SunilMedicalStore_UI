@@ -35,7 +35,7 @@ class InventoryItemTile extends StatelessWidget {
                   color: theme.colorScheme.primaryContainer,
                   borderRadius: BorderRadius.circular(AppConstants.radiusMd),
                 ),
-                child: Icon(Icons.medication, color: theme.colorScheme.onPrimaryContainer),
+                child: Icon(Icons.medication_outlined, color: theme.colorScheme.onPrimaryContainer),
               ),
               const SizedBox(width: AppConstants.spacingMd),
               Expanded(

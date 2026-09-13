@@ -28,7 +28,7 @@ class AdminPrescriptionTile extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(AppConstants.radiusSm),
+                borderRadius: BorderRadius.circular(AppConstants.radiusMd),
                 child: Image.network(
                   prescription.imageUrl,
                   width: 56,

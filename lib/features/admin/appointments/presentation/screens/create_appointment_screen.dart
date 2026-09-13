@@ -171,7 +171,7 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
           const SizedBox(height: AppConstants.spacingSm),
           Card(
             child: ListTile(
-              leading: const Icon(Icons.event),
+              leading: const Icon(Icons.event_outlined),
               title: Text(
                 _date == null
                     ? 'Pick a date'

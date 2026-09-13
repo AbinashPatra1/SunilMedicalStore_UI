@@ -177,7 +177,7 @@ class _EditFormState extends ConsumerState<_EditForm> {
           const SizedBox(height: AppConstants.spacingSm),
           Card(
             child: ListTile(
-              leading: const Icon(Icons.event),
+              leading: const Icon(Icons.event_outlined),
               title: Text(formattedDate),
               subtitle: Text('Time: $formattedTime (from doctor\'s schedule)'),
               trailing: TextButton(
