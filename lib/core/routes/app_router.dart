@@ -12,6 +12,9 @@ import 'package:sunil_medical_store/features/admin/discounts/presentation/screen
 import 'package:sunil_medical_store/features/admin/discounts/presentation/screens/discounts_list_screen.dart';
 import 'package:sunil_medical_store/features/admin/inventory/presentation/screens/add_or_edit_product_screen.dart';
 import 'package:sunil_medical_store/features/admin/inventory/presentation/screens/inventory_list_screen.dart';
+import 'package:sunil_medical_store/features/admin/banners/domain/home_banner.dart';
+import 'package:sunil_medical_store/features/admin/banners/presentation/screens/admin_banners_list_screen.dart';
+import 'package:sunil_medical_store/features/admin/banners/presentation/screens/edit_banner_screen.dart';
 import 'package:sunil_medical_store/features/admin/delivery/presentation/screens/admin_delivery_settings_screen.dart';
 import 'package:sunil_medical_store/features/admin/more/presentation/screens/admin_more_screen.dart';
 import 'package:sunil_medical_store/features/admin/orders/presentation/screens/admin_order_detail_screen.dart';
@@ -268,6 +271,16 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'delivery-settings',
                     builder: (context, state) => const AdminDeliverySettingsScreen(),
+                  ),
+                  GoRoute(
+                    path: 'banners',
+                    builder: (context, state) => const AdminBannersListScreen(),
+                    routes: [
+                      GoRoute(
+                        path: 'edit/:id',
+                        builder: (context, state) => EditBannerScreen(banner: state.extra as HomeBanner?),
+                      ),
+                    ],
                   ),
                 ],
               ),

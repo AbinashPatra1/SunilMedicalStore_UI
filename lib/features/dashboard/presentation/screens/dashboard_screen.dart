@@ -6,8 +6,8 @@ import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/auth/presentation/providers/auth_controller.dart';
 import 'package:sunil_medical_store/features/dashboard/presentation/providers/dashboard_providers.dart';
 import 'package:sunil_medical_store/features/dashboard/presentation/widgets/category_grid.dart';
+import 'package:sunil_medical_store/features/dashboard/presentation/widgets/home_banner_carousel.dart';
 import 'package:sunil_medical_store/features/dashboard/presentation/widgets/home_search_bar.dart';
-import 'package:sunil_medical_store/features/dashboard/presentation/widgets/promo_banner.dart';
 import 'package:sunil_medical_store/features/dashboard/presentation/widgets/suggested_products.dart';
 import 'package:sunil_medical_store/features/profile/domain/address.dart';
 import 'package:sunil_medical_store/features/profile/presentation/providers/address_controller.dart';
@@ -89,7 +89,7 @@ class DashboardScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: AppConstants.spacingLg),
-          PromoBanner(onTap: () => context.go(AppRoutes.medicines)),
+          HomeBannerCarousel(onTap: () => context.go(AppRoutes.medicines)),
           const SizedBox(height: AppConstants.spacingLg),
           Text('Shop by category', style: theme.textTheme.titleMedium),
           const SizedBox(height: AppConstants.spacingMd),

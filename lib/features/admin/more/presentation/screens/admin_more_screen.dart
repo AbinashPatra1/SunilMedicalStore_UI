@@ -38,6 +38,12 @@ class AdminMoreScreen extends StatelessWidget {
             subtitle: 'Store location and pharmacy delivery radius',
             onTap: () => context.push('${AppRoutes.adminMore}/delivery-settings'),
           ),
+          _MoreMenuTile(
+            icon: Icons.view_carousel_outlined,
+            title: 'Home Banners',
+            subtitle: 'Configure the offers shown on the customer home screen',
+            onTap: () => context.push(AppRoutes.adminBanners),
+          ),
         ],
       ),
     );

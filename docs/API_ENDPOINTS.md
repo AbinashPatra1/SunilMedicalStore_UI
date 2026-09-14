@@ -726,6 +726,72 @@ Haversine check).
 - Errors: `400 validation_error` (missing/invalid fields, including a tier
   with a non-positive `maxDistanceKm` or negative `fee`), `403 forbidden_admin_only`.
 
+### Home Banners — **73–75 proposed, not yet built**
+
+Backs the Admin > More > Home Banners screen: a **fixed 12-slot catalog**
+of dashboard promo banners — illustrations are client-side code keyed by
+`id`, not part of this contract. Admin edits `title`/`description`/
+`isActive` per slot; when more than one slot is active, the dashboard
+cycles through them. #73 is readable by any signed-in user (active banners
+only, for the dashboard carousel); #74/#75 are admin-only.
+
+**`id` is a fixed enum, not app-assigned** — one of the 12 values in the
+seed table below. No create/delete; every slot always exists (seed all 12
+on first migration).
+
+#### 73. `GET /v1/banners` → `200` — `HomeBanner[]`, **active only**, in catalog order (same order as the seed table below)
+```json
+[
+  {
+    "id": "generalDiscount1",
+    "title": "Up to 25% off on medicines",
+    "description": "Order your monthly refills and save more.",
+    "isActive": true
+  }
+]
+```
+- Client treats a `404`/empty array/request failure as "nothing extra to
+  show" — the dashboard falls back to a single hardcoded banner matching
+  `generalDiscount1`'s seed copy below, so this endpoint not existing yet
+  must never leave the dashboard's promo area blank or broken.
+
+#### 74. `GET /v1/admin/banners` → `200` — `HomeBanner[]`, **all 12 slots**, active or not, same catalog order as #73
+Same item shape as #73, unfiltered. `403 forbidden_admin_only` if not admin.
+
+#### 75. `PUT /v1/admin/banners/{id}` → `200` — updated `HomeBanner`
+Request: `{ "title": "...", "description": "...", "isActive": true }`
+- `{id}` is one of the 12 fixed ids below — `404 not_found` for anything else.
+- Errors: `400 validation_error` (empty title/description), `403 forbidden_admin_only`.
+
+**The 12 fixed `id` values and seed defaults** — seed exactly these on
+first migration, `isActive` as shown and everything else `false` until an
+admin turns it on:
+
+| `id` | Seed title | Seed description | `isActive` |
+|---|---|---|---|
+| `generalDiscount1` | Up to 25% off on medicines | Order your monthly refills and save more. | `true` |
+| `generalDiscount2` | Up to 25% off on medicines | Order your monthly refills and save more. | `false` |
+| `generalDiscount3` | Up to 25% off on medicines | Order your monthly refills and save more. | `false` |
+| `kaliPuja` | Save more on your pharmacy purchases this Kali Puja | Offers available on medicine purchase from 5th to 10th Nov. | `false` |
+| `durgaPuja` | Save more on your pharmacy purchases this Durga Puja | Offers available on medicine purchase from 5th to 10th Nov. | `false` |
+| `newYear` | Save more on your pharmacy purchases this New Year | Offers available on medicine purchase from 5th to 10th Nov. | `false` |
+| `holi` | Save more on your pharmacy purchases this Holi | Offers available on medicine purchase from 5th to 10th Nov. | `false` |
+| `independenceDay` | Save more on your pharmacy purchases this Independence Day | Offers available on medicine purchase from 5th to 10th Nov. | `false` |
+| `ganeshPuja` | Save more on your pharmacy purchases this Ganesh Puja | Offers available on medicine purchase from 5th to 10th Nov. | `false` |
+| `doctorVisit1` | Expert Cardiologist Dr. Rohan Verma | Consult Dr. Verma for your cardiology concerns. | `false` |
+| `doctorVisit2` | Expert Dermatologist Dr. Kavita Iyer | Consult Dr. Iyer for your skin and hair concerns. | `false` |
+| `doctorVisit3` | Expert Pediatrician Dr. Sameer Joshi | Consult Dr. Joshi for your child's health needs. | `false` |
+
+**Note on the festival descriptions**: "5th to 10th Nov" is the literal
+text given for every festival banner's seed description, but several of
+these festivals don't actually fall in November (Holi is spring,
+Independence Day is Aug 15, Kali/Durga Puja are typically Sep–Oct, New
+Year is Jan 1). Seeded as given since `title`/`description` are fully
+admin-editable either way — flagged back to the user, who will likely want
+distinct, correct date ranges per festival before these go live.
+
+---
+
 #### 26. `GET /v1/payment-methods` → `200` — `PaymentMethod[]` (default first)
 ```json
 { "id": "pm-0", "upiId": "rahul@okaxis", "isDefault": true }
@@ -1477,6 +1543,7 @@ with #15), `prescription_not_found` (proposed, with #54–59).
 | prescription `status` | `pending`, `approved`, `rejected` |
 | push `platform` | `android`, `ios` (proposed, with #60) |
 | push `data.type` | `order`, `appointment`, `labTest` (proposed, with #60) |
+| banner `id` | `generalDiscount1`, `generalDiscount2`, `generalDiscount3`, `kaliPuja`, `durgaPuja`, `newYear`, `holi`, `independenceDay`, `ganeshPuja`, `doctorVisit1`, `doctorVisit2`, `doctorVisit3` (fixed 12-slot catalog, proposed, with #73–75) |
 
 Deserialize with Dart's `Enum.values.byName(json)` — values match member names 1:1.
 
