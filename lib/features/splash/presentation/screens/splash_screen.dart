@@ -10,20 +10,12 @@ class SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.local_pharmacy_rounded,
-              size: 72,
-              color: theme.colorScheme.primary,
-            ),
-            const SizedBox(height: AppConstants.spacingMd),
-            Text(AppConstants.appName, style: theme.textTheme.headlineSmall),
+            Image.asset('assets/branding/logo.png', width: 220),
             const SizedBox(height: AppConstants.spacingXl),
             const CircularProgressIndicator(),
           ],

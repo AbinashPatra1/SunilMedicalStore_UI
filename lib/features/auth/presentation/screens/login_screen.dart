@@ -70,17 +70,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Icon(
-                  Icons.local_pharmacy_rounded,
-                  size: 64,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(height: AppConstants.spacingMd),
-                Text(
-                  AppConstants.appName,
-                  style: theme.textTheme.headlineSmall,
-                  textAlign: TextAlign.center,
-                ),
+                Center(child: Image.asset('assets/branding/logo.png', width: 160)),
                 const SizedBox(height: AppConstants.spacingXs),
                 Text(
                   _step == _Step.phone
