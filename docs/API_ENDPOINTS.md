@@ -113,6 +113,8 @@ brief see [`API_SPEC.md`](API_SPEC.md); for backend internals see [`claude.md`](
 | 70 | PUT | `/v1/admin/lab-test-bookings/{id}` | ✔ admin | Change booking status (advance or cancel) |
 | 71 | GET | `/v1/delivery-settings` | ✔ | Store location, delivery radius, fee tiers + platform fee (client-side pharmacy-order gating/pricing) |
 | 72 | PUT | `/v1/admin/delivery-settings` | ✔ admin | Set store location, delivery radius, fee tiers + platform fee |
+| 76 | PUT | `/v1/addresses/{id}` | ✔ | Edit an existing address (full replace) → 200 |
+| 77 | PUT | `/v1/payment-methods/{id}` | ✔ | Edit a saved UPI id → 200 |
 
 **45–66 are live** (verified against Azure), including the push-notification
 send side described after §3 — real order placement/cancellation triggered
@@ -250,6 +252,28 @@ exactly, or the pre-checkout estimate and the placed order's `total` will
 disagree. No new endpoint number — just the two new fields/formula, plus
 §71/#72's four new fields above.
 
+**⚠ 76–77 are not yet implemented on the backend** — Profile → Addresses
+and Profile → Payment Methods gained Edit actions alongside the existing
+Delete (delete already used the live #25/#29 and needed no backend change).
+#76 (`PUT /v1/addresses/{id}`) takes the same request shape as #23 (create)
+and returns the updated `Address`; #77 (`PUT /v1/payment-methods/{id}`)
+takes `{ "upiId": "..." }` (same validation as #27) and returns the updated
+`PaymentMethod`. Both are simple full-replace updates, no partial-update
+semantics.
+
+**⚠ `Product` gains a new `packSize` field, not yet implemented on the
+backend** — free-text pack size/quantity (e.g. `"10 tablets"`, `"125ml"`,
+`"1 piece"`) shown under the brand name on the catalog cards. Optional,
+`null`/omitted degrades cleanly (the card just doesn't show that line).
+Applies to #5–8 (customer catalog reads) and #30–33 (admin CRUD) — see #5
+and #32 for the exact field placement. No new endpoint, just a new field on
+existing `Product` responses/requests.
+
+**Note**: the "estimated delivery" line shown on catalog cards (e.g. "Get
+by Fri, 18th Sept") is computed entirely client-side (today + a fixed
+number of days) — there's no real logistics/ETA system yet, so this is
+cosmetic only and needs no backend field.
+
 49–53 additionally mean **#14 `POST /v1/promo-codes/validate` gains new
 rejection rules** — reject (still `400 invalid_promo_code`, just a different
 `message`) when the code is `active: false`, past `expiresAt`, at
@@ -353,7 +377,8 @@ before this was implemented. **Product object:**
   "dosage": "1 tablet every 6 hours, as needed (max 4/day)",
   "ingredients": ["Paracetamol", "Starch", "Povidone", "Magnesium stearate"],
   "imageUrl": null,
-  "stock": 42
+  "stock": 42,
+  "packSize": "10 tablets"
 }
 ```
 - `mrp`, `composition`, `dosage`, `imageUrl` may be `null`; `ingredients` may be `[]`
@@ -363,6 +388,11 @@ before this was implemented. **Product object:**
   "Out of stock" badge, and disables Add-to-cart. The customer catalog
   endpoints (5–8) return out-of-stock products so users can still discover
   them; only the admin `/admin/products` endpoints allow mutation.
+- **`packSize` — new field, not yet implemented.** Free-text quantity shown
+  under the brand name on the catalog cards, e.g. `"10 tablets"`, `"125ml"`,
+  `"1 piece"`/`"2 pieces"` for devices. `null`/omitted is fine — the card
+  simply doesn't show that line. Admin-editable on the Add/Edit product form
+  (#32/#33) alongside the other optional fields.
 
 #### 6. `GET /v1/catalog/products/suggested` → `200` — `Product[]` (6 items)
 #### 7. `GET /v1/catalog/products/{id}` → `200` — `Product` — `404 not_found` if missing
@@ -659,6 +689,12 @@ Request:
 #### 24. `PUT /v1/addresses/{id}/default` → `200` — updated `Address` (clears others' default). No body.
 #### 25. `DELETE /v1/addresses/{id}` → `204`. `404 address_not_found` if not the caller's.
 
+#### 76. `PUT /v1/addresses/{id}` → `200` — updated `Address` — **not yet implemented**
+Request: same shape as #23 (create), full replace — `type`, `line1`,
+`line2`, `area`, `city`, `state`, `pincode`, `latitude`, `longitude`. Does
+**not** touch `isDefault` (use #24 for that). `404 address_not_found` if not
+the caller's; same `400` validation errors as #23.
+
 ---
 
 ### Location & Delivery Settings — **71–72 proposed, not yet built**
@@ -805,6 +841,11 @@ Request: `{ "upiId": "rahul@okaxis" }`
 #### 28. `PUT /v1/payment-methods/{id}/default` → `200` — updated `PaymentMethod`. No body.
 #### 29. `DELETE /v1/payment-methods/{id}` → `204`. `404 payment_method_not_found`.
 
+#### 77. `PUT /v1/payment-methods/{id}` → `200` — updated `PaymentMethod` — **not yet implemented**
+Request: `{ "upiId": "rahul@okaxis" }`, same validation as #27. Does **not**
+touch `isDefault`. `404 payment_method_not_found` if not the caller's,
+`400 invalid_upi_id` on a bad UPI id.
+
 ---
 
 ### Admin — Inventory (products)
@@ -838,13 +879,14 @@ Request:
   "description": "Relieves mild to moderate pain and reduces fever.",
   "dosage": "1 tablet every 6 hours, as needed (max 4/day)",
   "ingredients": ["Paracetamol", "Starch", "Povidone"],
-  "imageUrl": null
+  "imageUrl": null,
+  "packSize": "10 tablets"
 }
 ```
 - Mandatory (client validates): `name`, `brand`, `category`, `price`,
   `stock`, `requiresPrescription`, `composition`.
 - Optional (omit or `null`): `mrp`, `description` (may be `""`), `dosage`,
-  `ingredients` (may be `[]`), `imageUrl`.
+  `ingredients` (may be `[]`), `imageUrl`, `packSize`.
 - Server assigns the id.
 - Errors: `400 validation_error` (missing mandatory field or bad type),
   `400 invalid_category` (unknown category label),

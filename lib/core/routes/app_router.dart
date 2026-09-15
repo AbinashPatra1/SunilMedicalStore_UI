@@ -38,11 +38,13 @@ import 'package:sunil_medical_store/features/medicines/presentation/screens/medi
 import 'package:sunil_medical_store/features/medicines/presentation/screens/medicines_screen.dart';
 import 'package:sunil_medical_store/features/medicines/presentation/screens/search_screen.dart';
 import 'package:sunil_medical_store/features/prescriptions/presentation/screens/prescriptions_screen.dart';
+import 'package:sunil_medical_store/features/profile/domain/address.dart';
 import 'package:sunil_medical_store/features/profile/domain/lab_test.dart';
 import 'package:sunil_medical_store/core/models/order.dart';
 import 'package:sunil_medical_store/features/profile/presentation/screens/account_screen.dart';
 import 'package:sunil_medical_store/features/profile/presentation/screens/add_address_screen.dart';
 import 'package:sunil_medical_store/features/profile/presentation/screens/addresses_screen.dart';
+import 'package:sunil_medical_store/features/profile/presentation/screens/help_support_screen.dart';
 import 'package:sunil_medical_store/features/profile/presentation/screens/lab_test_detail_screen.dart';
 import 'package:sunil_medical_store/features/profile/presentation/screens/lab_tests_screen.dart';
 import 'package:sunil_medical_store/features/profile/presentation/screens/order_detail_by_id_screen.dart';
@@ -51,6 +53,7 @@ import 'package:sunil_medical_store/features/profile/presentation/screens/orders
 import 'package:sunil_medical_store/features/profile/presentation/screens/payment_methods_screen.dart';
 import 'package:sunil_medical_store/features/profile/presentation/screens/profile_appointments_screen.dart';
 import 'package:sunil_medical_store/features/profile/presentation/screens/profile_screen.dart';
+import 'package:sunil_medical_store/features/profile/presentation/screens/settings_screen.dart';
 import 'package:sunil_medical_store/features/splash/presentation/screens/splash_screen.dart';
 
 /// App-wide [GoRouter] instance.
@@ -404,9 +407,15 @@ final routerProvider = Provider<GoRouter>((ref) {
                     builder: (context, state) => const AddressesScreen(),
                     routes: [
                       GoRoute(path: 'add', builder: (context, state) => const AddAddressScreen()),
+                      GoRoute(
+                        path: 'edit/:id',
+                        builder: (context, state) => AddAddressScreen(existing: state.extra as Address?),
+                      ),
                     ],
                   ),
                   GoRoute(path: 'payments', builder: (context, state) => const PaymentMethodsScreen()),
+                  GoRoute(path: 'help-support', builder: (context, state) => const HelpSupportScreen()),
+                  GoRoute(path: 'settings', builder: (context, state) => const SettingsScreen()),
                 ],
               ),
             ],

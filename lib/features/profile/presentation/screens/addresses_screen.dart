@@ -68,6 +68,7 @@ class _AddressCard extends ConsumerStatefulWidget {
 
 class _AddressCardState extends ConsumerState<_AddressCard> {
   bool _settingDefault = false;
+  bool _deleting = false;
 
   IconData _icon(AddressType type) => switch (type) {
     AddressType.home => Icons.home_outlined,
@@ -90,10 +91,54 @@ class _AddressCardState extends ConsumerState<_AddressCard> {
     }
   }
 
+  void _edit() {
+    context.push('${AppRoutes.profileEditAddress}/${widget.address.id}', extra: widget.address);
+  }
+
+  Future<void> _delete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete address?'),
+        content: Text('This will remove your ${widget.address.type.label.toLowerCase()} address. This can\'t be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton.tonal(
+            style: FilledButton.styleFrom(
+              foregroundColor: Theme.of(dialogContext).colorScheme.onErrorContainer,
+              backgroundColor: Theme.of(dialogContext).colorScheme.errorContainer,
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _deleting = true);
+    try {
+      await ref.read(addressesProvider.notifier).remove(widget.address.id);
+    } on ApiException catch (e) {
+      if (mounted) {
+        setState(() => _deleting = false);
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text(e.message)));
+      }
+      return;
+    }
+    if (mounted) setState(() => _deleting = false);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final address = widget.address;
+    final busy = _settingDefault || _deleting;
 
     return Card(
       child: Padding(
@@ -119,16 +164,30 @@ class _AddressCardState extends ConsumerState<_AddressCard> {
                       style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onPrimaryContainer),
                     ),
                   ),
+                const Spacer(),
+                IconButton(
+                  tooltip: 'Edit',
+                  visualDensity: VisualDensity.compact,
+                  icon: const Icon(Icons.edit_outlined, size: 20),
+                  onPressed: busy ? null : _edit,
+                ),
+                IconButton(
+                  tooltip: 'Delete',
+                  visualDensity: VisualDensity.compact,
+                  icon: _deleting
+                      ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                      : Icon(Icons.delete_outline, size: 20, color: theme.colorScheme.error),
+                  onPressed: busy ? null : _delete,
+                ),
               ],
             ),
-            const SizedBox(height: AppConstants.spacingSm),
             Text(address.formatted, style: theme.textTheme.bodyMedium),
             if (!address.isDefault) ...[
               const SizedBox(height: AppConstants.spacingSm),
               Align(
                 alignment: Alignment.centerLeft,
                 child: TextButton(
-                  onPressed: _settingDefault ? null : _setDefault,
+                  onPressed: busy ? null : _setDefault,
                   child: _settingDefault
                       ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
                       : const Text('Set as default'),

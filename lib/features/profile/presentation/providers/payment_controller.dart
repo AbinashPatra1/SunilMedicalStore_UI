@@ -25,6 +25,11 @@ class PaymentMethodController extends AsyncNotifier<List<PaymentMethod>> {
     state = await AsyncValue.guard(() => _repository.list());
   }
 
+  Future<void> updateUpi(String id, String upiId) async {
+    await _repository.updateUpi(id, upiId);
+    state = await AsyncValue.guard(() => _repository.list());
+  }
+
   Future<void> setDefault(String id) async {
     await _repository.setDefault(id);
     state = await AsyncValue.guard(() => _repository.list());

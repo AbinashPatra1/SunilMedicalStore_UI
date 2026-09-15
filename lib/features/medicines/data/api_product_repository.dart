@@ -59,5 +59,6 @@ class ApiProductRepository implements ProductRepository {
     ingredients: ((json['ingredients'] as List?) ?? const []).cast<String>(),
     imageUrl: json['imageUrl'] as String?,
     stock: json['stock'] as int? ?? 0,
+    packSize: json['packSize'] as String?,
   );
 }

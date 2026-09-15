@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
+import 'package:sunil_medical_store/core/utils/delivery_estimate.dart';
 import 'package:sunil_medical_store/features/medicines/domain/product.dart';
 
 /// Full-width list item for a product in the category / catalog list.
@@ -28,40 +29,60 @@ class ProductCard extends StatelessWidget {
           padding: const EdgeInsets.all(AppConstants.spacingMd),
           child: Opacity(
             opacity: oos ? 0.5 : 1.0,
-            child: Row(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _ProductThumb(size: 56, iconSize: 28),
-                const SizedBox(width: AppConstants.spacingMd),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(product.name, style: theme.textTheme.titleSmall, maxLines: 2, overflow: TextOverflow.ellipsis),
-                      Text(
-                        product.brand,
-                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                      ),
-                      if (product.requiresPrescription || oos) ...[
-                        const SizedBox(height: AppConstants.spacingXs),
-                        Row(
-                          children: [
-                            if (product.requiresPrescription) const _RxBadge(),
-                            if (product.requiresPrescription && oos)
-                              const SizedBox(width: AppConstants.spacingXs),
-                            if (oos) const _OutOfStockBadge(),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _ProductThumb(size: 56, iconSize: 28),
+                    const SizedBox(width: AppConstants.spacingMd),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(product.name, style: theme.textTheme.titleSmall, maxLines: 2, overflow: TextOverflow.ellipsis),
+                          Text(
+                            product.brand,
+                            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                          ),
+                          if (product.packSize != null)
+                            Text(
+                              product.packSize!,
+                              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                            ),
+                          if (product.requiresPrescription || oos) ...[
+                            const SizedBox(height: AppConstants.spacingXs),
+                            Row(
+                              children: [
+                                if (product.requiresPrescription) const _RxBadge(),
+                                if (product.requiresPrescription && oos)
+                                  const SizedBox(width: AppConstants.spacingXs),
+                                if (oos) const _OutOfStockBadge(),
+                              ],
+                            ),
                           ],
-                        ),
-                      ],
-                      const SizedBox(height: AppConstants.spacingSm),
-                      _PriceRow(product: product),
-                    ],
-                  ),
+                          const SizedBox(height: AppConstants.spacingSm),
+                          _PriceRow(product: product),
+                          if (!oos) ...[
+                            const SizedBox(height: AppConstants.spacingXs),
+                            Text(
+                              deliveryEstimateLabel(),
+                              style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.primary),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: AppConstants.spacingSm),
-                FilledButton.tonal(
-                  onPressed: oos ? null : onAdd,
-                  child: const Text('Add'),
+                const SizedBox(height: AppConstants.spacingSm),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: FilledButton.tonal(
+                    onPressed: oos ? null : onAdd,
+                    child: const Text('Add'),
+                  ),
                 ),
               ],
             ),

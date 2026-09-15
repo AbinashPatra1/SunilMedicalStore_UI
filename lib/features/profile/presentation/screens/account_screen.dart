@@ -183,19 +183,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                           },
                         ),
                         const SizedBox(height: AppConstants.spacingMd),
-                        Row(
-                          children: [
-                            SizedBox(
-                              width: 120,
-                              child: Text(
-                                'Phone number',
-                                style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                              ),
-                            ),
-                            const SizedBox(width: AppConstants.spacingSm),
-                            Expanded(child: Text(profile.phoneNumber, style: theme.textTheme.bodyMedium)),
-                            Icon(Icons.lock_outline, size: 16, color: theme.colorScheme.onSurfaceVariant),
-                          ],
+                        TextFormField(
+                          initialValue: profile.phoneNumber,
+                          enabled: false,
+                          decoration: const InputDecoration(
+                            labelText: 'Phone number',
+                            suffixIcon: Icon(Icons.lock_outline, size: 18),
+                          ),
                         ),
                         const SizedBox(height: AppConstants.spacingLg),
                         SizedBox(

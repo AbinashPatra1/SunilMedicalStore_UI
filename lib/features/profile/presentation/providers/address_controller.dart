@@ -49,6 +49,33 @@ class AddressController extends AsyncNotifier<List<Address>> {
     state = await AsyncValue.guard(() => _repository.list());
   }
 
+  Future<void> updateAddress({
+    required String id,
+    required AddressType type,
+    required String line1,
+    String? line2,
+    required String city,
+    required String stateName,
+    required String pincode,
+    String? area,
+    double? latitude,
+    double? longitude,
+  }) async {
+    await _repository.update(
+      id: id,
+      type: type,
+      line1: line1,
+      line2: line2,
+      city: city,
+      state: stateName,
+      pincode: pincode,
+      area: area,
+      latitude: latitude,
+      longitude: longitude,
+    );
+    state = await AsyncValue.guard(() => _repository.list());
+  }
+
   Future<void> setDefault(String id) async {
     await _repository.setDefault(id);
     state = await AsyncValue.guard(() => _repository.list());

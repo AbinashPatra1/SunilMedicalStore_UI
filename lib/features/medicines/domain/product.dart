@@ -18,6 +18,7 @@ class Product {
     this.ingredients = const [],
     this.imageUrl,
     this.stock = 0,
+    this.packSize,
   });
 
   final String id;
@@ -55,6 +56,11 @@ class Product {
   /// Units on hand. `0` means out of stock — customer catalog greys the
   /// product out and disables Add; admin inventory still shows it.
   final int stock;
+
+  /// Pack size / quantity shown under the brand name, e.g. `10 tablets`,
+  /// `125ml`, `1 piece` (`null` when not set — degrades cleanly since the
+  /// backend doesn't have this field yet).
+  final String? packSize;
 
   bool get isOutOfStock => stock <= 0;
 

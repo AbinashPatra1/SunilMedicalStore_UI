@@ -52,6 +52,8 @@ class ProfileScreen extends ConsumerWidget {
           ProfileOptionTile(icon: Icons.biotech_outlined, label: 'Lab Tests', onTap: () => context.push(AppRoutes.profileLabTests)),
           ProfileOptionTile(icon: Icons.location_on_outlined, label: 'Addresses', onTap: () => context.push(AppRoutes.profileAddresses)),
           ProfileOptionTile(icon: Icons.account_balance_wallet_outlined, label: 'Payment Methods', onTap: () => context.push(AppRoutes.profilePayments)),
+          ProfileOptionTile(icon: Icons.settings_outlined, label: 'Settings', onTap: () => context.push(AppRoutes.profileSettings)),
+          ProfileOptionTile(icon: Icons.help_outline, label: 'Help & Support', onTap: () => context.push(AppRoutes.profileHelpSupport)),
           const SizedBox(height: AppConstants.spacingLg),
           OutlinedButton.icon(
             onPressed: () => ref.read(authControllerProvider.notifier).signOut(),

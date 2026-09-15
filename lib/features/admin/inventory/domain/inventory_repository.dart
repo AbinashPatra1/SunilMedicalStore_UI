@@ -39,6 +39,7 @@ class ProductInput {
     this.dosage,
     this.ingredients = const [],
     this.imageUrl,
+    this.packSize,
   });
 
   final String name;
@@ -53,4 +54,7 @@ class ProductInput {
   final String? dosage;
   final List<String> ingredients;
   final String? imageUrl;
+
+  /// Pack size / quantity, e.g. `10 tablets`, `125ml`, `1 piece`.
+  final String? packSize;
 }

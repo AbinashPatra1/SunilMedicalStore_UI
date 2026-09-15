@@ -5,6 +5,7 @@ import 'package:sunil_medical_store/features/profile/domain/payment_method.dart'
 abstract interface class PaymentMethodRepository {
   Future<List<PaymentMethod>> list();
   Future<PaymentMethod> addUpi(String upiId);
+  Future<PaymentMethod> updateUpi(String id, String upiId);
   Future<void> setDefault(String id);
   Future<void> remove(String id);
 }

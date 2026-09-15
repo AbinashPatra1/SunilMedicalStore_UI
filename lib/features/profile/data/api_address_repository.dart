@@ -55,6 +55,40 @@ class ApiAddressRepository implements AddressRepository {
   }
 
   @override
+  Future<Address> update({
+    required String id,
+    required AddressType type,
+    required String line1,
+    String? line2,
+    required String city,
+    required String state,
+    required String pincode,
+    String? area,
+    double? latitude,
+    double? longitude,
+  }) async {
+    try {
+      final response = await _dio.put<Map<String, dynamic>>(
+        '/addresses/$id',
+        data: {
+          'type': type.name,
+          'line1': line1,
+          'line2': line2,
+          'city': city,
+          'state': state,
+          'pincode': pincode,
+          'area': area,
+          'latitude': latitude,
+          'longitude': longitude,
+        },
+      );
+      return _fromJson(response.data!);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  @override
   Future<void> setDefault(String id) async {
     try {
       await _dio.put<void>('/addresses/$id/default');

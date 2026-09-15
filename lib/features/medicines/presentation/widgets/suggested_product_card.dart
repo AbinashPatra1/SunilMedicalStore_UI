@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
+import 'package:sunil_medical_store/core/utils/delivery_estimate.dart';
 import 'package:sunil_medical_store/features/medicines/domain/product.dart';
 
 /// Compact, fixed-width product card for the horizontal "Suggested" row.
@@ -58,6 +59,13 @@ class SuggestedProductCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  if (product.packSize != null)
+                    Text(
+                      product.packSize!,
+                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
                   const SizedBox(height: AppConstants.spacingXs),
                   Row(
                     children: [
@@ -77,6 +85,15 @@ class SuggestedProductCard extends StatelessWidget {
                       ],
                     ],
                   ),
+                  if (!oos) ...[
+                    const SizedBox(height: AppConstants.spacingXs),
+                    Text(
+                      deliveryEstimateLabel(),
+                      style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.primary),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                   const SizedBox(height: AppConstants.spacingSm),
                   SizedBox(
                     width: double.infinity,

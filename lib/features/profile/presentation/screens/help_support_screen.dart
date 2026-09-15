@@ -1,0 +1,111 @@
+import 'package:flutter/material.dart';
+import 'package:sunil_medical_store/core/theme/app_constants.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+/// Profile > Help & Support: a WhatsApp Business chat shortcut plus common
+/// FAQs. FAQ copy is placeholder pending real content from the store.
+class HelpSupportScreen extends StatelessWidget {
+  const HelpSupportScreen({super.key});
+
+  // Placeholder — replace with the store's real WhatsApp Business number.
+  static const _whatsAppNumber = '911234567890';
+
+  static const _faqs = [
+    (
+      question: 'How do I track my order?',
+      answer:
+          'Go to Profile > Orders and tap the order to see its current status. '
+          'You\'ll also get a notification whenever the status changes.',
+    ),
+    (
+      question: 'How do I cancel an order or appointment?',
+      answer:
+          'Orders can be cancelled from Profile > Orders while they\'re still '
+          'being processed. Appointments can be cancelled from Profile > '
+          'Appointments up until the scheduled time.',
+    ),
+    (
+      question: 'Do I need a prescription for all medicines?',
+      answer:
+          'Only medicines marked "Rx required" need a valid prescription. '
+          'You can upload one from the Prescriptions section or during checkout.',
+    ),
+    (
+      question: 'What are your delivery charges?',
+      answer:
+          'Delivery is free above a minimum order value; below that, a small '
+          'distance-based delivery fee applies and is shown at checkout '
+          'before you place the order.',
+    ),
+    (
+      question: 'How do I add or change my delivery address?',
+      answer:
+          'Go to Profile > Addresses to add a new address, edit an existing '
+          'one, or set a different one as default.',
+    ),
+  ];
+
+  Future<void> _openWhatsApp(BuildContext context) async {
+    final uri = Uri.parse(
+      'https://wa.me/$_whatsAppNumber?text=${Uri.encodeComponent("Hi, I need help with my order.")}',
+    );
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!launched && context.mounted) {
+      ScaffoldMessenger.of(context)
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(content: Text('Could not open WhatsApp.')));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Help & Support')),
+      body: ListView(
+        padding: const EdgeInsets.all(AppConstants.spacingLg),
+        children: [
+          Card(
+            child: ListTile(
+              leading: CircleAvatar(
+                backgroundColor: theme.colorScheme.primaryContainer,
+                child: Icon(Icons.chat_outlined, color: theme.colorScheme.onPrimaryContainer),
+              ),
+              title: const Text('Chat with us on WhatsApp'),
+              subtitle: const Text('Get help from our support team'),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: () => _openWhatsApp(context),
+            ),
+          ),
+          const SizedBox(height: AppConstants.spacingXl),
+          Text('Frequently asked questions', style: theme.textTheme.titleMedium),
+          const SizedBox(height: AppConstants.spacingSm),
+          Card(
+            child: Column(
+              children: [
+                for (final faq in _faqs)
+                  ExpansionTile(
+                    title: Text(faq.question, style: theme.textTheme.bodyMedium),
+                    childrenPadding: const EdgeInsets.fromLTRB(
+                      AppConstants.spacingMd,
+                      0,
+                      AppConstants.spacingMd,
+                      AppConstants.spacingMd,
+                    ),
+                    expandedAlignment: Alignment.centerLeft,
+                    children: [
+                      Text(
+                        faq.answer,
+                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

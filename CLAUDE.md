@@ -27,6 +27,8 @@ every feature talks to it over HTTP — see "Data & backend strategy".
 - Firebase Storage (prescription image uploads — see "Prescriptions" below;
   `firebase_storage` package, **needs Storage enabled in the Firebase
   console** — not yet done, uploads currently fail with a 404 until it is)
+- `flutter_secure_storage` (already a dependency; first real use **2026-09-15**
+  — persists the dark-mode preference, see Profile > Settings below)
 - **ASP.NET Core + MySQL backend** — **live**, deployed to Azure App Service;
   this is the real data store
 - No Firestore. See "Data & backend strategy".
@@ -265,6 +267,21 @@ over Dio — no mock repositories remain.
   the catalog UIs (ProductCard, SuggestedProductCard, MedicineDetailScreen)
   grey out the card + disable Add + show an "Out of stock" badge. Cart's
   `addProduct` no-ops on out-of-stock as a defensive backstop.
+  **Card layout, 2026-09-15**: `ProductCard`/`SuggestedProductCard` gained a
+  `packSize` line under the brand (e.g. "10 tablets", "125ml", "1 piece") —
+  new optional `Product.packSize` field, admin-editable on the Inventory
+  Add/Edit form, **built ahead of the backend** (`docs/API_ENDPOINTS.md`
+  §5/§32), so it stays hidden until the backend returns it. Also added an
+  "estimated delivery" line (e.g. "Get by Fri, 18th Sept",
+  `core/utils/delivery_estimate.dart`) — purely client-computed (today + a
+  fixed number of days), no backend involved, cosmetic only. `ProductCard`
+  (the full-width list row) was restructured so **Add is bottom-right
+  aligned** instead of vertically centered beside the thumbnail, now that
+  the info column can run to 4–5 lines; `SuggestedProductCard` already had
+  Add at the bottom of its column. Verified live on the emulator (Medicines
+  list): delivery line renders correctly, Add button sits at the
+  bottom-right of each card; `packSize` has no seed data yet so its line
+  correctly stays hidden pending the backend field.
 - **Lab Tests** (tab) — bookable-test catalog like medicines
   (`features/lab_tests`, `LabTest` model + `ApiLabTestRepository` +
   `labTestCatalogProvider`), backed by `GET /catalog/lab-tests` /
@@ -345,7 +362,7 @@ over Dio — no mock repositories remain.
   prices/gates against (`selectedAddressProvider`) is shared with the Cart
   screen's pre-checkout estimate, so both show the same numbers before an
   address is ever explicitly changed.
-- **Profile** — header + 6 menus + Sign Out:
+- **Profile** — header + 8 menus + Sign Out:
   - **Account** — gender-based avatar, personal details, medical records
     (real backend data, read-only — see the Account note below).
   - **Appointments** — past appointments + "Book Appointment" → Appointments
@@ -367,6 +384,15 @@ over Dio — no mock repositories remain.
     backend degrades cleanly. The rate-doctor trigger itself hasn't been
     exercised live yet (no completed appointment in the test account) but
     is code-identical in structure to the proven Cancel flow.
+    **Layout fix, 2026-09-15**: putting Cancel on the same row as the
+    date/time (done 2026-09-13) left the date/time text starting flush
+    under the doctor avatar instead of aligned under the name/specialization
+    column. Fixed with a leading spacer matching the avatar's width +
+    spacing, and simplified Cancel from a labelled `TextButton.icon` to an
+    icon-only pill (`_CancelIconButton`, a small circular `IconButton` in
+    the error-container color) to free up the row — matches the user's own
+    suggested fix. Verified live: the date now lines up correctly under the
+    doctor name, Cancel renders as a compact red circular ✕ button.
   - **Orders** — history list → detail (items, total, **Download invoice**).
   - **Lab Tests** — history list → detail (parameters, **Download invoice**).
     `LabTest.bookedOn` is the customer-chosen scheduled collection date (not
@@ -382,11 +408,25 @@ over Dio — no mock repositories remain.
     `invoiceUrl` is currently a placeholder domain (`api.sunilmedicalstore.com`,
     doesn't resolve — no real PDF generation yet), so the page itself won't
     load; that's expected per `docs/API_ENDPOINTS.md`, not a client bug.
-  - **Addresses** — list, **Set as default**, **Add address** — real via
+  - **Addresses** — list, **Set as default**, **Add address**, and now
+    **Edit**/**Delete** (**added 2026-09-15**) — real via
     `ApiAddressRepository` (`GET/POST /addresses`,
-    `PUT /addresses/{id}/default`, `DELETE /addresses/{id}`), wrapped in an
+    `PUT /addresses/{id}/default`, `DELETE /addresses/{id}`, and a new
+    `PUT /addresses/{id}` for edit, **built ahead of the backend** —
+    endpoint #76 in `docs/API_ENDPOINTS.md`), wrapped in an
     `AsyncNotifierProvider` (`addressesProvider`) that re-fetches after each
-    mutation. Add Address has a **"Use current location"** button
+    mutation. `AddAddressScreen` now doubles as the edit form (`existing:
+    Address?` param — seeds every field including captured lat/lng, swaps
+    "Save address"/"Add address" copy for "Save changes"/"Edit address",
+    hides the "Set as default" checkbox in edit mode since editing
+    shouldn't silently change default status) — reached via a new pencil
+    icon per card (`/profile/addresses/edit/<id>`, address passed via
+    `extra`); delete is a trash icon with a confirm dialog, reusing the
+    controller's pre-existing (and already-live) `remove()`. Verified live:
+    Edit opens correctly pre-seeded; saving cleanly surfaces "Something
+    went wrong" since #76 isn't deployed yet (same fail-open pattern as
+    every other build-ahead-of-backend mutation), no crash. Add Address has
+    a **"Use current location"** button
     (`core/location/`: `geolocator` GPS fix + `geocoding` on-device
     reverse-geocode, no Maps API billing) that fills `area`/city/state/
     pincode read-only from the device's location; falls back to editable
@@ -400,12 +440,20 @@ over Dio — no mock repositories remain.
     `ConsumerStatefulWidget`, `_AddressCard` — button disables + swaps its
     label for a small spinner) — **fixed 2026-09-13**, the button previously
     gave no feedback during the round-trip and looked unresponsive.
-  - **Payment Methods** — list, **Add UPI** dialog — real via
-    `ApiPaymentMethodRepository` (`GET/POST /payment-methods`,
-    `PUT /payment-methods/{id}/default`, `DELETE /payment-methods/{id}`),
-    same `AsyncNotifierProvider` pattern (`paymentMethodsProvider`). Only UPI
-    supported for now. **Set default** got the same per-row loading-state fix
-    as Addresses above (`_PaymentMethodCard`), same day, same reason.
+  - **Payment Methods** — list, **Add UPI** dialog, and now **Edit**/
+    **Delete** (**added 2026-09-15**) — real via `ApiPaymentMethodRepository`
+    (`GET/POST /payment-methods`, `PUT /payment-methods/{id}/default`,
+    `DELETE /payment-methods/{id}`, and a new `PUT /payment-methods/{id}`
+    for edit, **built ahead of the backend** — endpoint #77), same
+    `AsyncNotifierProvider` pattern (`paymentMethodsProvider`). Only UPI
+    supported for now. The former `_AddUpiDialog` became `_AddOrEditUpiDialog`
+    (`existing: PaymentMethod?`) — tapping a card opens it pre-filled and
+    calls `updateUpi()` instead of `addUpi()`; delete is a trash icon with a
+    confirm dialog, reusing the already-live `remove()`. **Set default** got
+    the same per-row loading-state fix as Addresses above
+    (`_PaymentMethodCard`), same day, same reason. Verified live: tapping a
+    saved UPI method opens "Edit UPI" pre-filled with its id; delete icon
+    renders correctly next to the Default chip.
   - **Account** data — real via `ApiProfileRepository.customerProfile()`
     (`customerProfileProvider`), which self-heals a missing backend user row
     on first sign-in. Name/phone shown around the app are the real auth
@@ -433,6 +481,31 @@ over Dio — no mock repositories remain.
     "Profile updated" not shown), then a valid one — saved successfully
     against the real backend, and reloading the screen confirmed the new
     values persisted server-side.
+    **Restyled 2026-09-15**: the Phone number row used to be a plain
+    unstyled `Row` (label + text + lock icon) that didn't match the other
+    fields' `TextFormField` look. Swapped for a disabled `TextFormField`
+    (`enabled: false`, lock icon as `suffixIcon`) — same filled-box/
+    floating-label chrome as Full Name/Gender/etc., just visibly greyed out
+    and non-interactive. Verified live.
+  - **Settings** (`/profile/settings`, **new 2026-09-15**) — currently just
+    a dark-mode toggle (`SwitchListTile`), backed by a new
+    `themeModeProvider` (`Notifier<ThemeMode>`,
+    `features/profile/presentation/providers/theme_controller.dart`)
+    persisted via `flutter_secure_storage`. **The app now defaults to light
+    mode** regardless of the device's system setting — previously
+    `MaterialApp.router` didn't set `themeMode` at all, so it silently
+    followed `ThemeMode.system`; `app.dart` now watches `themeModeProvider`
+    explicitly. Verified live: app launches in light mode, the Settings
+    toggle switches the whole app to dark instantly and the choice would
+    persist across restarts (secure-storage write confirmed, not
+    separately verified across a real process restart).
+  - **Help & Support** (`/profile/help-support`, **new 2026-09-15**) — a
+    "Chat with us on WhatsApp" tile deep-linking to `wa.me/<number>` via
+    `url_launcher` (same `LaunchMode.externalApplication` pattern as
+    invoice download), plus a static FAQ list (`ExpansionTile`s). **The
+    WhatsApp number is a placeholder** (`HelpSupportScreen._whatsAppNumber`)
+    — needs the store's real WhatsApp Business number before go-live. FAQ
+    copy is placeholder/dummy content, as asked. Verified live.
 - **Admin console** (`lib/features/admin/`) — role-gated, mirrors the
   customer's 5-tab shell (`AdminScaffoldWithNavBar` in `core/widgets`). Tabs:
   - **Inventory** — full CRUD over the product catalog against
@@ -447,7 +520,9 @@ over Dio — no mock repositories remain.
     (`productId == null` means Add), captures all `Product` fields
     (mandatory: Name, Brand, Category, Price, Quantity, Composition, Rx;
     optional: MRP, Description, Dosage, Ingredients as comma-separated
-    string, Image URL), and has a delete-with-confirm action on Edit.
+    string, Image URL, **Pack size** — new 2026-09-15, e.g. "10 tablets",
+    feeds the catalog cards' pack-size line, see Medicines above), and has
+    a delete-with-confirm action on Edit.
   - **Appointments** — a `DefaultTabController` shell with **two sub-tabs**:
     - _Appointments sub-tab_ (`AdminAppointmentsListScreen`) — every
       appointment across every user. Search bar (name or doctor) +

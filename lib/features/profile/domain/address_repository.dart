@@ -18,6 +18,19 @@ abstract interface class AddressRepository {
     bool makeDefault = false,
   });
 
+  Future<Address> update({
+    required String id,
+    required AddressType type,
+    required String line1,
+    String? line2,
+    required String city,
+    required String state,
+    required String pincode,
+    String? area,
+    double? latitude,
+    double? longitude,
+  });
+
   Future<void> setDefault(String id);
   Future<void> remove(String id);
 }

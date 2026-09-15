@@ -248,6 +248,11 @@ class _AppointmentCardState extends ConsumerState<_AppointmentCard> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
+                // Matches the CircleAvatar's diameter (default radius 20) +
+                // the spacing after it above, so the date lines up under the
+                // name/specialization column instead of starting under the
+                // avatar.
+                const SizedBox(width: 40 + AppConstants.spacingMd),
                 Expanded(
                   child: Text(
                     DateFormat('d MMM yyyy, h:mm a').format(appointment.dateTime),
@@ -255,20 +260,7 @@ class _AppointmentCardState extends ConsumerState<_AppointmentCard> {
                   ),
                 ),
                 if (appointment.status.isCustomerCancellable)
-                  TextButton.icon(
-                    onPressed: _cancelling ? null : _cancel,
-                    style: TextButton.styleFrom(
-                      foregroundColor: theme.colorScheme.error,
-                      visualDensity: VisualDensity.compact,
-                      padding: const EdgeInsets.symmetric(horizontal: AppConstants.spacingSm),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    icon: _cancelling
-                        ? const SizedBox(height: 14, width: 14, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Icon(Icons.cancel_outlined, size: 16),
-                    label: const Text('Cancel'),
-                  ),
+                  _CancelIconButton(cancelling: _cancelling, onPressed: _cancel),
               ],
             ),
             if (appointment.status == AppointmentStatus.completed) ...[
@@ -298,6 +290,46 @@ class _AppointmentCardState extends ConsumerState<_AppointmentCard> {
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Icon-only Cancel action in a pill shape — replaces a labelled
+/// `TextButton.icon` to free up horizontal space now that it shares a row
+/// with the appointment date/time.
+class _CancelIconButton extends StatelessWidget {
+  const _CancelIconButton({required this.cancelling, required this.onPressed});
+
+  final bool cancelling;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SizedBox(
+      height: 28,
+      width: 28,
+      child: IconButton(
+        onPressed: cancelling ? null : onPressed,
+        tooltip: 'Cancel appointment',
+        padding: EdgeInsets.zero,
+        visualDensity: VisualDensity.compact,
+        style: IconButton.styleFrom(
+          backgroundColor: theme.colorScheme.errorContainer,
+          foregroundColor: theme.colorScheme.onErrorContainer,
+          shape: const CircleBorder(),
+        ),
+        icon: cancelling
+            ? SizedBox(
+                height: 14,
+                width: 14,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: theme.colorScheme.onErrorContainer,
+                ),
+              )
+            : const Icon(Icons.close, size: 16),
       ),
     );
   }

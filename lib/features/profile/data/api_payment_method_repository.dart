@@ -33,6 +33,19 @@ class ApiPaymentMethodRepository implements PaymentMethodRepository {
   }
 
   @override
+  Future<PaymentMethod> updateUpi(String id, String upiId) async {
+    try {
+      final response = await _dio.put<Map<String, dynamic>>(
+        '/payment-methods/$id',
+        data: {'upiId': upiId},
+      );
+      return _fromJson(response.data!);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  @override
   Future<void> setDefault(String id) async {
     try {
       await _dio.put<void>('/payment-methods/$id/default');

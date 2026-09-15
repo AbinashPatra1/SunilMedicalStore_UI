@@ -9,9 +9,15 @@ import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/profile/domain/address.dart';
 import 'package:sunil_medical_store/features/profile/presentation/providers/address_controller.dart';
 
-/// Form to add a new delivery address.
+/// Form to add a new delivery address, or edit an existing one when
+/// [existing] is passed (seeds the form and calls `update` instead of
+/// `add` on save).
 class AddAddressScreen extends ConsumerStatefulWidget {
-  const AddAddressScreen({super.key});
+  const AddAddressScreen({super.key, this.existing});
+
+  final Address? existing;
+
+  bool get isEdit => existing != null;
 
   @override
   ConsumerState<AddAddressScreen> createState() => _AddAddressScreenState();
@@ -19,14 +25,14 @@ class AddAddressScreen extends ConsumerStatefulWidget {
 
 class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _line1 = TextEditingController();
-  final _line2 = TextEditingController();
-  final _area = TextEditingController();
-  final _city = TextEditingController();
-  final _state = TextEditingController();
-  final _pincode = TextEditingController();
+  late final _line1 = TextEditingController(text: widget.existing?.line1 ?? '');
+  late final _line2 = TextEditingController(text: widget.existing?.line2 ?? '');
+  late final _area = TextEditingController(text: widget.existing?.area ?? '');
+  late final _city = TextEditingController(text: widget.existing?.city ?? '');
+  late final _state = TextEditingController(text: widget.existing?.state ?? '');
+  late final _pincode = TextEditingController(text: widget.existing?.pincode ?? '');
 
-  AddressType _type = AddressType.home;
+  late AddressType _type = widget.existing?.type ?? AddressType.home;
   bool _makeDefault = false;
   bool _saving = false;
   String? _error;
@@ -34,11 +40,13 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
   // Set once "Use current location" succeeds; cleared by "Edit manually".
   // The captured coordinates themselves persist through a later manual
   // edit — only the city/state/pincode/area fields flip back to editable.
-  bool _locationCaptured = false;
+  // Seeded true on edit when the existing address already has coordinates,
+  // so re-saving without touching location doesn't drop them.
+  late bool _locationCaptured = widget.existing?.latitude != null;
   bool _locating = false;
   String? _locationError;
-  double? _latitude;
-  double? _longitude;
+  late double? _latitude = widget.existing?.latitude;
+  late double? _longitude = widget.existing?.longitude;
 
   @override
   void dispose() {
@@ -86,18 +94,34 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
       _error = null;
     });
     try {
-      await ref.read(addressesProvider.notifier).add(
-        type: _type,
-        line1: _line1.text.trim(),
-        line2: _line2.text.trim().isEmpty ? null : _line2.text.trim(),
-        city: _city.text.trim(),
-        stateName: _state.text.trim(),
-        pincode: _pincode.text.trim(),
-        area: _area.text.trim().isEmpty ? null : _area.text.trim(),
-        latitude: _latitude,
-        longitude: _longitude,
-        makeDefault: _makeDefault,
-      );
+      final notifier = ref.read(addressesProvider.notifier);
+      if (widget.isEdit) {
+        await notifier.updateAddress(
+          id: widget.existing!.id,
+          type: _type,
+          line1: _line1.text.trim(),
+          line2: _line2.text.trim().isEmpty ? null : _line2.text.trim(),
+          city: _city.text.trim(),
+          stateName: _state.text.trim(),
+          pincode: _pincode.text.trim(),
+          area: _area.text.trim().isEmpty ? null : _area.text.trim(),
+          latitude: _latitude,
+          longitude: _longitude,
+        );
+      } else {
+        await notifier.add(
+          type: _type,
+          line1: _line1.text.trim(),
+          line2: _line2.text.trim().isEmpty ? null : _line2.text.trim(),
+          city: _city.text.trim(),
+          stateName: _state.text.trim(),
+          pincode: _pincode.text.trim(),
+          area: _area.text.trim().isEmpty ? null : _area.text.trim(),
+          latitude: _latitude,
+          longitude: _longitude,
+          makeDefault: _makeDefault,
+        );
+      }
       if (mounted) context.pop();
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
@@ -114,7 +138,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Add address')),
+      appBar: AppBar(title: Text(widget.isEdit ? 'Edit address' : 'Add address')),
       body: Form(
         key: _formKey,
         child: ListView(
@@ -208,13 +232,15 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
                 ),
               ),
             ],
-            const SizedBox(height: AppConstants.spacingSm),
-            CheckboxListTile(
-              contentPadding: EdgeInsets.zero,
-              value: _makeDefault,
-              onChanged: _saving ? null : (v) => setState(() => _makeDefault = v ?? false),
-              title: const Text('Set as default address'),
-            ),
+            if (!widget.isEdit) ...[
+              const SizedBox(height: AppConstants.spacingSm),
+              CheckboxListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _makeDefault,
+                onChanged: _saving ? null : (v) => setState(() => _makeDefault = v ?? false),
+                title: const Text('Set as default address'),
+              ),
+            ],
             if (_error != null) ...[
               const SizedBox(height: AppConstants.spacingSm),
               Text(_error!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),
@@ -224,7 +250,7 @@ class _AddAddressScreenState extends ConsumerState<AddAddressScreen> {
               onPressed: _saving ? null : _save,
               child: _saving
                   ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Text('Save address'),
+                  : Text(widget.isEdit ? 'Save changes' : 'Save address'),
             ),
           ],
         ),

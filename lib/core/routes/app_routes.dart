@@ -56,5 +56,8 @@ abstract final class AppRoutes {
   static const profileLabTestDetail = '/profile/lab-tests/detail';
   static const profileAddresses = '/profile/addresses';
   static const profileAddAddress = '/profile/addresses/add';
+  static const profileEditAddress = '/profile/addresses/edit'; // + /<addressId>
   static const profilePayments = '/profile/payments';
+  static const profileHelpSupport = '/profile/help-support';
+  static const profileSettings = '/profile/settings';
 }

@@ -55,6 +55,7 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
   late final TextEditingController _price;
   late final TextEditingController _mrp;
   late final TextEditingController _stock;
+  late final TextEditingController _packSize;
   late final TextEditingController _composition;
   late final TextEditingController _description;
   late final TextEditingController _dosage;
@@ -76,6 +77,7 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
     _price = TextEditingController(text: p?.price.toString() ?? '');
     _mrp = TextEditingController(text: p?.mrp?.toString() ?? '');
     _stock = TextEditingController(text: p?.stock.toString() ?? '');
+    _packSize = TextEditingController(text: p?.packSize ?? '');
     _composition = TextEditingController(text: p?.composition ?? '');
     _description = TextEditingController(text: p?.description ?? '');
     _dosage = TextEditingController(text: p?.dosage ?? '');
@@ -92,6 +94,7 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
     _price.dispose();
     _mrp.dispose();
     _stock.dispose();
+    _packSize.dispose();
     _composition.dispose();
     _description.dispose();
     _dosage.dispose();
@@ -138,6 +141,7 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
       dosage: _dosage.text.trim().isEmpty ? null : _dosage.text.trim(),
       ingredients: ingredientList,
       imageUrl: _imageUrl.text.trim().isEmpty ? null : _imageUrl.text.trim(),
+      packSize: _packSize.text.trim().isEmpty ? null : _packSize.text.trim(),
     );
   }
 
@@ -311,6 +315,15 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
               decoration: const InputDecoration(labelText: 'Quantity in stock'),
               validator: (v) => _requiredInt(v),
+            ),
+            const SizedBox(height: AppConstants.spacingMd),
+            TextFormField(
+              controller: _packSize,
+              enabled: !busy,
+              decoration: const InputDecoration(
+                labelText: 'Pack size (optional)',
+                hintText: 'e.g. 10 tablets, 125ml, 1 piece',
+              ),
             ),
             const SizedBox(height: AppConstants.spacingMd),
             TextFormField(

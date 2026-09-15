@@ -18,7 +18,7 @@ class PaymentMethodsScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Payment Methods')),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => showDialog<void>(context: context, builder: (_) => const _AddUpiDialog()),
+        onPressed: () => showDialog<void>(context: context, builder: (_) => const _AddOrEditUpiDialog()),
         icon: const Icon(Icons.add),
         label: const Text('Add UPI'),
       ),
@@ -84,6 +84,7 @@ class _PaymentMethodCard extends ConsumerStatefulWidget {
 
 class _PaymentMethodCardState extends ConsumerState<_PaymentMethodCard> {
   bool _settingDefault = false;
+  bool _deleting = false;
 
   Future<void> _setDefault() async {
     setState(() => _settingDefault = true);
@@ -100,10 +101,50 @@ class _PaymentMethodCardState extends ConsumerState<_PaymentMethodCard> {
     }
   }
 
+  Future<void> _delete() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete payment method?'),
+        content: Text('This will remove "${widget.method.upiId}". This can\'t be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton.tonal(
+            style: FilledButton.styleFrom(
+              foregroundColor: Theme.of(dialogContext).colorScheme.onErrorContainer,
+              backgroundColor: Theme.of(dialogContext).colorScheme.errorContainer,
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _deleting = true);
+    try {
+      await ref.read(paymentMethodsProvider.notifier).remove(widget.method.id);
+    } on ApiException catch (e) {
+      if (mounted) {
+        setState(() => _deleting = false);
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text(e.message)));
+      }
+      return;
+    }
+    if (mounted) setState(() => _deleting = false);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final method = widget.method;
+    final busy = _settingDefault || _deleting;
 
     return Card(
       child: ListTile(
@@ -113,33 +154,57 @@ class _PaymentMethodCardState extends ConsumerState<_PaymentMethodCard> {
         ),
         title: Text(method.upiId),
         subtitle: const Text('UPI'),
-        trailing: method.isDefault
-            ? Chip(
-                label: const Text('Default'),
-                visualDensity: VisualDensity.compact,
-                padding: EdgeInsets.zero,
+        onTap: busy ? null : () => showDialog<void>(context: context, builder: (_) => _AddOrEditUpiDialog(existing: method)),
+        trailing: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (method.isDefault)
+              const Padding(
+                padding: EdgeInsets.only(right: AppConstants.spacingXs),
+                child: Chip(
+                  label: Text('Default'),
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                ),
               )
-            : TextButton(
-                onPressed: _settingDefault ? null : _setDefault,
+            else
+              TextButton(
+                onPressed: busy ? null : _setDefault,
                 child: _settingDefault
                     ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
                     : const Text('Set default'),
               ),
+            IconButton(
+              tooltip: 'Delete',
+              visualDensity: VisualDensity.compact,
+              icon: _deleting
+                  ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  : Icon(Icons.delete_outline, size: 20, color: theme.colorScheme.error),
+              onPressed: busy ? null : _delete,
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _AddUpiDialog extends ConsumerStatefulWidget {
-  const _AddUpiDialog();
+/// Add-a-new-UPI dialog when [existing] is `null`; edits it in place
+/// (`updateUpi`) otherwise.
+class _AddOrEditUpiDialog extends ConsumerStatefulWidget {
+  const _AddOrEditUpiDialog({this.existing});
+
+  final PaymentMethod? existing;
+
+  bool get isEdit => existing != null;
 
   @override
-  ConsumerState<_AddUpiDialog> createState() => _AddUpiDialogState();
+  ConsumerState<_AddOrEditUpiDialog> createState() => _AddOrEditUpiDialogState();
 }
 
-class _AddUpiDialogState extends ConsumerState<_AddUpiDialog> {
+class _AddOrEditUpiDialogState extends ConsumerState<_AddOrEditUpiDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _upi = TextEditingController();
+  late final _upi = TextEditingController(text: widget.existing?.upiId ?? '');
   bool _saving = false;
   String? _error;
 
@@ -158,7 +223,12 @@ class _AddUpiDialogState extends ConsumerState<_AddUpiDialog> {
       _error = null;
     });
     try {
-      await ref.read(paymentMethodsProvider.notifier).addUpi(_upi.text.trim());
+      final notifier = ref.read(paymentMethodsProvider.notifier);
+      if (widget.isEdit) {
+        await notifier.updateUpi(widget.existing!.id, _upi.text.trim());
+      } else {
+        await notifier.addUpi(_upi.text.trim());
+      }
       if (mounted) Navigator.of(context).pop();
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
@@ -172,7 +242,7 @@ class _AddUpiDialogState extends ConsumerState<_AddUpiDialog> {
     final theme = Theme.of(context);
 
     return AlertDialog(
-      title: const Text('Add UPI'),
+      title: Text(widget.isEdit ? 'Edit UPI' : 'Add UPI'),
       content: Form(
         key: _formKey,
         child: Column(
@@ -202,7 +272,7 @@ class _AddUpiDialogState extends ConsumerState<_AddUpiDialog> {
           onPressed: _saving ? null : _save,
           child: _saving
               ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-              : const Text('Add'),
+              : Text(widget.isEdit ? 'Save' : 'Add'),
         ),
       ],
     );
