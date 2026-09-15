@@ -557,10 +557,10 @@ over Dio — no mock repositories remain.
       `StatsRangeFilter | StatsPeriodFilter`), backed by
       `statsFilterProvider`; a custom period shows as its own `InputChip`
       (e.g. "Mar 2026") with a delete action reverting to the 7-day default.
-      **Built ahead of the backend** — `6m`/`1y` and `range=custom` are new
-      additions to the already-live endpoint #61, not yet implemented
-      server-side; client-side plumbing not yet live-verified (deferred).
-      Below: revenue + order-count `StatTile`s, a
+      `6m`/`1y` and `range=custom` extend the already-live endpoint #61 —
+      **backend deployed and user-confirmed working live** (e.g. a "Jan
+      2026" custom period), see backlog #7. Below: revenue + order-count
+      `StatTile`s, a
       `RevenueLineChart` (`fl_chart`) trend — bucket labels
       (hourly/daily/monthly) are pre-formatted server-side, the client just
       renders them; an order-status `StatusBarChart` (also `fl_chart`, one
