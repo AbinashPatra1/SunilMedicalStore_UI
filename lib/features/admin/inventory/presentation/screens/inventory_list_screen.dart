@@ -4,14 +4,17 @@ import 'package:go_router/go_router.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/core/routes/app_routes.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
+import 'package:sunil_medical_store/features/admin/inventory/presentation/providers/inventory_filters_provider.dart';
 import 'package:sunil_medical_store/features/admin/inventory/presentation/providers/inventory_providers.dart';
 import 'package:sunil_medical_store/features/admin/inventory/presentation/widgets/inventory_item_tile.dart';
 import 'package:sunil_medical_store/features/admin/presentation/widgets/admin_sign_out_button.dart';
-import 'package:sunil_medical_store/features/dashboard/presentation/providers/dashboard_providers.dart';
+import 'package:sunil_medical_store/features/medicines/domain/product.dart';
+import 'package:sunil_medical_store/features/medicines/domain/product_category.dart';
 
-/// Admin > Inventory: lists all products (in and out of stock), filterable by
-/// category and by in-stock-only. Tapping a row edits; the FAB adds a new
-/// product.
+/// Admin > Inventory: lists all products (in and out of stock). The top bar
+/// shows the first 5 categories as quick-filter chips plus a fixed filter
+/// icon opening [AdminInventoryFilterScreen] for the full category/type/
+/// search selection. Tapping a row edits; the FAB adds a new product.
 class InventoryListScreen extends ConsumerStatefulWidget {
   const InventoryListScreen({super.key});
 
@@ -20,14 +23,22 @@ class InventoryListScreen extends ConsumerStatefulWidget {
 }
 
 class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
-  String _category = '';
   bool _inStockOnly = false;
+
+  bool _matchesSearch(Product product, String query) {
+    final q = query.toLowerCase();
+    return product.name.toLowerCase().contains(q) ||
+        product.category.toLowerCase().contains(q) ||
+        (product.type?.label.toLowerCase().contains(q) ?? false) ||
+        (product.composition?.toLowerCase().contains(q) ?? false) ||
+        product.ingredients.any((i) => i.toLowerCase().contains(q));
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final categoriesAsync = ref.watch(homeCategoriesProvider);
-    final productsAsync = ref.watch(adminInventoryListProvider(_category));
+    final filters = ref.watch(adminInventoryFiltersProvider);
+    final productsAsync = ref.watch(adminInventoryListProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -41,33 +52,49 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
       ),
       body: Column(
         children: [
-          // Category filter chips.
-          categoriesAsync.when(
-            loading: () => const SizedBox.shrink(),
-            error: (_, _) => const SizedBox.shrink(),
-            data: (categories) => Padding(
-              padding: const EdgeInsets.symmetric(vertical: AppConstants.spacingSm),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: AppConstants.spacingLg),
-                child: Row(
-                  children: [
-                    ChoiceChip(
-                      label: const Text('All'),
-                      selected: _category.isEmpty,
-                      onSelected: (_) => setState(() => _category = ''),
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppConstants.spacingLg,
+              vertical: AppConstants.spacingSm,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        ChoiceChip(
+                          label: const Text('All'),
+                          selected: filters.category == null,
+                          onSelected: (_) => ref
+                              .read(adminInventoryFiltersProvider.notifier)
+                              .apply(filters.withCategory(null)),
+                        ),
+                        for (final c in adminTopBarCategories) ...[
+                          const SizedBox(width: AppConstants.spacingSm),
+                          ChoiceChip(
+                            label: Text(c.label),
+                            selected: filters.category == c,
+                            onSelected: (_) => ref
+                                .read(adminInventoryFiltersProvider.notifier)
+                                .apply(filters.withCategory(c)),
+                          ),
+                        ],
+                      ],
                     ),
-                    for (final c in categories) ...[
-                      const SizedBox(width: AppConstants.spacingSm),
-                      ChoiceChip(
-                        label: Text(c.label),
-                        selected: _category == c.label,
-                        onSelected: (_) => setState(() => _category = c.label),
-                      ),
-                    ],
-                  ],
+                  ),
                 ),
-              ),
+                IconButton(
+                  tooltip: 'Filter',
+                  icon: Badge(
+                    isLabelVisible: filters.isActive,
+                    smallSize: 8,
+                    child: const Icon(Icons.tune),
+                  ),
+                  onPressed: () => context.push(AppRoutes.adminInventoryFilter),
+                ),
+              ],
             ),
           ),
           // In-stock toggle.
@@ -89,18 +116,21 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (error, _) => _ErrorView(
                 message: error is ApiException ? error.message : 'Could not load inventory.',
-                onRetry: () => ref.invalidate(adminInventoryListProvider(_category)),
+                onRetry: () => ref.invalidate(adminInventoryListProvider),
               ),
               data: (products) {
-                final visible = _inStockOnly
-                    ? products.where((p) => p.stock > 0).toList()
-                    : products;
+                var visible = _inStockOnly ? products.where((p) => p.stock > 0).toList() : products;
+                if (filters.type != null) {
+                  visible = visible.where((p) => p.type == filters.type).toList();
+                }
+                if (filters.search.isNotEmpty) {
+                  visible = visible.where((p) => _matchesSearch(p, filters.search)).toList();
+                }
                 if (visible.isEmpty) {
                   return const _EmptyView();
                 }
                 return RefreshIndicator(
-                  onRefresh: () async =>
-                      ref.invalidate(adminInventoryListProvider(_category)),
+                  onRefresh: () async => ref.invalidate(adminInventoryListProvider),
                   child: ListView.separated(
                     padding: const EdgeInsets.fromLTRB(
                       AppConstants.spacingLg,

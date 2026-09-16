@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/features/medicines/domain/product.dart';
 import 'package:sunil_medical_store/features/medicines/domain/product_repository.dart';
+import 'package:sunil_medical_store/features/medicines/domain/product_type.dart';
 
 /// [ProductRepository] backed by the real catalog API.
 class ApiProductRepository implements ProductRepository {
@@ -60,5 +61,6 @@ class ApiProductRepository implements ProductRepository {
     imageUrl: json['imageUrl'] as String?,
     stock: json['stock'] as int? ?? 0,
     packSize: json['packSize'] as String?,
+    type: ProductType.fromWireName(json['type'] as String?),
   );
 }

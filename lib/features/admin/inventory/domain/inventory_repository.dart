@@ -1,4 +1,5 @@
 import 'package:sunil_medical_store/features/medicines/domain/product.dart';
+import 'package:sunil_medical_store/features/medicines/domain/product_type.dart';
 
 /// Admin-side view of the product catalog: list-all (including out of stock),
 /// read-one, create, update, and delete.
@@ -40,6 +41,7 @@ class ProductInput {
     this.ingredients = const [],
     this.imageUrl,
     this.packSize,
+    this.type,
   });
 
   final String name;
@@ -57,4 +59,6 @@ class ProductInput {
 
   /// Pack size / quantity, e.g. `10 tablets`, `125ml`, `1 piece`.
   final String? packSize;
+
+  final ProductType? type;
 }

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/features/admin/inventory/domain/inventory_repository.dart';
 import 'package:sunil_medical_store/features/medicines/domain/product.dart';
+import 'package:sunil_medical_store/features/medicines/domain/product_type.dart';
 
 /// [InventoryRepository] backed by the admin catalog API
 /// (`/v1/admin/products`). See `docs/API_ENDPOINTS.md` §Admin.
@@ -82,6 +83,7 @@ class ApiInventoryRepository implements InventoryRepository {
     'ingredients': input.ingredients,
     'imageUrl': ?input.imageUrl,
     'packSize': ?input.packSize,
+    'type': ?input.type?.name,
   };
 
   Product _fromJson(Map<String, dynamic> json) => Product(
@@ -99,5 +101,6 @@ class ApiInventoryRepository implements InventoryRepository {
     imageUrl: json['imageUrl'] as String?,
     stock: json['stock'] as int? ?? 0,
     packSize: json['packSize'] as String?,
+    type: ProductType.fromWireName(json['type'] as String?),
   );
 }

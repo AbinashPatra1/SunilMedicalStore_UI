@@ -10,6 +10,7 @@ abstract final class AppRoutes {
   static const adminInventory = '/admin/inventory';
   static const adminInventoryEdit = '/admin/inventory/edit'; // + /<productId>
   static const adminInventoryAdd = '/admin/inventory/new';
+  static const adminInventoryFilter = '/admin/inventory/filter';
   static const adminAppointments = '/admin/appointments';
   static const adminAppointmentEdit = '/admin/appointments/edit'; // + /<id>
   static const adminAppointmentNew = '/admin/appointments/new';
@@ -42,6 +43,7 @@ abstract final class AppRoutes {
 
   // Nested under the Pharmacy tab so the bottom bar stays visible.
   static const medicines = '/pharmacy/medicines';
+  static const categories = '/pharmacy/categories';
   static const medicineDetail = '/pharmacy/medicine'; // + /<productId>
   static const search = '/pharmacy/search';
   static const prescriptions = '/pharmacy/prescriptions';

@@ -274,6 +274,19 @@ by Fri, 18th Sept") is computed entirely client-side (today + a fixed
 number of days) — there's no real logistics/ETA system yet, so this is
 cosmetic only and needs no backend field.
 
+**⚠ Category taxonomy replaced (6 → 22 categories) and `Product` gains a
+new `type` field, neither implemented on the backend, 2026-09-16** — see
+#4's note above for the full 22-label list and the **breaking-change data
+migration** existing products need (old labels like `Medicines`/`Wellness`
+no longer exist), and #5/#32 for the new `type` field (`tabletDrug |
+liquidDrug | injection | nonOralDrug | others`, mandatory going forward on
+admin create/update, `null`-tolerant on read for legacy rows). The
+category picker itself is now a fixed client-side catalog (`ProductCategory`)
+rather than reading #4 at all — `400 invalid_category` on #32/#33 needs to
+validate against the new 22 values, not the old 6. Admin Inventory's
+new filter screen (category + type + text search) needs no backend
+changes — see the note under §Admin — Inventory below.
+
 49–53 additionally mean **#14 `POST /v1/promo-codes/validate` gains new
 rejection rules** — reject (still `400 invalid_promo_code`, just a different
 `message`) when the code is `active: false`, past `expiresAt`, at
@@ -343,7 +356,7 @@ Request (all fields optional; `fullName` required on first-ever create):
 
 ### Catalog — Medicines
 
-#### 4. `GET /v1/catalog/categories` → `200` — **Public (no token)**
+#### 4. `GET /v1/catalog/categories` → `200` — **Public (no token)** — **no longer called by the client, 2026-09-16**
 ```json
 [
   { "label": "Medicines", "icon": "medication_outlined" },
@@ -354,6 +367,37 @@ Request (all fields optional; `fullName` required on first-ever create):
   { "label": "Ayurveda", "icon": "eco_outlined" }
 ]
 ```
+- **The category taxonomy moved to a fixed, client-side catalog** — the
+  Flutter app no longer calls this endpoint at all; `ProductCategory`
+  (`lib/features/medicines/domain/product_category.dart`) is now the single
+  source of truth for category labels, matching the same "fixed catalog,
+  not admin-extensible" decision already made for `BannerId` (Home
+  Banners). This endpoint can stay live for any other client, or be
+  retired — the Flutter app doesn't depend on it either way.
+- **The 22 valid category labels are now** (exact strings, case-sensitive —
+  this is the new required value set for `Product.category` on every write
+  endpoint below, replacing the old 6): `Vitamins & Supplements`,
+  `Monitoring Devices`, `Protein Supplements`, `Sexual Wellness`,
+  `Ayurvedic Wellness`, `Food & Nutrition`, `Skin Care`, `Men Care`,
+  `Women Care`, `Elderly Care`, `Pain Relief`, `Supports & Braces`,
+  `Gut Care`, `Diabetes`, `Hair Care`, `Oral Care`, `Cold, Cough & Fever`,
+  `First Aid`, `Baby Care`, `Respiratory Care`, `Eye Care`,
+  `Prescription Drugs`.
+- **⚠ Breaking change for existing product data** — every seeded/admin-
+  created product currently carries one of the *old* 6 category labels
+  (`Medicines`, `Wellness`, `Personal Care`, `Devices`, `Baby Care`,
+  `Ayurveda`), none of which exist in the new list. The client's category
+  filter chips/screens only filter by the new labels, so **existing
+  products will not appear under any category filter until their
+  `category` field is migrated** to one of the 22 new labels (a one-time
+  data migration, category-by-category — e.g. old `Medicines` products
+  likely split across `Vitamins & Supplements`/`Pain Relief`/
+  `Prescription Drugs`/etc. depending on the individual product, so this
+  needs a human decision per product, not a mechanical rename). Until
+  migrated, affected products still show up in **unfiltered** views (full
+  catalog, search, "Suggested for you") — only category-scoped views are
+  affected. `400 invalid_category` validation on the admin write endpoints
+  (#32/#33 below) should be updated to check against the new 22-value set.
 
 #### 5. `GET /v1/catalog/products?category={label}&search={q}` → `200` — `Product[]`
 `category` and `search` are both optional and combinable; omit both for the
@@ -378,12 +422,23 @@ before this was implemented. **Product object:**
   "ingredients": ["Paracetamol", "Starch", "Povidone", "Magnesium stearate"],
   "imageUrl": null,
   "stock": 42,
-  "packSize": "10 tablets"
+  "packSize": "10 tablets",
+  "type": "tabletDrug"
 }
 ```
 - `mrp`, `composition`, `dosage`, `imageUrl` may be `null`; `ingredients` may be `[]`
   (e.g. Devices). Client computes discount% from `mrp`/`price`; `imageUrl` falls back
   to a placeholder icon when `null`.
+- **`type` — new field, not yet implemented.** How the product is
+  dispensed, one of `tabletDrug | liquidDrug | injection | nonOralDrug |
+  others` (wire values match the enum name, camelCase — display labels are
+  "Tablet Drug" / "Liquid Drug" / "Injection" / "Non Oral Drug" / "Others").
+  `null`/omitted is fine — the client treats it the same as any other
+  build-ahead-of-backend field (degrades cleanly, just can't be filtered by
+  type until set). Admin-settable on the Inventory Add/Edit form (#32/#33)
+  as a required dropdown for **new/edited** products going forward; existing
+  products keep `null` until an admin re-saves them (no backfill, same
+  policy as every other build-ahead-of-backend field in this doc).
 - `stock` (integer, ≥ 0). When `0`, the client greys the card out, shows an
   "Out of stock" badge, and disables Add-to-cart. The customer catalog
   endpoints (5–8) return out-of-stock products so users can still discover
@@ -852,14 +907,24 @@ touch `isDefault`. `404 payment_method_not_found` if not the caller's,
 
 Full CRUD over the product catalog, admin-only. The customer catalog
 endpoints (5–8) are the read-only public surface; these are the admin
-mutation surface. Wire values for `category` match the seed strings in §6
-(`Medicines`, `Wellness`, etc.).
+mutation surface. Wire values for `category` are the new 22-label set (see
+#4's note above), not the old seed strings.
+
+**Admin Inventory filter/search, 2026-09-16 — entirely client-side beyond
+`category`**: the Inventory screen's "first 5 categories + filter" bar and
+its dedicated filter screen (product category, product type, and a text
+search across name/category/type/composition/ingredients) only send
+`category` to this endpoint — type and text search are filtered against the
+already-fetched category-scoped list on-device. No new query params were
+added here; if the catalog grows large enough that fetching a whole
+category client-side stops scaling, `type`/`search` query params on #30
+would be the natural next step, but aren't needed yet.
 
 #### 30. `GET /v1/admin/products?category={label}` → `200` — `Product[]`
 Full inventory, out-of-stock items included. `category` optional; omit for
 the entire catalog. Response objects match the customer `Product` shape
-above (including the new `stock` field). `403 forbidden_admin_only` if the
-caller isn't admin.
+above (including the new `stock` and `type` fields). `403
+forbidden_admin_only` if the caller isn't admin.
 
 #### 31. `GET /v1/admin/products/{id}` → `200` — `Product`
 Single product for the edit form. `404 product_not_found` if missing.
@@ -880,11 +945,14 @@ Request:
   "dosage": "1 tablet every 6 hours, as needed (max 4/day)",
   "ingredients": ["Paracetamol", "Starch", "Povidone"],
   "imageUrl": null,
-  "packSize": "10 tablets"
+  "packSize": "10 tablets",
+  "type": "tabletDrug"
 }
 ```
 - Mandatory (client validates): `name`, `brand`, `category`, `price`,
-  `stock`, `requiresPrescription`, `composition`.
+  `stock`, `requiresPrescription`, `composition`, `type` (new — the
+  Add/Edit form requires a selection for new/edited products; see #5's
+  note on `type` for the value set).
 - Optional (omit or `null`): `mrp`, `description` (may be `""`), `dosage`,
   `ingredients` (may be `[]`), `imageUrl`, `packSize`.
 - Server assigns the id.
@@ -1595,7 +1663,9 @@ Deserialize with Dart's `Enum.values.byName(json)` — values match member names
 
 The dev DB is seeded with stable ids you can use directly:
 
-- **Categories**: `Medicines`, `Wellness`, `Personal Care`, `Devices`, `Baby Care`, `Ayurveda`.
+- **Categories**: `Medicines`, `Wellness`, `Personal Care`, `Devices`, `Baby Care`, `Ayurveda`
+  — **stale, pending the 2026-09-16 category migration** (see §2's ⚠ note
+  and #4) — new/re-seeded test data should use the new 22-label set instead.
 - **Products**: `p1`–`p12` (`p1` = Paracetamol; `p9`/`p10` = Devices with `null`
   composition/dosage and empty `ingredients`).
 - **Lab tests**: `lt1`–`lt7` (`lt1` = CBC).

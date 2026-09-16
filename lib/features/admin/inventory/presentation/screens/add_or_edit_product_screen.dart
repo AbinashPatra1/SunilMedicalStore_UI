@@ -6,8 +6,9 @@ import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/admin/inventory/domain/inventory_repository.dart';
 import 'package:sunil_medical_store/features/admin/inventory/presentation/providers/inventory_providers.dart';
-import 'package:sunil_medical_store/features/dashboard/presentation/providers/dashboard_providers.dart';
 import 'package:sunil_medical_store/features/medicines/domain/product.dart';
+import 'package:sunil_medical_store/features/medicines/domain/product_category.dart';
+import 'package:sunil_medical_store/features/medicines/domain/product_type.dart';
 
 /// Admin > Inventory > Add / Edit: single form for creating or editing a
 /// product. Add mode when [productId] is null; edit mode fetches the
@@ -62,7 +63,8 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
   late final TextEditingController _ingredients;
   late final TextEditingController _imageUrl;
 
-  String? _category;
+  ProductCategory? _category;
+  ProductType? _type;
   bool _requiresPrescription = false;
   bool _saving = false;
   bool _deleting = false;
@@ -83,7 +85,8 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
     _dosage = TextEditingController(text: p?.dosage ?? '');
     _ingredients = TextEditingController(text: p?.ingredients.join(', ') ?? '');
     _imageUrl = TextEditingController(text: p?.imageUrl ?? '');
-    _category = p?.category;
+    _category = p == null ? null : ProductCategory.fromLabel(p.category);
+    _type = p?.type;
     _requiresPrescription = p?.requiresPrescription ?? false;
   }
 
@@ -131,7 +134,7 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
     return ProductInput(
       name: _name.text.trim(),
       brand: _brand.text.trim(),
-      category: _category!,
+      category: _category!.label,
       price: int.parse(_price.text.trim()),
       stock: int.parse(_stock.text.trim()),
       requiresPrescription: _requiresPrescription,
@@ -142,6 +145,7 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
       ingredients: ingredientList,
       imageUrl: _imageUrl.text.trim().isEmpty ? null : _imageUrl.text.trim(),
       packSize: _packSize.text.trim().isEmpty ? null : _packSize.text.trim(),
+      type: _type,
     );
   }
 
@@ -233,7 +237,6 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final categoriesAsync = ref.watch(homeCategoriesProvider);
     final busy = _saving || _deleting;
 
     return Scaffold(
@@ -267,19 +270,26 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
               validator: _required,
             ),
             const SizedBox(height: AppConstants.spacingMd),
-            categoriesAsync.when(
-              loading: () => const LinearProgressIndicator(),
-              error: (_, _) => const Text('Could not load categories.'),
-              data: (categories) => DropdownButtonFormField<String>(
-                initialValue: _category,
-                decoration: const InputDecoration(labelText: 'Category'),
-                items: [
-                  for (final c in categories)
-                    DropdownMenuItem(value: c.label, child: Text(c.label)),
-                ],
-                onChanged: busy ? null : (v) => setState(() => _category = v),
-                validator: (v) => v == null ? 'Choose a category' : null,
-              ),
+            DropdownButtonFormField<ProductCategory>(
+              initialValue: _category,
+              decoration: const InputDecoration(labelText: 'Category'),
+              items: [
+                for (final c in ProductCategory.values)
+                  DropdownMenuItem(value: c, child: Text(c.label)),
+              ],
+              onChanged: busy ? null : (v) => setState(() => _category = v),
+              validator: (v) => v == null ? 'Choose a category' : null,
+            ),
+            const SizedBox(height: AppConstants.spacingMd),
+            DropdownButtonFormField<ProductType>(
+              initialValue: _type,
+              decoration: const InputDecoration(labelText: 'Product type'),
+              items: [
+                for (final t in ProductType.values)
+                  DropdownMenuItem(value: t, child: Text(t.label)),
+              ],
+              onChanged: busy ? null : (v) => setState(() => _type = v),
+              validator: (v) => v == null ? 'Choose a product type' : null,
             ),
             const SizedBox(height: AppConstants.spacingMd),
             Row(

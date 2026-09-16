@@ -70,7 +70,7 @@ class _HomeBannerCarouselState extends ConsumerState<HomeBannerCarousel> {
         return Column(
           children: [
             SizedBox(
-              height: 190,
+              height: 206,
               child: PageView.builder(
                 controller: _pageController,
                 itemCount: banners.length,

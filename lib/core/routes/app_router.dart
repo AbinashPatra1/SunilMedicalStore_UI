@@ -5,6 +5,7 @@ import 'package:sunil_medical_store/core/routes/app_routes.dart';
 import 'package:sunil_medical_store/core/widgets/admin_scaffold_with_nav_bar.dart';
 import 'package:sunil_medical_store/core/widgets/scaffold_with_nav_bar.dart';
 import 'package:sunil_medical_store/features/admin/appointments/presentation/screens/add_or_edit_doctor_screen.dart';
+import 'package:sunil_medical_store/features/admin/inventory/presentation/screens/admin_inventory_filter_screen.dart';
 import 'package:sunil_medical_store/features/admin/appointments/presentation/screens/admin_appointments_screen.dart';
 import 'package:sunil_medical_store/features/admin/appointments/presentation/screens/create_appointment_screen.dart';
 import 'package:sunil_medical_store/features/admin/appointments/presentation/screens/edit_appointment_screen.dart';
@@ -34,6 +35,7 @@ import 'package:sunil_medical_store/features/cart/presentation/screens/checkout_
 import 'package:sunil_medical_store/features/dashboard/presentation/screens/dashboard_screen.dart';
 import 'package:sunil_medical_store/features/lab_tests/presentation/screens/lab_test_catalog_detail_screen.dart';
 import 'package:sunil_medical_store/features/lab_tests/presentation/screens/lab_tests_catalog_screen.dart';
+import 'package:sunil_medical_store/features/medicines/presentation/screens/all_categories_screen.dart';
 import 'package:sunil_medical_store/features/medicines/presentation/screens/medicine_detail_screen.dart';
 import 'package:sunil_medical_store/features/medicines/presentation/screens/medicines_screen.dart';
 import 'package:sunil_medical_store/features/medicines/presentation/screens/search_screen.dart';
@@ -162,6 +164,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                     builder: (context, state) => AddOrEditProductScreen(
                       productId: state.pathParameters['productId'],
                     ),
+                  ),
+                  GoRoute(
+                    path: 'filter',
+                    builder: (context, state) => const AdminInventoryFilterScreen(),
                   ),
                 ],
               ),
@@ -309,6 +315,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                     builder: (context, state) => MedicinesScreen(
                       category: state.uri.queryParameters['category'],
                     ),
+                  ),
+                  GoRoute(
+                    path: 'categories',
+                    builder: (context, state) => const AllCategoriesScreen(),
                   ),
                   // Product detail (sibling of the list so it pushes cleanly
                   // from both the list and the dashboard).

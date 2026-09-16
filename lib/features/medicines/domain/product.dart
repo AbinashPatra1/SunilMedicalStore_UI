@@ -1,3 +1,5 @@
+import 'package:sunil_medical_store/features/medicines/domain/product_type.dart';
+
 /// A sellable product in the pharmacy catalog.
 ///
 /// Plain domain model; the data layer maps its own DTOs into this type.
@@ -19,6 +21,7 @@ class Product {
     this.imageUrl,
     this.stock = 0,
     this.packSize,
+    this.type,
   });
 
   final String id;
@@ -61,6 +64,11 @@ class Product {
   /// `125ml`, `1 piece` (`null` when not set — degrades cleanly since the
   /// backend doesn't have this field yet).
   final String? packSize;
+
+  /// How the product is dispensed (tablet, liquid, injection, ...). `null`
+  /// for legacy/not-yet-set products — degrades cleanly since the backend
+  /// doesn't have this field yet.
+  final ProductType? type;
 
   bool get isOutOfStock => stock <= 0;
 
