@@ -94,6 +94,7 @@ class SuggestedProductCard extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ],
+                  const Spacer(),
                   const SizedBox(height: AppConstants.spacingSm),
                   SizedBox(
                     width: double.infinity,

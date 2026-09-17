@@ -84,9 +84,12 @@ class HelpSupportScreen extends StatelessWidget {
           Card(
             child: Column(
               children: [
-                for (final faq in _faqs)
+                for (var i = 0; i < _faqs.length; i++) ...[
+                  if (i > 0) const Divider(height: 1),
                   ExpansionTile(
-                    title: Text(faq.question, style: theme.textTheme.bodyMedium),
+                    shape: const Border(),
+                    collapsedShape: const Border(),
+                    title: Text(_faqs[i].question, style: theme.textTheme.bodyMedium),
                     childrenPadding: const EdgeInsets.fromLTRB(
                       AppConstants.spacingMd,
                       0,
@@ -96,11 +99,12 @@ class HelpSupportScreen extends StatelessWidget {
                     expandedAlignment: Alignment.centerLeft,
                     children: [
                       Text(
-                        faq.answer,
+                        _faqs[i].answer,
                         style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                       ),
                     ],
                   ),
+                ],
               ],
             ),
           ),

@@ -46,6 +46,13 @@ class _CategoryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final labelStyle = theme.textTheme.labelMedium!;
+    // Reserve space for the max 2 lines regardless of how many the label
+    // actually wraps to, so every tile has the same content height and the
+    // illustration lines up across a row even when a neighbor's label is
+    // shorter (a variable-height label here would otherwise shift the
+    // whole centered column up/down tile by tile).
+    final labelBoxHeight = (labelStyle.fontSize ?? 12) * (labelStyle.height ?? 1.2) * 2;
 
     return InkWell(
       borderRadius: BorderRadius.circular(AppConstants.radiusMd),
@@ -55,12 +62,15 @@ class _CategoryTile extends StatelessWidget {
         children: [
           CategoryIllustration(category: category, size: 56),
           const SizedBox(height: AppConstants.spacingSm),
-          Text(
-            category.label,
-            style: theme.textTheme.labelMedium,
-            textAlign: TextAlign.center,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
+          SizedBox(
+            height: labelBoxHeight,
+            child: Text(
+              category.label,
+              style: labelStyle,
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
         ],
       ),

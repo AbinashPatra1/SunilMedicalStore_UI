@@ -139,7 +139,7 @@ _CategorySpec _specFor(ProductCategory category) => switch (category) {
     icon: Icons.remove_red_eye_outlined,
   ),
   ProductCategory.prescriptionDrugs => const _CategorySpec(
-    cardColor: Color(0xFFE1F0EC),
+    cardColor: Color(0xFFC9ECE0),
     badgeColor: Color(0xFF2E8B6F),
     icon: Icons.local_pharmacy_outlined,
   ),
