@@ -22,6 +22,7 @@ class Product {
     this.stock = 0,
     this.packSize,
     this.type,
+    this.barcode,
   });
 
   final String id;
@@ -69,6 +70,11 @@ class Product {
   /// for legacy/not-yet-set products — degrades cleanly since the backend
   /// doesn't have this field yet.
   final ProductType? type;
+
+  /// Scannable barcode/SKU, when the admin has set one (built ahead of the
+  /// backend — `null` for products without one, degrades cleanly). Used by
+  /// Admin Inventory's barcode scanner to look up an existing product.
+  final String? barcode;
 
   bool get isOutOfStock => stock <= 0;
 

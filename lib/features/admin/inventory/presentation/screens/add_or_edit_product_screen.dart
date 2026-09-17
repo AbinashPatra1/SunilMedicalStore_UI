@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
+import 'package:sunil_medical_store/core/routes/app_routes.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/admin/inventory/domain/inventory_repository.dart';
 import 'package:sunil_medical_store/features/admin/inventory/presentation/providers/inventory_providers.dart';
@@ -14,14 +15,18 @@ import 'package:sunil_medical_store/features/medicines/domain/product_type.dart'
 /// product. Add mode when [productId] is null; edit mode fetches the
 /// existing product to pre-fill.
 class AddOrEditProductScreen extends ConsumerWidget {
-  const AddOrEditProductScreen({super.key, this.productId});
+  const AddOrEditProductScreen({super.key, this.productId, this.initialBarcode});
 
   final String? productId;
+
+  /// Pre-fills the Barcode field — set when this screen is reached from the
+  /// Inventory barcode scanner's "no match" fallback (Add mode only).
+  final String? initialBarcode;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (productId == null) {
-      return const _ProductForm(existing: null);
+      return _ProductForm(existing: null, initialBarcode: initialBarcode);
     }
     final async = ref.watch(adminProductByIdProvider(productId!));
     return async.when(
@@ -32,15 +37,16 @@ class AddOrEditProductScreen extends ConsumerWidget {
           child: Text(error is ApiException ? error.message : 'Could not load product.'),
         ),
       ),
-      data: (product) => _ProductForm(existing: product),
+      data: (product) => _ProductForm(existing: product, initialBarcode: null),
     );
   }
 }
 
 class _ProductForm extends ConsumerStatefulWidget {
-  const _ProductForm({required this.existing});
+  const _ProductForm({required this.existing, this.initialBarcode});
 
   final Product? existing;
+  final String? initialBarcode;
 
   bool get isEdit => existing != null;
 
@@ -57,6 +63,7 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
   late final TextEditingController _mrp;
   late final TextEditingController _stock;
   late final TextEditingController _packSize;
+  late final TextEditingController _barcode;
   late final TextEditingController _composition;
   late final TextEditingController _description;
   late final TextEditingController _dosage;
@@ -80,6 +87,7 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
     _mrp = TextEditingController(text: p?.mrp?.toString() ?? '');
     _stock = TextEditingController(text: p?.stock.toString() ?? '');
     _packSize = TextEditingController(text: p?.packSize ?? '');
+    _barcode = TextEditingController(text: p?.barcode ?? widget.initialBarcode ?? '');
     _composition = TextEditingController(text: p?.composition ?? '');
     _description = TextEditingController(text: p?.description ?? '');
     _dosage = TextEditingController(text: p?.dosage ?? '');
@@ -98,6 +106,7 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
     _mrp.dispose();
     _stock.dispose();
     _packSize.dispose();
+    _barcode.dispose();
     _composition.dispose();
     _description.dispose();
     _dosage.dispose();
@@ -146,7 +155,15 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
       imageUrl: _imageUrl.text.trim().isEmpty ? null : _imageUrl.text.trim(),
       packSize: _packSize.text.trim().isEmpty ? null : _packSize.text.trim(),
       type: _type,
+      barcode: _barcode.text.trim().isEmpty ? null : _barcode.text.trim(),
     );
+  }
+
+  Future<void> _scanBarcode() async {
+    final code = await context.push<String>(AppRoutes.adminInventoryScan);
+    if (code != null && mounted) {
+      _barcode.text = code;
+    }
   }
 
   Future<void> _save() async {
@@ -333,6 +350,20 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
               decoration: const InputDecoration(
                 labelText: 'Pack size (optional)',
                 hintText: 'e.g. 10 tablets, 125ml, 1 piece',
+              ),
+            ),
+            const SizedBox(height: AppConstants.spacingMd),
+            TextFormField(
+              controller: _barcode,
+              enabled: !busy,
+              decoration: InputDecoration(
+                labelText: 'Barcode (optional)',
+                hintText: 'Scan or enter manually',
+                suffixIcon: IconButton(
+                  tooltip: 'Scan barcode',
+                  icon: const Icon(Icons.qr_code_scanner_outlined),
+                  onPressed: busy ? null : _scanBarcode,
+                ),
               ),
             ),
             const SizedBox(height: AppConstants.spacingMd),

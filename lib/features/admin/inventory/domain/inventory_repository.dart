@@ -49,6 +49,7 @@ class ProductInput {
     this.imageUrl,
     this.packSize,
     this.type,
+    this.barcode,
   });
 
   final String name;
@@ -68,4 +69,8 @@ class ProductInput {
   final String? packSize;
 
   final ProductType? type;
+
+  /// Scannable barcode/SKU, when set via the barcode scanner or typed
+  /// manually.
+  final String? barcode;
 }

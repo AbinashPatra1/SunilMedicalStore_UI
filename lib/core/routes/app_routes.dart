@@ -12,6 +12,7 @@ abstract final class AppRoutes {
   static const adminInventoryAdd = '/admin/inventory/new';
   static const adminInventoryFilter = '/admin/inventory/filter';
   static const adminInventoryImport = '/admin/inventory/import';
+  static const adminInventoryScan = '/admin/inventory/scan';
   static const adminAppointments = '/admin/appointments';
   static const adminAppointmentEdit = '/admin/appointments/edit'; // + /<id>
   static const adminAppointmentNew = '/admin/appointments/new';

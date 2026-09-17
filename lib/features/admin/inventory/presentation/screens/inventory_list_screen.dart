@@ -34,6 +34,29 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
         product.ingredients.any((i) => i.toLowerCase().contains(q));
   }
 
+  /// Opens the scanner, then either edits the matching product (by
+  /// [Product.barcode], against the already-loaded list — same client-side
+  /// matching pattern as type/search filtering) or opens Add with the
+  /// scanned code pre-filled if nothing matches.
+  Future<void> _scanBarcode() async {
+    final code = await context.push<String>(AppRoutes.adminInventoryScan);
+    if (code == null || !mounted) return;
+    final products = ref.read(adminInventoryListProvider).value ?? const [];
+    Product? match;
+    for (final p in products) {
+      if (p.barcode == code) {
+        match = p;
+        break;
+      }
+    }
+    if (!mounted) return;
+    if (match != null) {
+      context.push('${AppRoutes.adminInventoryEdit}/${match.id}');
+    } else {
+      context.push(AppRoutes.adminInventoryAdd, extra: code);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -77,11 +100,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                     label: 'Barcode Scanner',
                     cardColor: const Color(0xFFE3E4FB),
                     badgeColor: const Color(0xFF5B6DF2),
-                    onTap: () {
-                      ScaffoldMessenger.of(context)
-                        ..hideCurrentSnackBar()
-                        ..showSnackBar(const SnackBar(content: Text('Coming soon')));
-                    },
+                    onTap: _scanBarcode,
                   ),
                 ),
               ],

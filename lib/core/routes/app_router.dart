@@ -12,6 +12,7 @@ import 'package:sunil_medical_store/features/admin/appointments/presentation/scr
 import 'package:sunil_medical_store/features/admin/discounts/presentation/screens/add_or_edit_promo_code_screen.dart';
 import 'package:sunil_medical_store/features/admin/discounts/presentation/screens/discounts_list_screen.dart';
 import 'package:sunil_medical_store/features/admin/inventory/presentation/screens/add_or_edit_product_screen.dart';
+import 'package:sunil_medical_store/features/admin/inventory/presentation/screens/barcode_scanner_screen.dart';
 import 'package:sunil_medical_store/features/admin/inventory/presentation/screens/bulk_import_screen.dart';
 import 'package:sunil_medical_store/features/admin/inventory/presentation/screens/inventory_list_screen.dart';
 import 'package:sunil_medical_store/features/admin/banners/domain/home_banner.dart';
@@ -158,7 +159,9 @@ final routerProvider = Provider<GoRouter>((ref) {
                 routes: [
                   GoRoute(
                     path: 'new',
-                    builder: (context, state) => const AddOrEditProductScreen(),
+                    builder: (context, state) => AddOrEditProductScreen(
+                      initialBarcode: state.extra as String?,
+                    ),
                   ),
                   GoRoute(
                     path: 'edit/:productId',
@@ -173,6 +176,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'import',
                     builder: (context, state) => const BulkImportScreen(),
+                  ),
+                  GoRoute(
+                    path: 'scan',
+                    builder: (context, state) => const BarcodeScannerScreen(),
                   ),
                 ],
               ),
