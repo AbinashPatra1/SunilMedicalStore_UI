@@ -436,6 +436,13 @@ Request (all fields optional; `fullName` required on first-ever create):
   catalog, search, "Suggested for you") — only category-scoped views are
   affected. `400 invalid_category` validation on the admin write endpoints
   (#32/#33 below) should be updated to check against the new 22-value set.
+- **⚠→✔ Live, verified 2026-09-17**: confirmed against the real Azure
+  backend that existing seed products already carry the new category
+  labels (not just new-write validation — the data migration itself has
+  happened), and that `GET /v1/catalog/products?category=Prescription+Drugs`
+  (customer-facing) correctly returns the right filtered products. Admin
+  create/update against the new 22-value set also confirmed working
+  earlier the same day (bulk import, barcode-scanning test product).
 
 #### 5. `GET /v1/catalog/products?category={label}&search={q}` → `200` — `Product[]`
 `category` and `search` are both optional and combinable; omit both for the
@@ -855,7 +862,18 @@ Haversine check).
 - Errors: `400 validation_error` (missing/invalid fields, including a tier
   with a non-positive `maxDistanceKm` or negative `fee`), `403 forbidden_admin_only`.
 
-### Home Banners — **73–75 proposed, not yet built**
+### Home Banners — **73–75 live, verified 2026-09-17**
+
+**Verified live end-to-end against the real Azure backend**: `GET
+/v1/admin/banners` returns all 12 slots with the exact seeded titles/
+descriptions/`isActive` flags documented below; `GET /v1/banners`
+(customer-facing) correctly returns only the active subset — confirmed the
+real customer dashboard carousel now cycles through all currently-active
+banners (4 at time of testing: `generalDiscount1`, `durgaPuja`,
+`doctorVisit1`, `doctorVisit2`) instead of the single static fallback.
+`PUT /v1/admin/banners/{id}` wasn't separately re-verified this pass (an
+earlier admin toggle — `durgaPuja` active — was already reflected, so
+writes are evidently working) but the read side is fully confirmed.
 
 Backs the Admin > More > Home Banners screen: a **fixed 12-slot catalog**
 of dashboard promo banners — illustrations are client-side code keyed by
@@ -1785,7 +1803,7 @@ values also reuse `invalid_category`/`validation_error` from above).
 | prescription `status` | `pending`, `approved`, `rejected` |
 | push `platform` | `android`, `ios` (proposed, with #60) |
 | push `data.type` | `order`, `appointment`, `labTest` (proposed, with #60) |
-| banner `id` | `generalDiscount1`, `generalDiscount2`, `generalDiscount3`, `kaliPuja`, `durgaPuja`, `newYear`, `holi`, `independenceDay`, `ganeshPuja`, `doctorVisit1`, `doctorVisit2`, `doctorVisit3` (fixed 12-slot catalog, proposed, with #73–75) |
+| banner `id` | `generalDiscount1`, `generalDiscount2`, `generalDiscount3`, `kaliPuja`, `durgaPuja`, `newYear`, `holi`, `independenceDay`, `ganeshPuja`, `doctorVisit1`, `doctorVisit2`, `doctorVisit3` (fixed 12-slot catalog, live with #73–75) |
 
 Deserialize with Dart's `Enum.values.byName(json)` — values match member names 1:1.
 
