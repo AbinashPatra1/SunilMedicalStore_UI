@@ -1,3 +1,4 @@
+import 'package:sunil_medical_store/features/admin/inventory/domain/bulk_import.dart';
 import 'package:sunil_medical_store/features/medicines/domain/product.dart';
 import 'package:sunil_medical_store/features/medicines/domain/product_type.dart';
 
@@ -22,6 +23,12 @@ abstract interface class InventoryRepository {
   Future<Product> update(String id, ProductInput input);
 
   Future<void> delete(String id);
+
+  /// Bulk create/update from an admin-uploaded spreadsheet, already parsed
+  /// and validated client-side (backlog #13) — see
+  /// `docs/API_ENDPOINTS.md` §Admin — Inventory (#78). Upserts by
+  /// name+brand; per-row outcome comes back in [BulkImportSummary].
+  Future<BulkImportSummary> bulkImport(List<ProductInput> rows);
 }
 
 /// Value object for create/update requests. Server assigns [Product.id]

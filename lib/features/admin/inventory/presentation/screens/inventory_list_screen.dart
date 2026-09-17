@@ -43,7 +43,14 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Inventory'),
-        actions: const [AdminSignOutButton()],
+        actions: [
+          IconButton(
+            tooltip: 'Bulk import',
+            icon: const Icon(Icons.upload_file_outlined),
+            onPressed: () => context.push(AppRoutes.adminInventoryImport),
+          ),
+          const AdminSignOutButton(),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push(AppRoutes.adminInventoryAdd),

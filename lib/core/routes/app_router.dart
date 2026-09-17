@@ -12,6 +12,7 @@ import 'package:sunil_medical_store/features/admin/appointments/presentation/scr
 import 'package:sunil_medical_store/features/admin/discounts/presentation/screens/add_or_edit_promo_code_screen.dart';
 import 'package:sunil_medical_store/features/admin/discounts/presentation/screens/discounts_list_screen.dart';
 import 'package:sunil_medical_store/features/admin/inventory/presentation/screens/add_or_edit_product_screen.dart';
+import 'package:sunil_medical_store/features/admin/inventory/presentation/screens/bulk_import_screen.dart';
 import 'package:sunil_medical_store/features/admin/inventory/presentation/screens/inventory_list_screen.dart';
 import 'package:sunil_medical_store/features/admin/banners/domain/home_banner.dart';
 import 'package:sunil_medical_store/features/admin/banners/presentation/screens/admin_banners_list_screen.dart';
@@ -168,6 +169,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                   GoRoute(
                     path: 'filter',
                     builder: (context, state) => const AdminInventoryFilterScreen(),
+                  ),
+                  GoRoute(
+                    path: 'import',
+                    builder: (context, state) => const BulkImportScreen(),
                   ),
                 ],
               ),

@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
+import 'package:sunil_medical_store/features/admin/inventory/domain/bulk_import.dart';
 import 'package:sunil_medical_store/features/admin/inventory/domain/inventory_repository.dart';
 import 'package:sunil_medical_store/features/medicines/domain/product.dart';
 import 'package:sunil_medical_store/features/medicines/domain/product_type.dart';
@@ -68,6 +69,48 @@ class ApiInventoryRepository implements InventoryRepository {
       throw ApiException.fromDioException(e);
     }
   }
+
+  @override
+  Future<BulkImportSummary> bulkImport(List<ProductInput> rows) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/admin/products/bulk-import',
+        data: {'rows': rows.map(_toJson).toList()},
+      );
+      return _summaryFromJson(response.data!);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  BulkImportSummary _summaryFromJson(Map<String, dynamic> json) {
+    final results = ((json['results'] as List?) ?? const [])
+        .cast<Map<String, dynamic>>()
+        .map(_rowOutcomeFromJson)
+        .toList();
+    return BulkImportSummary(
+      results: results,
+      createdCount: json['createdCount'] as int? ??
+          results.where((r) => r.outcome == BulkImportOutcome.created).length,
+      updatedCount: json['updatedCount'] as int? ??
+          results.where((r) => r.outcome == BulkImportOutcome.updated).length,
+      failedCount: json['failedCount'] as int? ??
+          results.where((r) => r.outcome == BulkImportOutcome.failed).length,
+    );
+  }
+
+  BulkImportRowOutcome _rowOutcomeFromJson(Map<String, dynamic> json) => BulkImportRowOutcome(
+    row: json['row'] as int? ?? 0,
+    name: json['name'] as String? ?? '',
+    brand: json['brand'] as String? ?? '',
+    outcome: switch (json['outcome'] as String?) {
+      'created' => BulkImportOutcome.created,
+      'updated' => BulkImportOutcome.updated,
+      _ => BulkImportOutcome.failed,
+    },
+    id: json['id'] as String?,
+    reason: json['reason'] as String?,
+  );
 
   Map<String, dynamic> _toJson(ProductInput input) => {
     'name': input.name,

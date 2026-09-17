@@ -115,6 +115,7 @@ brief see [`API_SPEC.md`](API_SPEC.md); for backend internals see [`claude.md`](
 | 72 | PUT | `/v1/admin/delivery-settings` | ✔ admin | Set store location, delivery radius, fee tiers + platform fee |
 | 76 | PUT | `/v1/addresses/{id}` | ✔ | Edit an existing address (full replace) → 200 |
 | 77 | PUT | `/v1/payment-methods/{id}` | ✔ | Edit a saved UPI id → 200 |
+| 78 | POST | `/v1/admin/products/bulk-import` | ✔ admin | Bulk create/update products parsed from an admin-uploaded spreadsheet |
 
 **45–66 are live** (verified against Azure), including the push-notification
 send side described after §3 — real order placement/cancellation triggered
@@ -286,6 +287,23 @@ rather than reading #4 at all — `400 invalid_category` on #32/#33 needs to
 validate against the new 22 values, not the old 6. Admin Inventory's
 new filter screen (category + type + text search) needs no backend
 changes — see the note under §Admin — Inventory below.
+
+**⚠ 78 is not yet implemented on the backend, 2026-09-17 — backlog #13,
+Excel bulk import** (client work not started yet; this contract is being
+sent ahead so backend can build in parallel). Admin picks an `.xlsx` file
+on-device; the **client parses and validates it entirely client-side** (no
+file/multipart upload — see §Admin — Inventory below for the exact
+row-to-field column mapping) and sends only the rows that already pass
+client-side validation as one JSON array to #78. **Upsert semantics**:
+match existing products by `name` + `brand` (case-insensitive exact match)
+— found → update (same full-replace fields as #33), not found → create
+(#32). **Non-atomic / partial-commit**: unlike #33's single-object replace,
+this endpoint should commit whichever rows succeed even if others fail —
+matches the same "partial import + error report" philosophy the client
+already applies during its own pre-flight validation — and return a
+**per-row result** so the admin can see exactly what happened to each row
+of their sheet. See §Admin — Inventory below for the full request/response
+shape and the new `invalid_type` error code it introduces.
 
 49–53 additionally mean **#14 `POST /v1/promo-codes/validate` gains new
 rejection rules** — reject (still `400 invalid_promo_code`, just a different
@@ -969,6 +987,95 @@ Hard delete. `404 product_not_found` if missing. Backend may want to prevent
 deletion if the product is referenced by unfulfilled orders — flag with
 `409 product_in_use` if so; the client will surface the message.
 
+#### 78. `POST /v1/admin/products/bulk-import` → `200` — **proposed, not yet built** (backlog #13)
+Backs a new Admin → Inventory "Import" screen: admin picks an `.xlsx` file,
+the client parses it (columns matched by header name, case-insensitive, any
+order) and runs the same validation the Add/Edit form already does — this
+endpoint only ever receives rows that already passed that client-side
+check. Client-side source-column mapping (for backend context only; the
+backend never sees the spreadsheet itself):
+
+| Column header | Maps to | Required |
+|---|---|---|
+| `Name` | `name` | ✔ |
+| `Brand` | `brand` | ✔ |
+| `Category` | `category` (must be one of the 22 labels — #4's note) | ✔ |
+| `Product Type` | `type` (`tabletDrug`/`liquidDrug`/`injection`/`nonOralDrug`/`others`) | ✔ |
+| `Price` | `price` (number) | ✔ |
+| `Quantity` | `stock` (integer) | ✔ |
+| `Composition` | `composition` | ✔ |
+| `Rx Required` | `requiresPrescription` (boolean — `Yes`/`No` or `TRUE`/`FALSE`) | ✔ |
+| `MRP` | `mrp` (number) | optional |
+| `Description` | `description` | optional |
+| `Dosage` | `dosage` | optional |
+| `Ingredients` | `ingredients` (comma-separated → array) | optional |
+| `Image URL` | `imageUrl` | optional |
+| `Pack Size` | `packSize` | optional |
+
+Request — a JSON array, one entry per valid row, each shaped exactly like
+#32's create request body:
+```json
+{
+  "rows": [
+    {
+      "name": "Paracetamol 500mg Tablets",
+      "brand": "Micro Labs",
+      "category": "Pain Relief",
+      "type": "tabletDrug",
+      "price": 30,
+      "stock": 100,
+      "requiresPrescription": false,
+      "composition": "Paracetamol 500mg",
+      "mrp": 35,
+      "description": null,
+      "dosage": null,
+      "ingredients": [],
+      "imageUrl": null,
+      "packSize": "10 tablets"
+    }
+  ]
+}
+```
+Response:
+```json
+{
+  "results": [
+    { "row": 2, "name": "Paracetamol 500mg Tablets", "brand": "Micro Labs", "outcome": "created", "id": "abc123" },
+    { "row": 3, "name": "Vitamin D3 Drops", "brand": "Zenith", "outcome": "updated", "id": "def456" },
+    { "row": 4, "name": "Cough Syrup X", "brand": "Acme", "outcome": "failed", "reason": "invalid_category" }
+  ],
+  "createdCount": 1,
+  "updatedCount": 1,
+  "failedCount": 1
+}
+```
+- **`row`** — the row's 1-indexed position in the original sheet (header =
+  row 1, so the first data row is `2`) so the admin can cross-reference back
+  to what they uploaded; the client sends rows in file order and expects
+  `results` back in the same order (or carries `row` itself, either works —
+  the client will key off whichever the backend finds easier).
+- **Upsert key**: `name` + `brand`, case-insensitive exact match against
+  existing products. Match → update all other fields (full replace, same
+  as #33). No match → create (#32), server assigns `id`.
+- **Non-atomic**: process each row independently; a failure on one row must
+  not roll back the others. This mirrors the client's own "partial import"
+  pre-flight — the admin already saw and accepted which rows would be sent.
+- If the same `name`+`brand` pair appears more than once **within one
+  request** (shouldn't normally happen — the client's own pre-flight flags
+  exact duplicate rows as invalid before this call), treat it defensively
+  as last-row-wins rather than erroring the whole batch.
+- Server re-validates every row independently of the client (never trust
+  client-side validation) using the same rules as #32: `category` against
+  the 22-value set (`400`-equivalent per-row `reason: "invalid_category"`),
+  `type` against the 5-value set (new `reason: "invalid_type"`), and the
+  same required-field/numeric checks (`reason: "validation_error"`).
+- Suggested row cap per call (e.g. 500) to keep this a synchronous request —
+  left to the backend's judgment; if a cap exists, reject the whole call
+  with `400 too_many_rows` rather than silently truncating, so the client
+  can tell the admin to split their sheet.
+- `403 forbidden_admin_only` if the caller isn't admin. `400
+  validation_error` if `rows` is missing/empty/not an array.
+
 ---
 
 ### Admin — Doctors
@@ -1633,7 +1740,9 @@ Common codes: `validation_error`, `invalid_promo_code`, `invalid_upi_id`, `empty
 `invalid_category`, `product_in_use`, `doctor_in_use`, `appointment_not_found`,
 `slot_unavailable`, `order_not_cancellable` (proposed, with #45),
 `promo_code_exists` (proposed, with #51), `prescription_required` (proposed,
-with #15), `prescription_not_found` (proposed, with #54–59).
+with #15), `prescription_not_found` (proposed, with #54–59),
+`invalid_type` and `too_many_rows` (proposed, with #78 — per-row `reason`
+values also reuse `invalid_category`/`validation_error` from above).
 
 ---
 
@@ -1649,6 +1758,7 @@ with #15), `prescription_not_found` (proposed, with #54–59).
 | appointment `status` | `upcoming`, `inSession`, `completed`, `cancelled` |
 | order item `kind` | `medicine`, `labTest` |
 | promo `type` | `percentage`, `flat` |
+| product `type` | `tabletDrug`, `liquidDrug`, `injection`, `nonOralDrug`, `others` |
 | `paymentMethod` | `googlePay`, `phonePe`, `bhim`, `upi`, `cod` |
 | prescription `status` | `pending`, `approved`, `rejected` |
 | push `platform` | `android`, `ios` (proposed, with #60) |
