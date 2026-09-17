@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Matches the launcher icon artwork's own card background, so the
+         adaptive-icon mask crop blends seamlessly with the rounded corners
+         baked into ic_launcher_foreground rather than showing a
+         mismatched-color ring. Updated 2026-09-17 for the newest logo (a
+         glossy blue/green cross+leaf rounded-square card on a white
+         backdrop) — its own corners sample as near-pure white. -->
+    <color name="ic_launcher_background">#FFFFFF</color>
+</resources>
