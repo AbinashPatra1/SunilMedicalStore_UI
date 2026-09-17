@@ -92,8 +92,11 @@ class _BulkImportScreenState extends ConsumerState<BulkImportScreen> {
             _ResultView(summary: _summary!)
           else if (_parseResult != null)
             _PreviewView(result: _parseResult!)
-          else
+          else ...[
             const _IntroView(),
+            const SizedBox(height: AppConstants.spacingMd),
+            const _SampleDownloadButton(),
+          ],
           if (_error != null) ...[
             const SizedBox(height: AppConstants.spacingMd),
             _ErrorCard(message: _error!),
@@ -185,6 +188,56 @@ class _IntroView extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Lets the admin save a ready-made `.xlsx` template (correct headers + one
+/// filled-in example row) via the system "Save As" picker, so they don't
+/// have to guess the column names/order from the intro card's text alone.
+class _SampleDownloadButton extends StatefulWidget {
+  const _SampleDownloadButton();
+
+  @override
+  State<_SampleDownloadButton> createState() => _SampleDownloadButtonState();
+}
+
+class _SampleDownloadButtonState extends State<_SampleDownloadButton> {
+  bool _saving = false;
+
+  Future<void> _download() async {
+    setState(() => _saving = true);
+    try {
+      final bytes = buildSampleImportWorkbookBytes();
+      final uri = await FilePicker.saveFile(
+        fileName: 'product_import_template.xlsx',
+        bytes: bytes,
+        mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      );
+      if (uri != null && mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(const SnackBar(content: Text('Sample file saved')));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(const SnackBar(content: Text('Could not save the sample file.')));
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: _saving ? null : _download,
+      icon: _saving
+          ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+          : const Icon(Icons.download_outlined),
+      label: const Text('Download sample file'),
     );
   }
 }

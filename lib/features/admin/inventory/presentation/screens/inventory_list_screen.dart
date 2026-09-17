@@ -43,14 +43,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Inventory'),
-        actions: [
-          IconButton(
-            tooltip: 'Bulk import',
-            icon: const Icon(Icons.upload_file_outlined),
-            onPressed: () => context.push(AppRoutes.adminInventoryImport),
-          ),
-          const AdminSignOutButton(),
-        ],
+        actions: const [AdminSignOutButton()],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push(AppRoutes.adminInventoryAdd),
@@ -59,6 +52,41 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
       ),
       body: Column(
         children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppConstants.spacingLg,
+              AppConstants.spacingSm,
+              AppConstants.spacingLg,
+              0,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: _QuickActionButton(
+                    icon: Icons.upload_file_outlined,
+                    label: 'Excel Import',
+                    cardColor: const Color(0xFFD7F2E3),
+                    badgeColor: const Color(0xFF1F9D55),
+                    onTap: () => context.push(AppRoutes.adminInventoryImport),
+                  ),
+                ),
+                const SizedBox(width: AppConstants.spacingMd),
+                Expanded(
+                  child: _QuickActionButton(
+                    icon: Icons.qr_code_scanner_outlined,
+                    label: 'Barcode Scanner',
+                    cardColor: const Color(0xFFE3E4FB),
+                    badgeColor: const Color(0xFF5B6DF2),
+                    onTap: () {
+                      ScaffoldMessenger.of(context)
+                        ..hideCurrentSnackBar()
+                        ..showSnackBar(const SnackBar(content: Text('Coming soon')));
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: AppConstants.spacingLg,
@@ -162,6 +190,68 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Colorful icon+label tile used for the "Excel Import"/"Barcode Scanner"
+/// row above the category filters — fixed, theme-independent colors (same
+/// reasoning as `CategoryIllustration`'s palette) so they stay vivid in
+/// both light and dark mode.
+class _QuickActionButton extends StatelessWidget {
+  const _QuickActionButton({
+    required this.icon,
+    required this.label,
+    required this.cardColor,
+    required this.badgeColor,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String label;
+  final Color cardColor;
+  final Color badgeColor;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return InkWell(
+      borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppConstants.spacingSm,
+          vertical: AppConstants.spacingMd,
+        ),
+        decoration: BoxDecoration(
+          color: cardColor,
+          borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+          border: Border.all(color: badgeColor.withValues(alpha: 0.4)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircleAvatar(
+              radius: 14,
+              backgroundColor: badgeColor,
+              child: Icon(icon, size: 16, color: Colors.white),
+            ),
+            const SizedBox(width: AppConstants.spacingSm),
+            Flexible(
+              child: Text(
+                label,
+                style: theme.textTheme.labelMedium?.copyWith(
+                  color: badgeColor,
+                  fontWeight: FontWeight.w700,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

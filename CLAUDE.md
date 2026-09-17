@@ -620,9 +620,18 @@ over Dio — no mock repositories remain.
     `ProductType` enums (no more network category fetch on this screen
     either).
     **Bulk import (Excel), 2026-09-17 — backlog #13, first of two planned
-    passes (barcode scanning is the deferred second pass)**: a new "Import"
-    icon on the Inventory app bar opens `BulkImportScreen`
-    (`/admin/inventory/import`). Admin picks an `.xlsx` file
+    passes (barcode scanning is the deferred second pass)**: a new row of
+    two colorful icon+label action buttons (`_QuickActionButton`, fixed
+    theme-independent pastel-card/vivid-badge colors — same reasoning as
+    `CategoryIllustration`'s palette — plus a hairline border in the same
+    badge color, added on request) sits above the category filter chips
+    — **"Excel Import"** (green, real, opens `BulkImportScreen`) and
+    **"Barcode Scanner"** (blue/violet, placeholder — shows a "Coming
+    soon" SnackBar per this doc's own convention, since that's the
+    deferred second pass). Originally shipped as a single app-bar icon
+    next to Sign Out; moved here and paired with the Barcode Scanner
+    placeholder per explicit user ask, 2026-09-17. `BulkImportScreen`
+    itself (`/admin/inventory/import`) — admin picks an `.xlsx` file
     (`file_picker`, new dependency — the v13 API's `FilePicker.pickFile()`
     + `PlatformFile.readAsBytes()`, no SDK equivalent for a native file
     picker); the file is parsed and validated **entirely client-side**
@@ -677,6 +686,24 @@ over Dio — no mock repositories remain.
     same parser limitation (the fix would be either patching/forking the
     `excel` dependency or preprocessing the zip, neither done since it
     wasn't reproducible with a realistically-authored file).
+    **Sample template download, 2026-09-17**: a "Download sample file"
+    `OutlinedButton` under the intro card (only shown before a file's been
+    picked) builds a ready-made `.xlsx` — `buildSampleImportWorkbookBytes()`
+    (`bulk_import_sheet_reader.dart`, using `Excel.createExcel()` +
+    `sheet.appendRow()` — the same `excel` package, now used to *write*, not
+    just read) with the exact header row `parseBulkImportRows` expects plus
+    one filled-in example row (the same Paracetamol 500mg Tablets values
+    used in `docs/API_ENDPOINTS.md`'s #78 example) — then hands it to
+    `FilePicker.saveFile()` (the v13 API's system "Save As" picker, already
+    a dependency) so the admin picks where to save it. Verified live:
+    saved to Downloads as `product_import_template.xlsx`, confirmed as a
+    structurally valid `.xlsx` (inspected the raw zip/shared-strings
+    content), and round-tripped it straight back through "Choose file" —
+    parsed as "1 row ready to import" with zero issues, proving the
+    writer and reader agree on the exact same format (and, incidentally,
+    that `excel: 4.0.6`'s own writer emits relative worksheet targets, so
+    round-tripping a self-generated file never hits the openpyxl parser
+    bug noted above).
   - **Appointments** — a `DefaultTabController` shell with **two sub-tabs**:
     - _Appointments sub-tab_ (`AdminAppointmentsListScreen`) — every
       appointment across every user. Search bar (name or doctor) +
