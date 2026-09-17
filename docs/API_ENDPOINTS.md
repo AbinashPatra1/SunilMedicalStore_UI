@@ -275,6 +275,26 @@ by Fri, 18th Sept") is computed entirely client-side (today + a fixed
 number of days) — there's no real logistics/ETA system yet, so this is
 cosmetic only and needs no backend field.
 
+**⚠ `Product` gains a new `barcode` field, not yet implemented on the
+backend, 2026-09-17 — backlog #13, barcode scanning (second pass)**: a
+free-text scannable barcode/SKU, optional, `null`/omitted degrades cleanly
+(no UI depends on it being present). Applies to #30–33 (admin CRUD) only —
+not exposed on the customer-facing catalog reads (#5–8), since this is an
+admin-inventory-management field, not a storefront one. Admin sets it
+either via camera scan (`mobile_scanner`, ML Kit barcode/QR detection,
+entirely on-device — no new endpoint) or manual entry, from a new "Scan
+barcode" affordance on the Add/Edit product form and a "Barcode Scanner"
+quick action on the Inventory list (scans, then looks up a match by
+`barcode` against the already-fetched product list — same client-side
+matching pattern as the Excel import's Name+Brand upsert lookup — and
+either opens that product's Edit screen or opens Add pre-filled with the
+scanned code if nothing matches). **Verified live**: confirmed the client
+correctly sends `barcode` in the `POST /v1/admin/products` request body,
+but the current backend response omits the field entirely (silently
+dropped, not persisted) — same degrade-cleanly behavior as every other
+built-ahead-of-backend field on this model. No new endpoint, just a new
+field on the existing admin create/update/read requests/responses.
+
 **⚠ Category taxonomy replaced (6 → 22 categories) and `Product` gains a
 new `type` field, neither implemented on the backend, 2026-09-16** — see
 #4's note above for the full 22-label list and the **breaking-change data
@@ -964,7 +984,8 @@ Request:
   "ingredients": ["Paracetamol", "Starch", "Povidone"],
   "imageUrl": null,
   "packSize": "10 tablets",
-  "type": "tabletDrug"
+  "type": "tabletDrug",
+  "barcode": null
 }
 ```
 - Mandatory (client validates): `name`, `brand`, `category`, `price`,
@@ -972,7 +993,8 @@ Request:
   Add/Edit form requires a selection for new/edited products; see #5's
   note on `type` for the value set).
 - Optional (omit or `null`): `mrp`, `description` (may be `""`), `dosage`,
-  `ingredients` (may be `[]`), `imageUrl`, `packSize`.
+  `ingredients` (may be `[]`), `imageUrl`, `packSize`, `barcode` (new,
+  2026-09-17 — see the top-level ⚠ note above).
 - Server assigns the id.
 - Errors: `400 validation_error` (missing mandatory field or bad type),
   `400 invalid_category` (unknown category label),
