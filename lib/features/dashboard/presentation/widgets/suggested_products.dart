@@ -31,7 +31,7 @@ class SuggestedProducts extends ConsumerWidget {
             child: Center(child: Text('Could not load suggestions.')),
           ),
           data: (products) => SizedBox(
-            height: 250,
+            height: 280,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: products.length,

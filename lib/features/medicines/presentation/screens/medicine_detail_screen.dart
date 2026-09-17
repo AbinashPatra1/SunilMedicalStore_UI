@@ -148,7 +148,7 @@ class _Detail extends ConsumerWidget {
                         Text('Similar products', style: theme.textTheme.titleMedium),
                         const SizedBox(height: AppConstants.spacingMd),
                         SizedBox(
-                          height: 250,
+                          height: 280,
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
                             itemCount: similar.length,
