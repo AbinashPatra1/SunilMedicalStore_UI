@@ -5,10 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 import 'package:sunil_medical_store/core/illustrations/order_success_illustration.dart';
 import 'package:sunil_medical_store/core/models/prescription.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/core/routes/app_routes.dart';
+import 'package:sunil_medical_store/core/theme/app_colors.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/core/utils/distance.dart';
 import 'package:sunil_medical_store/features/admin/delivery/presentation/providers/delivery_settings_providers.dart';
@@ -19,15 +21,10 @@ import 'package:sunil_medical_store/features/cart/presentation/widgets/payment_o
 import 'package:sunil_medical_store/features/cart/presentation/widgets/price_breakdown.dart';
 import 'package:sunil_medical_store/features/prescriptions/presentation/providers/prescription_providers.dart';
 import 'package:sunil_medical_store/features/profile/domain/address.dart';
-import 'package:sunil_medical_store/features/profile/domain/payment_method.dart';
 import 'package:sunil_medical_store/features/profile/presentation/providers/address_controller.dart';
-import 'package:sunil_medical_store/features/profile/presentation/providers/payment_controller.dart';
 
 enum _PaymentChoice {
-  googlePay('Google Pay', 'googlePay', Icons.account_balance_wallet_outlined),
-  phonePe('PhonePe', 'phonePe', Icons.phone_android),
-  bhim('BHIM', 'bhim', Icons.account_balance),
-  otherUpi('Other UPI', 'upi', Icons.alternate_email),
+  online('Pay online', 'razorpay', Icons.payment_outlined),
   cod('Cash on Delivery', 'cod', Icons.payments_outlined);
 
   const _PaymentChoice(this.label, this.wireValue, this.icon);
@@ -47,23 +44,31 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 }
 
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
-  final _upiPattern = RegExp(r'^[\w.\-]{2,}@[a-zA-Z]{2,}$');
-  final _customUpiController = TextEditingController();
+  late final Razorpay _razorpay;
 
   _PaymentChoice? _payment;
-
-  /// A saved UPI id selected instead of one of the generic [_PaymentChoice]
-  /// options — mutually exclusive with [_payment] (see [_select]/[_selectSaved]).
-  PaymentMethod? _savedMethod;
-  String? _upiError;
   bool _placing = false;
+
+  /// Set right before opening Razorpay checkout so the success/error
+  /// callbacks (which carry no context of their own) know which address to
+  /// place the order against once payment completes.
+  Address? _checkoutAddress;
 
   String? _selectedPrescriptionId;
   bool _uploadingPrescription = false;
 
   @override
+  void initState() {
+    super.initState();
+    _razorpay = Razorpay();
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _onRazorpaySuccess);
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _onRazorpayError);
+    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _onRazorpayExternalWallet);
+  }
+
+  @override
   void dispose() {
-    _customUpiController.dispose();
+    _razorpay.clear();
     super.dispose();
   }
 
@@ -171,19 +176,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   }
 
   void _select(_PaymentChoice choice) {
-    setState(() {
-      _payment = choice;
-      _savedMethod = null;
-      _upiError = null;
-    });
-  }
-
-  void _selectSaved(PaymentMethod method) {
-    setState(() {
-      _savedMethod = method;
-      _payment = null;
-      _upiError = null;
-    });
+    setState(() => _payment = choice);
   }
 
   Future<void> _orderNow(Address? address) async {
@@ -191,12 +184,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       _snack('Please add a delivery address in Profile → Addresses.');
       return;
     }
-    if (_payment == null && _savedMethod == null) {
+    if (_payment == null) {
       _snack('Please select a payment method.');
-      return;
-    }
-    if (_payment == _PaymentChoice.otherUpi && !_upiPattern.hasMatch(_customUpiController.text.trim())) {
-      setState(() => _upiError = 'Enter a valid UPI id (name@bank).');
       return;
     }
     if (ref.read(cartRequiresPrescriptionProvider) && _selectedPrescriptionId == null) {
@@ -226,39 +215,105 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
         }
       }
     }
-    await _placeOrder(address);
+    if (_payment == _PaymentChoice.online) {
+      await _payOnline(address);
+    } else {
+      await _placeOrder(address);
+    }
   }
 
-  Future<void> _placeOrder(Address address) async {
+  List<OrderRequestItem> _cartAsRequestItems() => [
+    for (final item in ref.read(cartProvider))
+      OrderRequestItem(
+        kind: item.kind,
+        catalogId: item.catalogId,
+        quantity: item.quantity,
+        scheduledDate: item.scheduledDate,
+        timeSlot: item.timeSlot,
+      ),
+  ];
+
+  /// Pay-online flow: get a Razorpay order for the authoritatively-priced
+  /// cart, then open Razorpay's own checkout UI. [_onRazorpaySuccess] picks
+  /// up from there and calls [_placeOrder] once payment succeeds.
+  Future<void> _payOnline(Address address) async {
+    setState(() => _placing = true);
+    try {
+      final details = await ref.read(orderRepositoryProvider).createRazorpayOrder(
+        items: _cartAsRequestItems(),
+        addressId: address.id,
+        promoCode: ref.read(appliedPromoProvider)?.code,
+      );
+      if (!mounted) return;
+      _checkoutAddress = address;
+      _razorpay.open({
+        'key': details.keyId,
+        'order_id': details.razorpayOrderId,
+        'amount': details.amount,
+        'currency': details.currency,
+        'name': 'Sunil Medical Store',
+        'description': 'Order payment',
+        'theme': {'color': AppColors.primaryHex},
+      });
+    } on ApiException catch (e) {
+      if (mounted) {
+        _snack(e.message);
+        setState(() => _placing = false);
+      }
+    }
+  }
+
+  void _onRazorpaySuccess(PaymentSuccessResponse response) {
+    final address = _checkoutAddress;
+    if (address == null) return;
+    _placeOrder(
+      address,
+      razorpayOrderId: response.orderId,
+      razorpayPaymentId: response.paymentId,
+      razorpaySignature: response.signature,
+    );
+  }
+
+  void _onRazorpayError(PaymentFailureResponse response) {
+    if (!mounted) return;
+    setState(() => _placing = false);
+    if (response.code == Razorpay.PAYMENT_CANCELLED) {
+      _snack('Payment cancelled.');
+      return;
+    }
+    // The native bridge sometimes hands back the literal string "undefined"
+    // (or "null") instead of a real message/null — never show that verbatim.
+    final message = response.message;
+    final hasRealMessage = message != null && message.isNotEmpty && message != 'undefined' && message != 'null';
+    _snack(hasRealMessage ? message : 'Payment failed. Please try again.');
+  }
+
+  void _onRazorpayExternalWallet(ExternalWalletResponse response) {
+    if (!mounted) return;
+    setState(() => _placing = false);
+    _snack('Selected wallet: ${response.walletName}. Please complete the payment there and try again.');
+  }
+
+  Future<void> _placeOrder(
+    Address address, {
+    String? razorpayOrderId,
+    String? razorpayPaymentId,
+    String? razorpaySignature,
+  }) async {
     setState(() => _placing = true);
 
-    final savedMethod = _savedMethod;
-    final payment = _payment;
-    final wireValue = savedMethod != null ? 'upi' : payment!.wireValue;
-    final upiId = savedMethod?.upiId ?? (payment == _PaymentChoice.otherUpi ? _customUpiController.text.trim() : null);
-    final paymentLabel = savedMethod != null
-        ? 'UPI · ${savedMethod.upiId}'
-        : (payment == _PaymentChoice.otherUpi ? 'UPI · ${_customUpiController.text.trim()}' : payment!.label);
-    final items = ref.read(cartProvider);
-    final promoCode = ref.read(appliedPromoProvider)?.code;
+    final payment = _payment!;
 
     try {
       final order = await ref.read(orderRepositoryProvider).placeOrder(
-        items: [
-          for (final item in items)
-            OrderRequestItem(
-              kind: item.kind,
-              catalogId: item.catalogId,
-              quantity: item.quantity,
-              scheduledDate: item.scheduledDate,
-              timeSlot: item.timeSlot,
-            ),
-        ],
+        items: _cartAsRequestItems(),
         addressId: address.id,
-        promoCode: promoCode,
-        paymentMethod: wireValue,
-        upiId: upiId,
+        promoCode: ref.read(appliedPromoProvider)?.code,
+        paymentMethod: payment.wireValue,
         prescriptionId: _selectedPrescriptionId,
+        razorpayOrderId: razorpayOrderId,
+        razorpayPaymentId: razorpayPaymentId,
+        razorpaySignature: razorpaySignature,
       );
 
       if (!mounted) return;
@@ -271,7 +326,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           title: const Text('Order placed!'),
           content: Text(
             'Order ${order.orderNumber} for ₹${order.total} will be delivered to your '
-            '${address.type.label} address.\n\nPayment: $paymentLabel',
+            '${address.type.label} address.\n\nPayment: ${payment.label}',
             textAlign: TextAlign.center,
           ),
           actions: [
@@ -307,7 +362,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     ref.watch(deliverySettingsProvider);
     final addresses = ref.watch(addressesProvider).value ?? const <Address>[];
     final address = ref.watch(selectedAddressProvider);
-    final savedMethods = ref.watch(paymentMethodsProvider).value ?? const <PaymentMethod>[];
     final total = ref.watch(cartTotalProvider);
     final needsPrescription = ref.watch(cartRequiresPrescriptionProvider);
     final prescriptions = ref.watch(prescriptionsProvider).value ?? const <Prescription>[];
@@ -375,51 +429,16 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     ),
                   ),
                 ],
-                if (savedMethods.isNotEmpty) ...[
-                  const SizedBox(height: AppConstants.spacingLg),
-                  Text('Saved UPI', style: theme.textTheme.titleMedium),
-                  const SizedBox(height: AppConstants.spacingSm),
-                  for (final method in savedMethods)
-                    PaymentOptionTile(
-                      icon: Icons.account_balance_outlined,
-                      title: method.upiId,
-                      subtitle: method.isDefault ? 'Default' : null,
-                      selected: _savedMethod?.id == method.id,
-                      onTap: _placing ? () {} : () => _selectSaved(method),
-                    ),
-                ],
                 const SizedBox(height: AppConstants.spacingLg),
-                Text('Pay using UPI', style: theme.textTheme.titleMedium),
+                Text('Payment method', style: theme.textTheme.titleMedium),
                 const SizedBox(height: AppConstants.spacingSm),
-                for (final choice in [_PaymentChoice.googlePay, _PaymentChoice.phonePe, _PaymentChoice.bhim, _PaymentChoice.otherUpi]) ...[
-                  PaymentOptionTile(
-                    icon: choice.icon,
-                    title: choice.label,
-                    selected: _payment == choice,
-                    onTap: _placing ? () {} : () => _select(choice),
-                  ),
-                  if (choice == _PaymentChoice.otherUpi && _payment == _PaymentChoice.otherUpi)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: AppConstants.spacingSm),
-                      child: TextField(
-                        controller: _customUpiController,
-                        autofocus: true,
-                        enabled: !_placing,
-                        decoration: InputDecoration(
-                          labelText: 'Your UPI ID',
-                          hintText: 'name@bank',
-                          errorText: _upiError,
-                          prefixIcon: const Icon(Icons.alternate_email),
-                        ),
-                        onChanged: (_) {
-                          if (_upiError != null) setState(() => _upiError = null);
-                        },
-                      ),
-                    ),
-                ],
-                const SizedBox(height: AppConstants.spacingMd),
-                Text('Other', style: theme.textTheme.titleMedium),
-                const SizedBox(height: AppConstants.spacingSm),
+                PaymentOptionTile(
+                  icon: _PaymentChoice.online.icon,
+                  title: _PaymentChoice.online.label,
+                  subtitle: 'UPI, cards, netbanking and wallets via Razorpay',
+                  selected: _payment == _PaymentChoice.online,
+                  onTap: _placing ? () {} : () => _select(_PaymentChoice.online),
+                ),
                 PaymentOptionTile(
                   icon: _PaymentChoice.cod.icon,
                   title: _PaymentChoice.cod.label,

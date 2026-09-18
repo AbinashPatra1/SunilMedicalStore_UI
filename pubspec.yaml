@@ -54,6 +54,7 @@ dependencies:
   file_picker: ^13.1.0
   excel: ^4.0.6
   mobile_scanner: ^7.4.2
+  razorpay_flutter: ^1.4.6
 
 dev_dependencies:
   flutter_test:

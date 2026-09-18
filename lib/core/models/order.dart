@@ -40,6 +40,22 @@ enum OrderStatus {
   };
 }
 
+/// Outcome of an automatic refund (backlog #20) — only set when an order
+/// paid via Razorpay is later cancelled. `null` on [Order.refundStatus]
+/// means either no refund applies (COD, or never cancelled) or the order
+/// predates this feature.
+enum RefundStatus {
+  pending,
+  processed,
+  failed;
+
+  String get label => switch (this) {
+    RefundStatus.pending => 'Refund in progress',
+    RefundStatus.processed => 'Refunded',
+    RefundStatus.failed => 'Refund failed — contact support',
+  };
+}
+
 /// A single line item within an [Order].
 class OrderItem {
   const OrderItem({required this.name, required this.quantity, required this.price});
@@ -71,6 +87,7 @@ class Order {
     required this.total,
     this.paymentMethod,
     this.addressId,
+    this.refundStatus,
   });
 
   final String id;
@@ -91,6 +108,9 @@ class Order {
   /// `upi`, `cod`), when known.
   final String? paymentMethod;
   final String? addressId;
+
+  /// Automatic-refund outcome (backlog #20) — see [RefundStatus].
+  final RefundStatus? refundStatus;
 
   int get itemCount => items.fold(0, (sum, i) => sum + i.quantity);
 }

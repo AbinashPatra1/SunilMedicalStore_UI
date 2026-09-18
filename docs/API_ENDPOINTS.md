@@ -116,6 +116,8 @@ brief see [`API_SPEC.md`](API_SPEC.md); for backend internals see [`claude.md`](
 | 76 | PUT | `/v1/addresses/{id}` | ✔ | Edit an existing address (full replace) → 200 |
 | 77 | PUT | `/v1/payment-methods/{id}` | ✔ | Edit a saved UPI id → 200 |
 | 78 | POST | `/v1/admin/products/bulk-import` | ✔ admin | Bulk create/update products parsed from an admin-uploaded spreadsheet |
+| 80 | POST | `/v1/payments/razorpay/order` | ✔ | Create a Razorpay order for the authoritatively-priced cart, before checkout |
+| 81 | POST | `/v1/payments/razorpay/webhook` | — (Razorpay-only, webhook secret) | Server-to-server: confirms captured payments (idempotent order creation) and refund outcomes |
 
 **45–66 are live** (verified against Azure), including the push-notification
 send side described after §3 — real order placement/cancellation triggered
@@ -645,10 +647,31 @@ Request:
 - `promoCode`: optional (`null`/omit for none).
 - `prescriptionId`: optional/omit unless the cart has an Rx item (see §54–59
   below) — required and server-validated in that case.
-- `paymentMethod`: `googlePay | phonePe | bhim | upi | cod`. For `upi`, also send `upiId`:
+- `paymentMethod`: `googlePay | phonePe | bhim | upi | cod | razorpay`. For
+  `upi`, also send `upiId`:
   ```json
   { "paymentMethod": "upi", "upiId": "rahul@okaxis" }
   ```
+  **`razorpay` — new value, proposed with #80–81 (backlog #20)**: real
+  gateway payment via Razorpay Checkout, replacing the old
+  `googlePay`/`phonePe`/`bhim`/`upi` values' "selection only, no real
+  charge" behavior for online payments (those values may stay reserved for
+  now — not removed, just superseded). When `paymentMethod` is `razorpay`,
+  also send the checkout result from the Razorpay SDK:
+  ```json
+  {
+    "paymentMethod": "razorpay",
+    "razorpayOrderId": "order_ABC123",
+    "razorpayPaymentId": "pay_XYZ789",
+    "razorpaySignature": "9ef4dcb...c3a"
+  }
+  ```
+  Verify `razorpaySignature` (HMAC-SHA256 of `razorpayOrderId|razorpayPaymentId`
+  using the Razorpay **key secret**) before creating the order — reject with
+  `400 payment_verification_failed` if it doesn't match, rather than
+  creating an order for an unconfirmed charge. `razorpayOrderId` must also
+  match one created via #80 for this cart/amount (reject
+  `400 payment_verification_failed` on mismatch, e.g. a stale/replayed id).
 Response:
 ```json
 {
@@ -666,11 +689,17 @@ Response:
   "platformFee": 0,
   "total": 459,
   "paymentMethod": "googlePay",
-  "addressId": "addr-0"
+  "addressId": "addr-0",
+  "refundStatus": null
 }
 ```
 - Pricing: `delivery` = ₹40, waived (→ 0) when `subtotal ≥ 500`. Discount: `percentage →
   subtotal*value/100` (integer division), `flat → value`, clamped to subtotal.
+- **`refundStatus` — new field, proposed with #80–81 (backlog #20, Razorpay integration).**
+  `null` unless this order was paid via `razorpay` and has since been
+  cancelled; then `pending | processed | failed` — see §Payments — Razorpay
+  below for the full refund flow. Every existing/COD/non-cancelled order is
+  simply `null`.
 - **`platformFee` — new field, not yet implemented.** See the ⚠ note below
   (backlog #12) for the full pharmacy-only, distance-tiered pricing formula
   this and `delivery` need to move to.
@@ -681,7 +710,8 @@ Response:
   numbering-format ⚠ note near the top of §2.
 - Errors: `400 empty_cart`, `400 address_required`, `404 address_not_found`,
   `404 product_not_found` / `404 lab_test_not_found`, `400 invalid_quantity`,
-  `400 invalid_upi_id`, `400 invalid_promo_code`.
+  `400 invalid_upi_id`, `400 invalid_promo_code`, `400
+  payment_verification_failed` (new, `razorpay` only — see above).
 
 #### 16. `GET /v1/orders` → `200` — `Order[]` (same shape as #15, newest first)
 #### 17. `GET /v1/orders/{id}` → `200` — `Order` — `404 order_not_found`
@@ -696,6 +726,98 @@ No body. The customer cancelling their own order.
 - Only valid while `status` is `created` or `processing` — reject with
   `409 order_not_cancellable` once `shipped`/`delivered`/already `cancelled`.
 - `404 order_not_found` if missing or not the caller's order.
+- **Automatic refund — proposed with #80–81 (backlog #20)**: if this
+  order's `paymentMethod` is `razorpay` and it has a captured
+  `razorpayPaymentId` on record, kick off a full-amount refund via
+  Razorpay's Refunds API (`POST /payments/{payment_id}/refund`) as part of
+  handling this request — no separate client call needed, it's a side
+  effect of cancelling. Set the order's `refundStatus` to `pending`
+  immediately in this response; don't block the cancel itself on the
+  refund API call succeeding — if that call itself errors (Razorpay down,
+  etc.), still cancel the order and set `refundStatus: "failed"` so staff
+  can see it needs a manual refund via the Razorpay dashboard as a
+  fallback. The eventual outcome (`processed`/`failed`) arrives async via
+  the webhook (#81) and isn't necessarily known by the time this request
+  returns. COD orders and any order with no captured payment: `refundStatus`
+  stays `null`, nothing to refund.
+
+---
+
+### Payments — Razorpay — **proposed, not yet built** (backlog #20)
+
+Real payment-gateway integration replacing the old "selection only, no real
+charge" UPI-app picker for online payments. **Decided with the user**:
+payment confirmation uses client-relay *and* a Razorpay webhook as the
+authoritative source (not client-relay alone) — a payment that succeeds but
+never gets reported back by the app (crash/dropped connection right after
+paying) must not leave the customer charged with no order on our side.
+Refunds on cancellation are automatic, not manual.
+
+#### 80. `POST /v1/payments/razorpay/order` → `200`
+Client calls this **before** #15, instead of going straight to
+`POST /orders`, whenever the customer picks online payment. Same
+cart-defining payload as #15, minus payment fields:
+```json
+{
+  "items": [
+    { "kind": "medicine", "productId": "p1", "quantity": 2 }
+  ],
+  "addressId": "addr-0",
+  "promoCode": "SAVE10"
+}
+```
+- Backend prices this **authoritatively** — identical logic to #15/#12 (same
+  subtotal/discount/delivery/platform-fee computation) — never trust a
+  client-sent total for the charge amount.
+- Creates a Razorpay Order (Razorpay's own Orders API, server-side, using
+  the **key secret** — never exposed to the client) for that computed
+  total, in paise (Razorpay's smallest-unit convention: ₹459 → `45900`).
+- **Stash the full order-creation payload** (items, address, promo,
+  prescription id) keyed by the returned Razorpay order id — backend's
+  choice how (a pending-order table, or Razorpay's own order `notes`
+  metadata). This is what lets #81's webhook create the store order on its
+  own if the client never calls #15 after a successful charge (app
+  crash/dropped connection) — the two paths must converge on the same
+  order, not create duplicates or silently drop it.
+
+Response:
+```json
+{
+  "razorpayOrderId": "order_ABC123",
+  "amount": 45900,
+  "currency": "INR",
+  "keyId": "rzp_test_xxxxxxxxxxxx"
+}
+```
+- `keyId` — the Razorpay **public** Key ID (safe to send to the client; the
+  Flutter app passes it straight into the `razorpay_flutter` SDK to open
+  checkout). Never send the key **secret** to the client, ever.
+- Errors: same as #15's cart-validation errors (`400 empty_cart`, `404
+  address_not_found`, `400 invalid_promo_code`, etc.) — this is the same
+  validation, just before payment instead of after.
+
+#### 81. Razorpay webhook (backend-internal — **not called by the client**)
+Registered directly in the Razorpay dashboard against a backend URL of your
+choice (e.g. `POST /v1/payments/razorpay/webhook`); Razorpay calls this
+server-to-server on payment/refund events. Verify the webhook signature
+(the **webhook secret**, configured in the Razorpay dashboard — a
+*different* secret from both the key secret and #15's checkout signature)
+before trusting any payload.
+
+Events to handle:
+- **`payment.captured` / `order.paid`** — the authoritative confirmation
+  that money actually moved. Look up the stashed payload for this
+  `razorpayOrderId` (from #80) and ensure the store order exists —
+  **idempotently**: if the client's own #15 call already created it (the
+  common case), this is a no-op; if not (client dropped off after paying),
+  create it now from the stashed payload, same as #15 would have. Either
+  way, exactly one order must exist per successful payment, never zero,
+  never two.
+- **`refund.processed`** — set the order's `refundStatus` to `processed`.
+- **`refund.failed`** — set the order's `refundStatus` to `failed`, so
+  staff know a manual refund is needed.
+- Return `200` quickly (Razorpay retries on non-2xx/timeout) — do any slow
+  work after acknowledging, not before.
 
 ---
 
@@ -1363,9 +1485,12 @@ Filter query params:
   "delivery": 0,
   "total": 459,
   "paymentMethod": "googlePay",
-  "addressId": "addr-0"
+  "addressId": "addr-0",
+  "refundStatus": null
 }
 ```
+- **`refundStatus` — new field, proposed with #80–81 (backlog #20)**: same
+  field/meaning as the customer `Order` shape (#15) — see there.
 - **`orderNumber` format is changing, not yet implemented** — from
   `SMS-<seq>` to `PHSMS-<mmyy>-<seq>` for orders placed after this ships;
   existing orders keep their current number (no backfill). See the
@@ -1386,6 +1511,12 @@ Request:
 ```
 - `status` — `created | processing | shipped | delivered | cancelled`.
 - Errors: `404 order_not_found`, `403 forbidden_admin_only`.
+- **Automatic refund on `status: "cancelled"` — proposed with #80–81
+  (backlog #20)**: same trigger/behavior as #45's note above — if the order
+  was paid via `razorpay` with a captured payment, kick off an automatic
+  full refund and set `refundStatus` accordingly. Admin cancelling a
+  `shipped`/`delivered` order (allowed here, unlike the customer's
+  pre-shipment-only #45) still triggers the same refund if applicable.
 - **Client-side behavior change (no request/response shape change here)**:
   the admin app no longer lets the admin free-pick any status from a list —
   it only ever sends **the single next status in the linear sequence**
@@ -1799,7 +1930,8 @@ values also reuse `invalid_category`/`validation_error` from above).
 | order item `kind` | `medicine`, `labTest` |
 | promo `type` | `percentage`, `flat` |
 | product `type` | `tabletDrug`, `liquidDrug`, `injection`, `nonOralDrug`, `others` |
-| `paymentMethod` | `googlePay`, `phonePe`, `bhim`, `upi`, `cod` |
+| `paymentMethod` | `googlePay`, `phonePe`, `bhim`, `upi`, `cod`, `razorpay` (proposed, with #80–81) |
+| `refundStatus` | `pending`, `processed`, `failed`, or `null` (proposed, with #80–81) |
 | prescription `status` | `pending`, `approved`, `rejected` |
 | push `platform` | `android`, `ios` (proposed, with #60) |
 | push `data.type` | `order`, `appointment`, `labTest` (proposed, with #60) |

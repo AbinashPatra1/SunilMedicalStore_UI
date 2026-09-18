@@ -4,6 +4,7 @@ import 'package:sunil_medical_store/core/models/order.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/features/cart/domain/cart_item.dart';
 import 'package:sunil_medical_store/features/cart/domain/order_repository.dart';
+import 'package:sunil_medical_store/features/cart/domain/razorpay_order_details.dart';
 
 /// [OrderRepository] backed by the real API.
 class ApiOrderRepository implements OrderRepository {
@@ -18,30 +19,23 @@ class ApiOrderRepository implements OrderRepository {
     required String addressId,
     String? promoCode,
     required String paymentMethod,
-    String? upiId,
     String? prescriptionId,
+    String? razorpayOrderId,
+    String? razorpayPaymentId,
+    String? razorpaySignature,
   }) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
         '/orders',
         data: {
-          'items': [
-            for (final item in items)
-              {
-                'kind': item.kind.name,
-                if (item.kind == CartItemKind.medicine) 'productId': item.catalogId,
-                if (item.kind == CartItemKind.labTest) 'testId': item.catalogId,
-                'quantity': item.quantity,
-                if (item.kind == CartItemKind.labTest && item.scheduledDate != null)
-                  'scheduledDate': _dateFormat.format(item.scheduledDate!),
-                if (item.kind == CartItemKind.labTest && item.timeSlot != null) 'timeSlot': item.timeSlot,
-              },
-          ],
+          'items': _itemsToJson(items),
           'addressId': addressId,
           'promoCode': ?promoCode,
           'paymentMethod': paymentMethod,
-          'upiId': ?upiId,
           'prescriptionId': ?prescriptionId,
+          'razorpayOrderId': ?razorpayOrderId,
+          'razorpayPaymentId': ?razorpayPaymentId,
+          'razorpaySignature': ?razorpaySignature,
         },
       );
       return _fromJson(response.data!);
@@ -49,6 +43,46 @@ class ApiOrderRepository implements OrderRepository {
       throw ApiException.fromDioException(e);
     }
   }
+
+  @override
+  Future<RazorpayOrderDetails> createRazorpayOrder({
+    required List<OrderRequestItem> items,
+    required String addressId,
+    String? promoCode,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/payments/razorpay/order',
+        data: {
+          'items': _itemsToJson(items),
+          'addressId': addressId,
+          'promoCode': ?promoCode,
+        },
+      );
+      final json = response.data!;
+      return RazorpayOrderDetails(
+        razorpayOrderId: json['razorpayOrderId'] as String,
+        amount: json['amount'] as int,
+        currency: json['currency'] as String,
+        keyId: json['keyId'] as String,
+      );
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
+  List<Map<String, dynamic>> _itemsToJson(List<OrderRequestItem> items) => [
+    for (final item in items)
+      {
+        'kind': item.kind.name,
+        if (item.kind == CartItemKind.medicine) 'productId': item.catalogId,
+        if (item.kind == CartItemKind.labTest) 'testId': item.catalogId,
+        'quantity': item.quantity,
+        if (item.kind == CartItemKind.labTest && item.scheduledDate != null)
+          'scheduledDate': _dateFormat.format(item.scheduledDate!),
+        if (item.kind == CartItemKind.labTest && item.timeSlot != null) 'timeSlot': item.timeSlot,
+      },
+  ];
 
   @override
   Future<Order> cancelOrder(String id) async {
@@ -81,5 +115,8 @@ class ApiOrderRepository implements OrderRepository {
     total: json['total'] as int,
     paymentMethod: json['paymentMethod'] as String?,
     addressId: json['addressId'] as String?,
+    refundStatus: json['refundStatus'] == null
+        ? null
+        : RefundStatus.values.byName(json['refundStatus'] as String),
   );
 }

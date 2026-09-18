@@ -10,6 +10,10 @@ class AppColors {
   static const Color primary = Color(0xFF0E7C7B);
   static const Color secondary = Color(0xFF2A9D8F);
 
+  /// [primary] as a `#RRGGBB` string — for APIs that want a hex color
+  /// literal rather than a [Color] (e.g. the Razorpay checkout SDK's theme).
+  static const String primaryHex = '#0E7C7B';
+
   static const Color success = Color(0xFF2E7D32);
   static const Color warning = Color(0xFFF9A825);
   static const Color error = Color(0xFFD32F2F);
