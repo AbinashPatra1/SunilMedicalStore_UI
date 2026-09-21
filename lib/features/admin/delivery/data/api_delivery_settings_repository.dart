@@ -31,6 +31,8 @@ class ApiDeliverySettingsRepository implements DeliverySettingsRepository {
     required bool deliveryFeeWaived,
     required int platformFee,
     required bool platformFeeWaived,
+    required bool returnsEnabled,
+    required int returnWindowDays,
   }) async {
     try {
       final response = await _dio.put<Map<String, dynamic>>(
@@ -45,6 +47,8 @@ class ApiDeliverySettingsRepository implements DeliverySettingsRepository {
           'deliveryFeeWaived': deliveryFeeWaived,
           'platformFee': platformFee,
           'platformFeeWaived': platformFeeWaived,
+          'returnsEnabled': returnsEnabled,
+          'returnWindowDays': returnWindowDays,
         },
       );
       return _fromJson(response.data!);
@@ -69,5 +73,7 @@ class ApiDeliverySettingsRepository implements DeliverySettingsRepository {
     deliveryFeeWaived: json['deliveryFeeWaived'] as bool? ?? false,
     platformFee: json['platformFee'] as int? ?? 0,
     platformFeeWaived: json['platformFeeWaived'] as bool? ?? false,
+    returnsEnabled: json['returnsEnabled'] as bool? ?? false,
+    returnWindowDays: json['returnWindowDays'] as int? ?? DeliverySettings.defaultReturnWindowDays,
   );
 }

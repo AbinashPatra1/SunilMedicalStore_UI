@@ -14,8 +14,9 @@ enum OrderStatus {
     OrderStatus.cancelled => 'Cancelled',
   };
 
-  /// The customer can self-cancel only before the order ships.
-  bool get isCustomerCancellable => this == created || this == processing;
+  /// The customer can self-cancel only while the order hasn't been processed
+  /// yet (i.e. still `created`).
+  bool get isCustomerCancellable => this == created;
 
   /// The next status in the linear pharmacy fulfilment flow — admin can
   /// only ever advance one step at a time (via a swipe action), never jump
@@ -66,7 +67,13 @@ enum RefundStatus {
 
 /// A single line item within an [Order].
 class OrderItem {
-  const OrderItem({required this.name, required this.quantity, required this.price});
+  const OrderItem({
+    required this.name,
+    required this.quantity,
+    required this.price,
+    this.productId,
+    this.kind,
+  });
 
   final String name;
   final int quantity;
@@ -74,7 +81,55 @@ class OrderItem {
   /// Unit price in rupees.
   final int price;
 
+  /// Catalog id of the medicine (needed to reorder it) — `null` until the
+  /// backend returns it (`docs/API_ENDPOINTS.md` §Orders).
+  final String? productId;
+
+  /// `medicine` or `labTest`, when the backend says which.
+  final String? kind;
+
+  bool get isLabTest => kind == 'labTest';
+
   int get lineTotal => quantity * price;
+
+  static OrderItem fromJson(Map<String, dynamic> json) => OrderItem(
+    name: json['name'] as String,
+    quantity: json['quantity'] as int,
+    price: json['price'] as int,
+    productId: json['productId'] as String?,
+    kind: json['kind'] as String?,
+  );
+
+  static List<OrderItem> listFromJson(Object? raw) =>
+      ((raw as List?) ?? const []).cast<Map<String, dynamic>>().map(fromJson).toList();
+}
+
+/// The delivery address as it was when the order was placed, kept as one
+/// display string — the order screens never edit it.
+class OrderAddress {
+  const OrderAddress(this.formatted);
+
+  final String formatted;
+
+  /// Accepts either a ready-made string or an object with
+  /// `line1`/`line2`/`area`/`city`/`state`/`pincode`; `null` for anything else.
+  static OrderAddress? tryParse(Object? raw) {
+    if (raw is String) return raw.trim().isEmpty ? null : OrderAddress(raw.trim());
+    if (raw is Map) {
+      String? s(String key) {
+        final v = raw[key];
+        return v is String && v.trim().isNotEmpty ? v.trim() : null;
+      }
+
+      final cityLine = [s('city'), [s('state'), s('pincode')].whereType<String>().join(' ')]
+          .whereType<String>()
+          .where((p) => p.isNotEmpty)
+          .join(', ');
+      final parts = [s('line1'), s('line2'), s('area'), cityLine].whereType<String>().where((p) => p.isNotEmpty);
+      return parts.isEmpty ? null : OrderAddress(parts.join(', '));
+    }
+    return null;
+  }
 }
 
 /// An order — placed via checkout, or read back as history.
@@ -96,6 +151,9 @@ class Order {
     this.paymentMethod,
     this.addressId,
     this.refundStatus,
+    this.platformFee = 0,
+    this.deliveredOn,
+    this.deliveryAddress,
   });
 
   final String id;
@@ -110,7 +168,18 @@ class Order {
   final int subtotal;
   final int discount;
   final int delivery;
+
+  /// Flat platform fee charged on pharmacy orders (`0` when none/waived).
+  final int platformFee;
   final int total;
+
+  /// When the order was marked delivered, once it is (`null` before that, or
+  /// until the backend returns it).
+  final DateTime? deliveredOn;
+
+  /// Delivery address snapshot from when the order was placed, if the backend
+  /// returns one.
+  final OrderAddress? deliveryAddress;
 
   /// Wire value of the payment method chosen at checkout (e.g. `googlePay`,
   /// `upi`, `cod`), when known.

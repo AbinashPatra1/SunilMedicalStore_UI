@@ -21,6 +21,9 @@ class AdminOrder {
     this.paymentMethod,
     this.addressId,
     this.refundStatus,
+    this.platformFee = 0,
+    this.deliveredOn,
+    this.deliveryAddress,
   });
 
   final String id;
@@ -39,7 +42,14 @@ class AdminOrder {
   final int subtotal;
   final int discount;
   final int delivery;
+  final int platformFee;
   final int total;
+
+  /// When the order was marked delivered (`null` before that / until the backend returns it).
+  final DateTime? deliveredOn;
+
+  /// Delivery address snapshot from when the order was placed, if returned.
+  final OrderAddress? deliveryAddress;
 
   final String? paymentMethod;
   final String? addressId;

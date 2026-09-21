@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:sunil_medical_store/core/utils/support_contact.dart';
 
 /// Profile > Help & Support: a WhatsApp Business chat shortcut plus common
 /// FAQs. FAQ copy is placeholder pending real content from the store.
 class HelpSupportScreen extends StatelessWidget {
   const HelpSupportScreen({super.key});
-
-  // Placeholder — replace with the store's real WhatsApp Business number.
-  static const _whatsAppNumber = '911234567890';
 
   static const _faqs = [
     (
@@ -45,18 +42,6 @@ class HelpSupportScreen extends StatelessWidget {
     ),
   ];
 
-  Future<void> _openWhatsApp(BuildContext context) async {
-    final uri = Uri.parse(
-      'https://wa.me/$_whatsAppNumber?text=${Uri.encodeComponent("Hi, I need help with my order.")}',
-    );
-    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!launched && context.mounted) {
-      ScaffoldMessenger.of(context)
-        ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text('Could not open WhatsApp.')));
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -75,7 +60,7 @@ class HelpSupportScreen extends StatelessWidget {
               title: const Text('Chat with us on WhatsApp'),
               subtitle: const Text('Get help from our support team'),
               trailing: const Icon(Icons.chevron_right),
-              onTap: () => _openWhatsApp(context),
+              onTap: () => openSupportWhatsApp(context),
             ),
           ),
           const SizedBox(height: AppConstants.spacingXl),

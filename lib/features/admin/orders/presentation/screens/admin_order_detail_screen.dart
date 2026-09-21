@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:sunil_medical_store/core/models/order.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/core/widgets/refund_status_banner.dart';
+import 'package:sunil_medical_store/features/admin/delivery/presentation/providers/delivery_settings_providers.dart';
 import 'package:sunil_medical_store/features/admin/orders/domain/admin_order.dart';
 import 'package:sunil_medical_store/features/admin/orders/presentation/providers/admin_order_providers.dart';
 import 'package:sunil_medical_store/features/admin/presentation/widgets/status_swipe_bar.dart';
-import 'package:sunil_medical_store/features/profile/presentation/widgets/status_chip.dart';
+import 'package:sunil_medical_store/features/profile/presentation/widgets/order_detail_sections.dart';
 
 /// Admin views an order and can change its status — advance the fulfilment
 /// lifecycle (`created → processing → shipped → delivered`) or cancel it.
@@ -119,67 +119,39 @@ class _DetailFormState extends ConsumerState<_DetailForm> {
     final theme = Theme.of(context);
     final o = _order;
     final advanceLabel = o.status.advanceLabel;
+    final settings = ref.watch(deliverySettingsProvider).value;
 
     return Scaffold(
       appBar: AppBar(title: Text(o.orderNumber)),
       body: ListView(
         padding: const EdgeInsets.all(AppConstants.spacingLg),
         children: [
+          OrderSummaryCard(status: o.status, placedOn: o.placedOn, deliveredOn: o.deliveredOn),
+          if (o.refundStatus != null) ...[
+            const SizedBox(height: AppConstants.spacingMd),
+            RefundStatusBanner(status: o.refundStatus!),
+          ],
+          const SizedBox(height: AppConstants.spacingLg),
           Card(
-            child: Padding(
-              padding: const EdgeInsets.all(AppConstants.spacingMd),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(o.userName, style: theme.textTheme.titleSmall),
-                  Text(
-                    o.userPhone,
-                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                  ),
-                  const SizedBox(height: AppConstants.spacingSm),
-                  Text(
-                    'Placed on ${DateFormat('EEE, d MMM yyyy').format(o.placedOn)}',
-                    style: theme.textTheme.bodySmall,
-                  ),
-                  if (o.paymentMethod != null)
-                    Text('Payment: ${o.paymentMethod}', style: theme.textTheme.bodySmall),
-                ],
-              ),
+            child: ListTile(
+              leading: const Icon(Icons.person_outline),
+              title: Text(o.userName),
+              subtitle: Text(o.userPhone),
             ),
           ),
           const SizedBox(height: AppConstants.spacingLg),
           Text('Items', style: theme.textTheme.titleMedium),
           const SizedBox(height: AppConstants.spacingSm),
-          Card(
-            child: Column(
-              children: [
-                for (final item in o.items)
-                  ListTile(
-                    title: Text(item.name),
-                    subtitle: Text('Qty ${item.quantity} × ₹${item.price}'),
-                    trailing: Text('₹${item.lineTotal}', style: theme.textTheme.titleSmall),
-                  ),
-                const Divider(height: 1),
-                ListTile(
-                  title: Text('Total', style: theme.textTheme.titleMedium),
-                  trailing: Text('₹${o.total}', style: theme.textTheme.titleMedium),
-                ),
-              ],
-            ),
+          OrderItemsBillCard(
+            items: o.items,
+            subtotal: o.subtotal,
+            discount: o.discount,
+            delivery: o.delivery,
+            platformFee: o.platformFee,
+            total: o.total,
+            paymentMethod: o.paymentMethod,
           ),
           const SizedBox(height: AppConstants.spacingLg),
-          Row(
-            children: [
-              Text('Status', style: theme.textTheme.titleMedium),
-              const SizedBox(width: AppConstants.spacingSm),
-              StatusChip(label: o.status.label, positive: o.status != OrderStatus.cancelled),
-            ],
-          ),
-          if (o.refundStatus != null) ...[
-            const SizedBox(height: AppConstants.spacingSm),
-            RefundStatusBanner(status: o.refundStatus!),
-          ],
-          const SizedBox(height: AppConstants.spacingSm),
           if (advanceLabel != null)
             StatusSwipeBar(
               label: advanceLabel,
@@ -190,13 +162,20 @@ class _DetailFormState extends ConsumerState<_DetailForm> {
             const SizedBox(height: AppConstants.spacingMd),
             Text(_error!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),
           ],
-          const SizedBox(height: AppConstants.spacingLg),
+          const SizedBox(height: AppConstants.spacingSm),
           OutlinedButton.icon(
             onPressed: (_busy || o.status == OrderStatus.cancelled) ? null : _cancel,
             style: OutlinedButton.styleFrom(foregroundColor: theme.colorScheme.error),
             icon: const Icon(Icons.cancel_outlined),
             label: const Text('Cancel order'),
           ),
+          const SizedBox(height: AppConstants.spacingLg),
+          OrderPolicySection(
+            order: OrderPolicyInput(status: o.status, deliveredOn: o.deliveredOn, orderNumber: o.orderNumber),
+            settings: settings,
+          ),
+          const SizedBox(height: AppConstants.spacingLg),
+          OrderInfoCard(address: o.deliveryAddress?.formatted, orderNumber: o.orderNumber, placedOn: o.placedOn),
         ],
       ),
     );

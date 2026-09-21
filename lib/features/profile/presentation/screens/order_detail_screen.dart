@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/core/widgets/refund_status_banner.dart';
 import 'package:sunil_medical_store/core/models/order.dart';
+import 'package:sunil_medical_store/features/admin/delivery/presentation/providers/delivery_settings_providers.dart';
 import 'package:sunil_medical_store/features/cart/presentation/providers/cart_providers.dart';
+import 'package:sunil_medical_store/features/cart/presentation/providers/reorder.dart';
+import 'package:sunil_medical_store/features/profile/presentation/providers/address_controller.dart';
 import 'package:sunil_medical_store/features/profile/presentation/providers/profile_providers.dart';
-import 'package:sunil_medical_store/features/profile/presentation/widgets/status_chip.dart';
+import 'package:sunil_medical_store/features/profile/presentation/widgets/order_detail_sections.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Detail of a single order, with a download-invoice action and — while the
@@ -25,6 +27,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
   late Order? _order = widget.order;
   bool _cancelling = false;
   bool _downloadingInvoice = false;
+  bool _reordering = false;
 
   Future<void> _downloadInvoice() async {
     final order = _order;
@@ -46,6 +49,28 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       }
     } finally {
       if (mounted) setState(() => _downloadingInvoice = false);
+    }
+  }
+
+  Future<void> _reorder() async {
+    final order = _order;
+    if (order == null) return;
+    setState(() => _reordering = true);
+    try {
+      final result = await reorder(ref, order);
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text(result.message)));
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } finally {
+      if (mounted) setState(() => _reordering = false);
     }
   }
 
@@ -119,21 +144,32 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     }
 
     final theme = Theme.of(context);
+    final settings = ref.watch(deliverySettingsProvider).value;
+    String? address = order.deliveryAddress?.formatted;
+    if (address == null) {
+      for (final a in ref.watch(addressesProvider).value ?? const []) {
+        if (a.id == order.addressId) address = a.formatted;
+      }
+    }
+
     return Scaffold(
       appBar: AppBar(title: Text(order.orderNumber)),
       body: ListView(
         padding: const EdgeInsets.all(AppConstants.spacingLg),
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  'Placed on ${DateFormat('d MMM yyyy').format(order.placedOn)}',
-                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                ),
-              ),
-              StatusChip(label: order.status.label, positive: order.status != OrderStatus.cancelled),
-            ],
+          OrderSummaryCard(
+            status: order.status,
+            placedOn: order.placedOn,
+            deliveredOn: order.deliveredOn,
+            action: canReorder(order)
+                ? FilledButton.tonalIcon(
+                    onPressed: _reordering ? null : _reorder,
+                    icon: _reordering
+                        ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.replay),
+                    label: const Text('Reorder'),
+                  )
+                : null,
           ),
           if (order.refundStatus != null) ...[
             const SizedBox(height: AppConstants.spacingMd),
@@ -142,22 +178,14 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
           const SizedBox(height: AppConstants.spacingLg),
           Text('Items', style: theme.textTheme.titleMedium),
           const SizedBox(height: AppConstants.spacingSm),
-          Card(
-            child: Column(
-              children: [
-                for (final item in order.items)
-                  ListTile(
-                    title: Text(item.name),
-                    subtitle: Text('Qty ${item.quantity} × ₹${item.price}'),
-                    trailing: Text('₹${item.lineTotal}', style: theme.textTheme.titleSmall),
-                  ),
-                const Divider(height: 1),
-                ListTile(
-                  title: Text('Total', style: theme.textTheme.titleMedium),
-                  trailing: Text('₹${order.total}', style: theme.textTheme.titleMedium),
-                ),
-              ],
-            ),
+          OrderItemsBillCard(
+            items: order.items,
+            subtotal: order.subtotal,
+            discount: order.discount,
+            delivery: order.delivery,
+            platformFee: order.platformFee,
+            total: order.total,
+            paymentMethod: order.paymentMethod,
           ),
           const SizedBox(height: AppConstants.spacingLg),
           OutlinedButton.icon(
@@ -178,6 +206,18 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
               label: const Text('Cancel order'),
             ),
           ],
+          const SizedBox(height: AppConstants.spacingLg),
+          OrderPolicySection(
+            order: OrderPolicyInput(
+              status: order.status,
+              deliveredOn: order.deliveredOn,
+              orderNumber: order.orderNumber,
+            ),
+            settings: settings,
+            showHelp: true,
+          ),
+          const SizedBox(height: AppConstants.spacingLg),
+          OrderInfoCard(address: address, orderNumber: order.orderNumber, placedOn: order.placedOn),
         ],
       ),
     );

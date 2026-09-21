@@ -28,7 +28,7 @@ class CartController extends Notifier<List<CartItem>> {
 
   /// Adds one unit of a medicine. No-op when the product is out of stock —
   /// the UI already disables the Add button, this is a defensive backstop.
-  void addProduct(Product product) {
+  void addProduct(Product product, {int quantity = 1}) {
     if (product.isOutOfStock) return;
     _add(
       id: 'medicine-${product.id}',
@@ -39,6 +39,9 @@ class CartController extends Notifier<List<CartItem>> {
       kind: CartItemKind.medicine,
       requiresPrescription: product.requiresPrescription,
     );
+    for (var i = 1; i < quantity; i++) {
+      increment('medicine-${product.id}');
+    }
   }
 
   /// Adds one unit of a lab test, scheduled for [scheduledDate] in the

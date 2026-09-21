@@ -21,7 +21,12 @@ class DeliverySettings {
     this.deliveryFeeWaived = false,
     this.platformFee = 0,
     this.platformFeeWaived = false,
+    this.returnsEnabled = false,
+    this.returnWindowDays = defaultReturnWindowDays,
   });
+
+  /// Used when returns are on but the backend hasn't sent a window.
+  static const defaultReturnWindowDays = 7;
 
   final double storeLatitude;
   final double storeLongitude;
@@ -38,6 +43,13 @@ class DeliverySettings {
   /// Single flat fee, charged once per pharmacy order regardless of distance.
   final int platformFee;
   final bool platformFeeWaived;
+
+  /// Whether customers can return delivered orders (admin toggle). When off,
+  /// the customer app shows nothing return-related.
+  final bool returnsEnabled;
+
+  /// Days after delivery within which an order can be returned.
+  final int returnWindowDays;
 
   /// The delivery fee for [distanceKm], or `null` if no tiers are
   /// configured (caller should fall back to a legacy default in that case).

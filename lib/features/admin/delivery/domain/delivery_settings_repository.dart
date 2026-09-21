@@ -15,5 +15,7 @@ abstract interface class DeliverySettingsRepository {
     required bool deliveryFeeWaived,
     required int platformFee,
     required bool platformFeeWaived,
+    required bool returnsEnabled,
+    required int returnWindowDays,
   });
 }

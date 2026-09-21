@@ -38,6 +38,7 @@ class AdminDeliverySettingsScreen extends ConsumerStatefulWidget {
 class _AdminDeliverySettingsScreenState extends ConsumerState<AdminDeliverySettingsScreen> {
   final _radiusController = TextEditingController();
   final _platformFeeController = TextEditingController();
+  final _returnDaysController = TextEditingController();
   final List<_TierRow> _tierRows = [];
 
   double? _latitude;
@@ -45,6 +46,7 @@ class _AdminDeliverySettingsScreenState extends ConsumerState<AdminDeliverySetti
   String? _locationPreview;
   bool _deliveryFeeWaived = false;
   bool _platformFeeWaived = false;
+  bool _returnsEnabled = false;
   bool _locating = false;
   bool _saving = false;
   String? _error;
@@ -54,6 +56,7 @@ class _AdminDeliverySettingsScreenState extends ConsumerState<AdminDeliverySetti
   void dispose() {
     _radiusController.dispose();
     _platformFeeController.dispose();
+    _returnDaysController.dispose();
     for (final row in _tierRows) {
       row.dispose();
     }
@@ -69,6 +72,8 @@ class _AdminDeliverySettingsScreenState extends ConsumerState<AdminDeliverySetti
     _deliveryFeeWaived = settings.deliveryFeeWaived;
     _platformFeeController.text = settings.platformFee.toString();
     _platformFeeWaived = settings.platformFeeWaived;
+    _returnsEnabled = settings.returnsEnabled;
+    _returnDaysController.text = settings.returnWindowDays.toString();
     for (final tier in settings.deliveryFeeTiers) {
       _tierRows.add(
         _TierRow(maxDistanceKm: tier.maxDistanceKm.toString(), fee: tier.fee.toString()),
@@ -140,6 +145,11 @@ class _AdminDeliverySettingsScreenState extends ConsumerState<AdminDeliverySetti
       setState(() => _error = 'Enter a valid platform fee.');
       return;
     }
+    final returnDays = int.tryParse(_returnDaysController.text.trim());
+    if (_returnsEnabled && (returnDays == null || returnDays < 1 || returnDays > 365)) {
+      setState(() => _error = 'Enter a return window between 1 and 365 days.');
+      return;
+    }
 
     setState(() {
       _saving = true;
@@ -156,6 +166,8 @@ class _AdminDeliverySettingsScreenState extends ConsumerState<AdminDeliverySetti
             deliveryFeeWaived: _deliveryFeeWaived,
             platformFee: platformFee,
             platformFeeWaived: _platformFeeWaived,
+            returnsEnabled: _returnsEnabled,
+            returnWindowDays: returnDays ?? DeliverySettings.defaultReturnWindowDays,
           );
       ref.invalidate(deliverySettingsProvider);
       if (mounted) {
@@ -309,6 +321,29 @@ class _AdminDeliverySettingsScreenState extends ConsumerState<AdminDeliverySetti
                 title: const Text('Mark platform fee as free'),
                 subtitle: const Text('Shows the fee struck through instead of charging it'),
               ),
+              const Divider(height: AppConstants.spacingXl),
+              Text('Returns', style: theme.textTheme.titleMedium),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                value: _returnsEnabled,
+                onChanged: _saving ? null : (v) => setState(() => _returnsEnabled = v),
+                title: const Text('Allow returns'),
+                subtitle: const Text(
+                  'When off, customers see nothing about returns on their orders',
+                ),
+              ),
+              if (_returnsEnabled) ...[
+                const SizedBox(height: AppConstants.spacingSm),
+                TextField(
+                  controller: _returnDaysController,
+                  enabled: !_saving,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: 'Return window (days)',
+                    helperText: 'Counted from the delivery date',
+                  ),
+                ),
+              ],
               if (_error != null) ...[
                 const SizedBox(height: AppConstants.spacingSm),
                 Text(_error!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),

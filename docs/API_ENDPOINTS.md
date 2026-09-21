@@ -744,6 +744,37 @@ No body. The customer cancelling their own order.
 
 ---
 
+### Order detail additions — **proposed, not yet built** (2026-09-21)
+
+The redesigned order detail screens (customer and admin) need a few more
+fields on every order response — `GET /orders`, `GET /orders/{id}`, `POST
+/orders` (#15–17) and the admin `GET /admin/orders`, `GET`/`PUT
+/admin/orders/{id}` (#46–48). The client is already built against these and
+degrades cleanly (hides the affected section) while they're missing:
+
+- **`deliveredOn`** — ISO-8601 UTC date-time, set when the order's status
+  moves to `delivered` (#48), `null` before that. Drives "Delivered on …"
+  and the return window (which counts from delivery).
+- **`items[].productId`** and **`items[].kind`** (`medicine` | `labTest`) —
+  today each item is only `name`/`quantity`/`price`. The client's **Reorder**
+  button needs the catalog id to re-add a medicine (and re-check its stock via
+  `GET /catalog/products/{id}`); it hides Reorder if `productId` is absent.
+  For lab-test items send `testId` instead of `productId` (client only uses
+  `kind` to skip them — lab tests need a fresh date/slot, so Reorder leaves
+  them out).
+- **`deliveryAddress`** — the address **as it was when the order was placed**
+  (a snapshot, so later edits/deletes of the saved address don't change past
+  orders, and the admin — who can't read customers' address books — can show
+  it). Either an object `{ "type": "home", "line1": "…", "line2": null,
+  "area": "Gachibowli", "city": "Hyderabad", "state": "Telangana", "pincode":
+  "500084" }` or a single pre-formatted string; the client accepts both.
+- **`platformFee`** — already returned by #15; now also read on #16/#17 and
+  the admin order responses (`0` when none), so the bill can list it.
+- **Cancellation rule change (#45)**: the customer can now cancel **only
+  while `status` is `created`** (previously `created` or `processing`). Reject
+  `processing`/`shipped`/`delivered`/`cancelled` with `409
+  order_not_cancellable`. (Admin cancel, #48, is unchanged.)
+
 ### Payments — Razorpay — **live, verified 2026-09-21** (backlog #20)
 
 Real payment-gateway integration replacing the old "selection only, no real
@@ -950,9 +981,19 @@ gets a platform fee, regardless of what's configured here.
   ],
   "deliveryFeeWaived": false,
   "platformFee": 10,
-  "platformFeeWaived": false
+  "platformFeeWaived": false,
+  "returnsEnabled": true,
+  "returnWindowDays": 7
 }
 ```
+- **`returnsEnabled` / `returnWindowDays` — new, proposed 2026-09-21 (order
+  detail redesign).** Admin's return policy. `returnsEnabled: false` (or the
+  fields missing) → the customer app shows nothing return-related on order
+  detail. When `true`, `returnWindowDays` (integer, `1–365`) is how many days
+  **after delivery** an order can be returned; the client turns it into "can
+  be returned by <deliveredOn + N days>" / "return window closed on <date>".
+  Purely informational for now — there is no return-request endpoint. Both
+  fields must default to `false` / `7` for existing settings rows.
 - Client treats **either** a `404` here **or** a missing `latitude`/`longitude`
   on the selected address as "can't verify, allow the order" — this endpoint
   not existing yet must never block every pharmacy checkout.
@@ -975,15 +1016,19 @@ gets a platform fee, regardless of what's configured here.
   per pharmacy order alongside delivery.
 
 #### 72. `PUT /v1/admin/delivery-settings` → `200` — updated `DeliverySettings`
-Request: same shape as #71's response, all seven fields together (radius/
+Request: same shape as #71's response, all nine fields together (radius/
 location and the four new fee fields are saved as one form on the admin
 screen — no partial-update semantics needed). Admin sets `storeLatitude`/
 `storeLongitude` by standing at (or near) the store and capturing device GPS —
 mirrors the customer's "Use current location" address flow, just without the
 reverse-geocode step (raw coordinates are all that's needed for the
 Haversine check).
+- `returnsEnabled` (bool) and `returnWindowDays` (int) are sent every time;
+  when `returnsEnabled` is `false` the client still sends the last window
+  value, which the backend may store but should ignore.
 - Errors: `400 validation_error` (missing/invalid fields, including a tier
-  with a non-positive `maxDistanceKm` or negative `fee`), `403 forbidden_admin_only`.
+  with a non-positive `maxDistanceKm` or negative `fee`, or `returnWindowDays`
+  outside `1–365` while `returnsEnabled` is `true`), `403 forbidden_admin_only`.
 
 ### Home Banners — **73–75 live, verified 2026-09-17**
 
