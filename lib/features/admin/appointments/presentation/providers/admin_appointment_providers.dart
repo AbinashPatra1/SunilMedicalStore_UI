@@ -31,6 +31,6 @@ final adminAppointmentsProvider = FutureProvider<List<AdminAppointment>>((ref) {
 
 /// A single admin appointment for the edit sheet.
 final adminAppointmentByIdProvider =
-    FutureProvider.family<AdminAppointment, String>((ref, id) {
+    FutureProvider.autoDispose.family<AdminAppointment, String>((ref, id) {
   return ref.watch(adminAppointmentRepositoryProvider).getById(id);
 });

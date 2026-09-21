@@ -327,16 +327,21 @@ class OrderPolicySection extends StatelessWidget {
     required this.order,
     required this.settings,
     this.showHelp = false,
+    this.showCancelNote = true,
   });
 
   final OrderPolicyInput order;
   final DeliverySettings? settings;
   final bool showHelp;
 
+  /// The customer-facing cancel rule; the admin view hides it, since admins
+  /// can cancel at any point.
+  final bool showCancelNote;
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cancelNote = cancelPolicyMessage(order.status);
+    final cancelNote = showCancelNote ? cancelPolicyMessage(order.status) : null;
     final returnInfo = evaluateReturn(
       status: order.status,
       deliveredOn: order.deliveredOn,

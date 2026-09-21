@@ -175,6 +175,7 @@ class _DetailFormState extends ConsumerState<_DetailForm> {
           OrderPolicySection(
             order: OrderPolicyInput(status: o.status, deliveredOn: o.deliveredOn, orderNumber: o.orderNumber),
             settings: settings,
+            showCancelNote: false,
           ),
           const SizedBox(height: AppConstants.spacingLg),
           OrderInfoCard(address: o.deliveryAddress?.formatted, orderNumber: o.orderNumber, placedOn: o.placedOn),

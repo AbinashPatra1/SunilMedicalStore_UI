@@ -28,6 +28,6 @@ final adminOrdersProvider = FutureProvider<List<AdminOrder>>((ref) {
 });
 
 /// A single admin order for the detail/edit screen.
-final adminOrderByIdProvider = FutureProvider.family<AdminOrder, String>((ref, id) {
+final adminOrderByIdProvider = FutureProvider.autoDispose.family<AdminOrder, String>((ref, id) {
   return ref.watch(adminOrderRepositoryProvider).getById(id);
 });

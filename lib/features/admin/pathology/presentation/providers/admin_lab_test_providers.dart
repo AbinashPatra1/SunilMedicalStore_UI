@@ -28,6 +28,6 @@ final adminLabTestBookingsProvider = FutureProvider<List<AdminLabTestBooking>>((
 });
 
 /// A single admin lab-test booking for the detail screen.
-final adminLabTestBookingByIdProvider = FutureProvider.family<AdminLabTestBooking, String>((ref, id) {
+final adminLabTestBookingByIdProvider = FutureProvider.autoDispose.family<AdminLabTestBooking, String>((ref, id) {
   return ref.watch(adminLabTestRepositoryProvider).getById(id);
 });
