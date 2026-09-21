@@ -53,8 +53,17 @@ class SuggestedProductCard extends StatelessWidget {
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  Text(
-                    product.brand,
+                  Text.rich(
+                    TextSpan(
+                      children: [
+                        if (product.requiresPrescription)
+                          TextSpan(
+                            text: 'Rx  ',
+                            style: TextStyle(color: theme.colorScheme.error, fontWeight: FontWeight.w700),
+                          ),
+                        TextSpan(text: product.brand),
+                      ],
+                    ),
                     style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,

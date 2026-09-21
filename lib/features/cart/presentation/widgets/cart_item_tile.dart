@@ -50,6 +50,14 @@ class CartItemTile extends StatelessWidget {
                     item.subtitle,
                     style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                   ),
+                  if (item.requiresPrescription)
+                    Text(
+                      'Rx required',
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.error,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   if (item.kind == CartItemKind.labTest && item.scheduledDate != null && item.timeSlot != null) ...[
                     const SizedBox(height: 2),
                     Text(
