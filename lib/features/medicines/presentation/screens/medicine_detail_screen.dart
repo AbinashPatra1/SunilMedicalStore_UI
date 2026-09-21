@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:sunil_medical_store/core/theme/app_palette.dart';
+import 'package:sunil_medical_store/core/illustrations/product_illustration.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sunil_medical_store/core/routes/app_routes.dart';
@@ -73,16 +75,7 @@ class _Detail extends ConsumerWidget {
             child: ListView(
               padding: const EdgeInsets.all(AppConstants.spacingLg),
               children: [
-                // Image placeholder.
-                Container(
-                  height: 160,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(AppConstants.radiusLg),
-                  ),
-                  child: Icon(Icons.medication_outlined, size: 72, color: theme.colorScheme.onPrimaryContainer),
-                ),
+                ProductIllustration.forProduct(product: product, height: 180, width: double.infinity, radius: AppConstants.radiusLg),
                 const SizedBox(height: AppConstants.spacingLg),
                 Text(product.name, style: theme.textTheme.titleLarge),
                 const SizedBox(height: AppConstants.spacingXs),
@@ -172,7 +165,7 @@ class _Detail extends ConsumerWidget {
           ),
           DecoratedBox(
             decoration: BoxDecoration(
-              color: theme.colorScheme.surfaceContainerHigh,
+              color: AppPalette.barColor(theme),
               border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4))),
             ),
             child: SafeArea(

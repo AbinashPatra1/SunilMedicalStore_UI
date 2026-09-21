@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sunil_medical_store/core/illustrations/product_illustration.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/core/utils/delivery_estimate.dart';
 import 'package:sunil_medical_store/features/medicines/domain/product.dart';
@@ -37,15 +38,7 @@ class SuggestedProductCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    height: 72,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer,
-                      borderRadius: BorderRadius.circular(AppConstants.radiusMd),
-                    ),
-                    child: Icon(Icons.medication_outlined, color: theme.colorScheme.onPrimaryContainer),
-                  ),
+                  ProductIllustration.forProduct(product: product, height: 72, width: double.infinity),
                   const SizedBox(height: AppConstants.spacingSm),
                   Text(
                     product.name,

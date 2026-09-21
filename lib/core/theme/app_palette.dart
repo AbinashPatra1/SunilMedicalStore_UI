@@ -9,6 +9,12 @@ abstract final class AppPalette {
   /// Dark ink used for text on the light pastel gradients.
   static const Color ink = Color(0xFF12312B);
 
+  /// Background of the sticky bottom action bars (cart, checkout, product
+  /// detail): the same soft white tint as the bottom nav in light mode.
+  static Color barColor(ThemeData theme) => theme.brightness == Brightness.dark
+      ? theme.colorScheme.surfaceContainer
+      : Colors.white.withValues(alpha: 0.85);
+
   // Buttons: one deeper-orange gradient everywhere, white text on top.
   static const Color orangeStart = Color(0xFFE85A0C);
   static const Color orangeEnd = Color(0xFFFF8A2B);

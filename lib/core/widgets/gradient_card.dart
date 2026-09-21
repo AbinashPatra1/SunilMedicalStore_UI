@@ -27,7 +27,10 @@ class GradientCard extends StatelessWidget {
     final gradient = AppTabPalette.of(AppTabScope.of(context)).card(brightness);
     return Padding(
       padding: margin ?? const EdgeInsets.all(4),
-      child: Ink(
+      // A plain DecoratedBox rather than `Ink`: an Ink decoration keeps the
+      // size it had when first laid out, so a card that grows afterwards
+      // (e.g. a row appearing once data loads) painted short.
+      child: DecoratedBox(
         decoration: BoxDecoration(
           gradient: gradient,
           borderRadius: radius,
@@ -37,10 +40,14 @@ class GradientCard extends StatelessWidget {
             ),
           ),
         ),
-        child: InkWell(
+        child: Material(
+          type: MaterialType.transparency,
           borderRadius: radius,
-          onTap: onTap,
-          child: Padding(padding: padding, child: child),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(padding: padding, child: child),
+          ),
         ),
       ),
     );

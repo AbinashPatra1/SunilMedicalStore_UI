@@ -38,6 +38,9 @@ class CartController extends Notifier<List<CartItem>> {
       price: product.price,
       kind: CartItemKind.medicine,
       requiresPrescription: product.requiresPrescription,
+      category: product.category,
+      productTypeName: product.type?.name,
+      imageUrl: product.imageUrl,
     );
     for (var i = 1; i < quantity; i++) {
       increment('medicine-${product.id}');
@@ -67,6 +70,9 @@ class CartController extends Notifier<List<CartItem>> {
     bool requiresPrescription = false,
     DateTime? scheduledDate,
     String? timeSlot,
+    String? category,
+    String? productTypeName,
+    String? imageUrl,
   }) {
     final index = state.indexWhere((i) => i.id == id);
     if (index >= 0) {
@@ -97,6 +103,9 @@ class CartController extends Notifier<List<CartItem>> {
           requiresPrescription: requiresPrescription,
           scheduledDate: scheduledDate,
           timeSlot: timeSlot,
+          category: category,
+          productTypeName: productTypeName,
+          imageUrl: imageUrl,
         ),
       ];
     }

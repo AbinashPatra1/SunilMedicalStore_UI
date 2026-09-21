@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:sunil_medical_store/core/illustrations/product_illustration.dart';
+import 'package:sunil_medical_store/features/medicines/domain/product_type.dart';
 import 'package:intl/intl.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/cart/domain/cart_item.dart';
@@ -28,18 +30,15 @@ class CartItemTile extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: theme.colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(AppConstants.radiusMd),
-              ),
-              child: Icon(
-                item.kind == CartItemKind.labTest ? Icons.biotech_outlined : Icons.medication_outlined,
-                color: theme.colorScheme.onPrimaryContainer,
-              ),
-            ),
+            item.kind == CartItemKind.labTest
+                ? const ProductIllustration.labTest(width: 56, height: 56)
+                : ProductIllustration(
+                    category: item.category ?? '',
+                    type: ProductType.fromWireName(item.productTypeName),
+                    imageUrl: item.imageUrl,
+                    width: 56,
+                    height: 56,
+                  ),
             const SizedBox(width: AppConstants.spacingMd),
             Expanded(
               child: Column(

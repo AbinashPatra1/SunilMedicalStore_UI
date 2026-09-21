@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sunil_medical_store/core/illustrations/product_illustration.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/core/utils/delivery_estimate.dart';
 import 'package:sunil_medical_store/features/medicines/domain/product.dart';
@@ -35,7 +36,7 @@ class ProductCard extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _ProductThumb(size: 56, iconSize: 28),
+                    ProductIllustration.forProduct(product: product, width: 64, height: 64),
                     const SizedBox(width: AppConstants.spacingMd),
                     Expanded(
                       child: Column(
@@ -114,27 +115,6 @@ class _OutOfStockBadge extends StatelessWidget {
 }
 
 /// Rounded placeholder thumbnail used until real product images exist.
-class _ProductThumb extends StatelessWidget {
-  const _ProductThumb({required this.size, required this.iconSize});
-
-  final double size;
-  final double iconSize;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(AppConstants.radiusMd),
-      ),
-      child: Icon(Icons.medication_outlined, size: iconSize, color: theme.colorScheme.onPrimaryContainer),
-    );
-  }
-}
-
 class _RxBadge extends StatelessWidget {
   const _RxBadge();
 

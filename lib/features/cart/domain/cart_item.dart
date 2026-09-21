@@ -16,6 +16,9 @@ class CartItem {
     this.requiresPrescription = false,
     this.scheduledDate,
     this.timeSlot,
+    this.category,
+    this.productTypeName,
+    this.imageUrl,
   });
 
   /// Unique within the cart (kind-prefixed, e.g. `medicine-p1`, `labtest-lt2`).
@@ -46,6 +49,14 @@ class CartItem {
   /// for [CartItemKind.labTest].
   final String? timeSlot;
 
+  /// Catalog snapshot used only to pick the line's illustration (medicines).
+  final String? category;
+
+  /// `ProductType.name`, kept as a string so the cart stays decoupled from
+  /// the medicines domain.
+  final String? productTypeName;
+  final String? imageUrl;
+
   int get lineTotal => price * quantity;
 
   CartItem copyWith({int? quantity, DateTime? scheduledDate, String? timeSlot}) => CartItem(
@@ -59,5 +70,8 @@ class CartItem {
     requiresPrescription: requiresPrescription,
     scheduledDate: scheduledDate ?? this.scheduledDate,
     timeSlot: timeSlot ?? this.timeSlot,
+    category: category,
+    productTypeName: productTypeName,
+    imageUrl: imageUrl,
   );
 }
