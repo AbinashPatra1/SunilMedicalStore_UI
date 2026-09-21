@@ -20,6 +20,7 @@ class AdminOrder {
     required this.total,
     this.paymentMethod,
     this.addressId,
+    this.refundStatus,
   });
 
   final String id;
@@ -42,6 +43,9 @@ class AdminOrder {
 
   final String? paymentMethod;
   final String? addressId;
+
+  /// Automatic-refund outcome for a cancelled Razorpay order; `null` if none applies.
+  final RefundStatus? refundStatus;
 
   int get itemCount => items.fold(0, (sum, i) => sum + i.quantity);
 }

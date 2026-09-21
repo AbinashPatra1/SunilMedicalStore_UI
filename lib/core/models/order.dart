@@ -49,6 +49,14 @@ enum RefundStatus {
   processed,
   failed;
 
+  /// Parses the wire value; `null` (or anything unrecognized) means no refund.
+  static RefundStatus? fromWire(String? value) {
+    for (final s in values) {
+      if (s.name == value) return s;
+    }
+    return null;
+  }
+
   String get label => switch (this) {
     RefundStatus.pending => 'Refund in progress',
     RefundStatus.processed => 'Refunded',

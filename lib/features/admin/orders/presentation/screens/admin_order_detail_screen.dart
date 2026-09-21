@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:sunil_medical_store/core/models/order.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
+import 'package:sunil_medical_store/core/widgets/refund_status_banner.dart';
 import 'package:sunil_medical_store/features/admin/orders/domain/admin_order.dart';
 import 'package:sunil_medical_store/features/admin/orders/presentation/providers/admin_order_providers.dart';
 import 'package:sunil_medical_store/features/admin/presentation/widgets/status_swipe_bar.dart';
@@ -174,6 +175,10 @@ class _DetailFormState extends ConsumerState<_DetailForm> {
               StatusChip(label: o.status.label, positive: o.status != OrderStatus.cancelled),
             ],
           ),
+          if (o.refundStatus != null) ...[
+            const SizedBox(height: AppConstants.spacingSm),
+            RefundStatusBanner(status: o.refundStatus!),
+          ],
           const SizedBox(height: AppConstants.spacingSm),
           if (advanceLabel != null)
             StatusSwipeBar(

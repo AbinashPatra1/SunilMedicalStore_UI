@@ -743,7 +743,7 @@ No body. The customer cancelling their own order.
 
 ---
 
-### Payments — Razorpay — **proposed, not yet built** (backlog #20)
+### Payments — Razorpay — **live, verified 2026-09-21** (backlog #20)
 
 Real payment-gateway integration replacing the old "selection only, no real
 charge" UPI-app picker for online payments. **Decided with the user**:

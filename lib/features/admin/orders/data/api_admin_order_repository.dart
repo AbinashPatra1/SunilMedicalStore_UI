@@ -78,5 +78,6 @@ class ApiAdminOrderRepository implements AdminOrderRepository {
     total: json['total'] as int,
     paymentMethod: json['paymentMethod'] as String?,
     addressId: json['addressId'] as String?,
+    refundStatus: RefundStatus.fromWire(json['refundStatus'] as String?),
   );
 }

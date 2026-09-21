@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
+import 'package:sunil_medical_store/core/widgets/refund_status_banner.dart';
 import 'package:sunil_medical_store/core/models/order.dart';
 import 'package:sunil_medical_store/features/cart/presentation/providers/cart_providers.dart';
 import 'package:sunil_medical_store/features/profile/presentation/providers/profile_providers.dart';
@@ -134,6 +135,10 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
               StatusChip(label: order.status.label, positive: order.status != OrderStatus.cancelled),
             ],
           ),
+          if (order.refundStatus != null) ...[
+            const SizedBox(height: AppConstants.spacingMd),
+            RefundStatusBanner(status: order.refundStatus!),
+          ],
           const SizedBox(height: AppConstants.spacingLg),
           Text('Items', style: theme.textTheme.titleMedium),
           const SizedBox(height: AppConstants.spacingSm),

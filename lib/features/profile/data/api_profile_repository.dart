@@ -157,6 +157,7 @@ class ApiProfileRepository implements ProfileRepository {
     total: json['total'] as int,
     paymentMethod: json['paymentMethod'] as String?,
     addressId: json['addressId'] as String?,
+    refundStatus: RefundStatus.fromWire(json['refundStatus'] as String?),
   );
 
   LabTest _labTestFromJson(Map<String, dynamic> json) => LabTest(

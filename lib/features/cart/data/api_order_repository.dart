@@ -115,8 +115,6 @@ class ApiOrderRepository implements OrderRepository {
     total: json['total'] as int,
     paymentMethod: json['paymentMethod'] as String?,
     addressId: json['addressId'] as String?,
-    refundStatus: json['refundStatus'] == null
-        ? null
-        : RefundStatus.values.byName(json['refundStatus'] as String),
+    refundStatus: RefundStatus.fromWire(json['refundStatus'] as String?),
   );
 }
