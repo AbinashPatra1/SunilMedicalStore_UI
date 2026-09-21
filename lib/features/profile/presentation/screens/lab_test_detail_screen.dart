@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sunil_medical_store/core/widgets/gradient_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
@@ -82,7 +83,8 @@ class _LabTestDetailScreenState extends ConsumerState<LabTestDetailScreen> {
           const SizedBox(height: AppConstants.spacingLg),
           Text('Parameters', style: theme.textTheme.titleMedium),
           const SizedBox(height: AppConstants.spacingSm),
-          Card(
+          GradientCard(
+            padding: EdgeInsets.zero,
             child: Column(
               children: [
                 for (final parameter in test.parameters)
@@ -95,7 +97,8 @@ class _LabTestDetailScreenState extends ConsumerState<LabTestDetailScreen> {
             ),
           ),
           const SizedBox(height: AppConstants.spacingMd),
-          Card(
+          GradientCard(
+            padding: EdgeInsets.zero,
             child: ListTile(
               title: Text('Amount', style: theme.textTheme.titleMedium),
               trailing: Text('₹${test.amount}', style: theme.textTheme.titleMedium),

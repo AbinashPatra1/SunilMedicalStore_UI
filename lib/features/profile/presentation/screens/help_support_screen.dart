@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sunil_medical_store/core/widgets/gradient_card.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/core/utils/support_contact.dart';
 
@@ -51,7 +52,8 @@ class HelpSupportScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(AppConstants.spacingLg),
         children: [
-          Card(
+          GradientCard(
+            padding: EdgeInsets.zero,
             child: ListTile(
               leading: CircleAvatar(
                 backgroundColor: theme.colorScheme.primaryContainer,
@@ -66,7 +68,8 @@ class HelpSupportScreen extends StatelessWidget {
           const SizedBox(height: AppConstants.spacingXl),
           Text('Frequently asked questions', style: theme.textTheme.titleMedium),
           const SizedBox(height: AppConstants.spacingSm),
-          Card(
+          GradientCard(
+            padding: EdgeInsets.zero,
             child: Column(
               children: [
                 for (var i = 0; i < _faqs.length; i++) ...[

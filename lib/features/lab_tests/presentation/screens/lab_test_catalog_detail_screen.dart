@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sunil_medical_store/core/widgets/gradient_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sunil_medical_store/core/routes/app_routes.dart';
@@ -88,7 +89,8 @@ class _Detail extends ConsumerWidget {
                 const SizedBox(height: AppConstants.spacingMd),
                 Text(test.description, style: theme.textTheme.bodyMedium),
                 const SizedBox(height: AppConstants.spacingLg),
-                Card(
+                GradientCard(
+                  padding: EdgeInsets.zero,
                   child: Column(
                     children: [
                       _InfoRow(icon: Icons.water_drop_outlined, label: 'Sample', value: test.sampleType),
@@ -106,7 +108,8 @@ class _Detail extends ConsumerWidget {
                 const SizedBox(height: AppConstants.spacingLg),
                 Text('Parameters included (${test.parameters.length})', style: theme.textTheme.titleMedium),
                 const SizedBox(height: AppConstants.spacingSm),
-                Card(
+                GradientCard(
+                  padding: EdgeInsets.zero,
                   child: Column(
                     children: [
                       for (final parameter in test.parameters)

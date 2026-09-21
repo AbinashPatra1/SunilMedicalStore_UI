@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sunil_medical_store/core/widgets/gradient_card.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/core/utils/week_range.dart';
 import 'package:sunil_medical_store/features/appointments/domain/doctor.dart';
@@ -21,7 +22,8 @@ class DoctorCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Card(
+    return GradientCard(
+      padding: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(AppConstants.spacingMd),
         child: Column(

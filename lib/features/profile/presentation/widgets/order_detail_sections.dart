@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sunil_medical_store/core/widgets/gradient_card.dart';
 import 'package:intl/intl.dart';
 import 'package:sunil_medical_store/core/models/order.dart';
 import 'package:sunil_medical_store/core/theme/app_colors.dart';
@@ -47,7 +48,8 @@ class OrderSummaryCard extends StatelessWidget {
         ? 'Delivered on ${_dateFormat.format(deliveredOn!.toLocal())}'
         : 'Placed on ${_dateFormat.format(placedOn.toLocal())}';
 
-    return Card(
+    return GradientCard(
+      padding: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(AppConstants.spacingLg),
         child: Column(
@@ -240,7 +242,8 @@ class OrderItemsBillCard extends StatelessWidget {
       fontWeight: FontWeight.w700,
     );
 
-    return Card(
+    return GradientCard(
+      padding: EdgeInsets.zero,
       child: Column(
         children: [
           for (final item in items)
@@ -348,7 +351,8 @@ class OrderPolicySection extends StatelessWidget {
     };
     if (cancelNote == null && returnNote == null && !showHelp) return const SizedBox.shrink();
 
-    return Card(
+    return GradientCard(
+      padding: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(AppConstants.spacingLg),
         child: Column(
@@ -447,7 +451,8 @@ class OrderInfoCard extends StatelessWidget {
       ),
     );
 
-    return Card(
+    return GradientCard(
+      padding: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
           AppConstants.spacingLg,

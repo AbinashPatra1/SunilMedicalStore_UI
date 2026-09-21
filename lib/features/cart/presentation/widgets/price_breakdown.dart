@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sunil_medical_store/core/widgets/gradient_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/cart/presentation/providers/cart_providers.dart';
@@ -16,7 +17,8 @@ class PriceBreakdown extends ConsumerWidget {
     final platformFee = ref.watch(cartPlatformFeeLineProvider);
     final total = ref.watch(cartTotalProvider);
 
-    return Card(
+    return GradientCard(
+      padding: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(AppConstants.spacingMd),
         child: Column(

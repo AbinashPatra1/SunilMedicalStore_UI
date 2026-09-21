@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sunil_medical_store/core/widgets/gradient_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
@@ -124,7 +125,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                 const SizedBox(height: AppConstants.spacingXl),
                 Text('Personal details', style: theme.textTheme.titleMedium),
                 const SizedBox(height: AppConstants.spacingSm),
-                Card(
+                GradientCard(
+                  padding: EdgeInsets.zero,
                   child: Padding(
                     padding: const EdgeInsets.all(AppConstants.spacingMd),
                     child: Column(
@@ -214,7 +216,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                     style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                   )
                 else
-                  Card(
+                  GradientCard(
+                    padding: EdgeInsets.zero,
                     child: Column(
                       children: [
                         for (final record in profile.medicalRecords)

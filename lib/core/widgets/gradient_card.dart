@@ -26,7 +26,7 @@ class GradientCard extends StatelessWidget {
     final radius = BorderRadius.circular(AppConstants.radiusLg);
     final gradient = AppTabPalette.of(AppTabScope.of(context)).card(brightness);
     return Padding(
-      padding: margin ?? EdgeInsets.zero,
+      padding: margin ?? const EdgeInsets.all(4),
       child: Ink(
         decoration: BoxDecoration(
           gradient: gradient,

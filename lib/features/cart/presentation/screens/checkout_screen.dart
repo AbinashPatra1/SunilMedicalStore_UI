@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:sunil_medical_store/core/widgets/gradient_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -383,7 +384,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               children: [
                 Text('Delivery address', style: theme.textTheme.titleMedium),
                 const SizedBox(height: AppConstants.spacingSm),
-                Card(
+                GradientCard(
+                  padding: EdgeInsets.zero,
                   child: ListTile(
                     leading: Icon(address == null ? Icons.location_off_outlined : _addressIcon(address.type)),
                     title: Text(address?.type.label ?? 'No address'),
@@ -400,7 +402,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   const SizedBox(height: AppConstants.spacingLg),
                   Text('Prescription required', style: theme.textTheme.titleMedium),
                   const SizedBox(height: AppConstants.spacingSm),
-                  Card(
+                  GradientCard(
+                    padding: EdgeInsets.zero,
                     child: ListTile(
                       leading: Icon(
                         selectedPrescription == null ? Icons.warning_amber_outlined : Icons.description_outlined,
