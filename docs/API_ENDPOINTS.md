@@ -744,7 +744,7 @@ No body. The customer cancelling their own order.
 
 ---
 
-### Order detail additions — **proposed, not yet built** (2026-09-21)
+### Order detail additions — **live, response fields verified 2026-09-21**
 
 The redesigned order detail screens (customer and admin) need a few more
 fields on every order response — `GET /orders`, `GET /orders/{id}`, `POST
@@ -770,6 +770,12 @@ degrades cleanly (hides the affected section) while they're missing:
   "500084" }` or a single pre-formatted string; the client accepts both.
 - **`platformFee`** — already returned by #15; now also read on #16/#17 and
   the admin order responses (`0` when none), so the bill can list it.
+- **Verified live (2026-09-21, customer `GET /orders` + `GET /orders/{id}`)**: `deliveredOn`,
+  `items[].kind`/`productId`/`testId` and `platformFee` are returned;
+  `deliveryAddress` is `null` on orders placed before the change (no backfill,
+  by design) — still to confirm it is populated on a *new* order, and that
+  `deliveredOn` is set after delivery and #45 now rejects `processing` with
+  `409 order_not_cancellable`.
 - **Cancellation rule change (#45)**: the customer can now cancel **only
   while `status` is `created`** (previously `created` or `processing`). Reject
   `processing`/`shipped`/`delivered`/`cancelled` with `409
@@ -951,7 +957,7 @@ the caller's; same `400` validation errors as #23.
 
 ---
 
-### Location & Delivery Settings — **71–72 proposed, not yet built**
+### Location & Delivery Settings — **71–72 live**
 
 Backs backlog #11 (device-only Geocoder + Haversine distance, no Maps API
 billing): the store's own reference point + delivery radius, used entirely
@@ -986,8 +992,8 @@ gets a platform fee, regardless of what's configured here.
   "returnWindowDays": 7
 }
 ```
-- **`returnsEnabled` / `returnWindowDays` — new, proposed 2026-09-21 (order
-  detail redesign).** Admin's return policy. `returnsEnabled: false` (or the
+- **`returnsEnabled` / `returnWindowDays` — added 2026-09-21 (order detail
+  redesign); live, returned by #71 (default `false` / `7`).** Admin's return policy. `returnsEnabled: false` (or the
   fields missing) → the customer app shows nothing return-related on order
   detail. When `true`, `returnWindowDays` (integer, `1–365`) is how many days
   **after delivery** an order can be returned; the client turns it into "can
@@ -1195,7 +1201,7 @@ Hard delete. `404 product_not_found` if missing. Backend may want to prevent
 deletion if the product is referenced by unfulfilled orders — flag with
 `409 product_in_use` if so; the client will surface the message.
 
-#### 78. `POST /v1/admin/products/bulk-import` → `200` — **proposed, not yet built** (backlog #13)
+#### 78. `POST /v1/admin/products/bulk-import` → `200` — **live** (backlog #13)
 Backs a new Admin → Inventory "Import" screen: admin picks an `.xlsx` file,
 the client parses it (columns matched by header name, case-insensitive, any
 order) and runs the same validation the Add/Edit form already does — this
@@ -1577,7 +1583,7 @@ Request:
 
 ---
 
-### Admin — Pathology (lab-test bookings) — **68–70 proposed, not yet built**
+### Admin — Pathology (lab-test bookings) — **68–70 live**
 
 Admin's read + write surface for every lab-test booking across every user —
 brand new, there was no admin-side lab-test management before this. Mirrors
@@ -1862,7 +1868,7 @@ A timer-triggered job, **once daily at 8:00 AM IST**, that:
 
 ---
 
-### Admin — Statistics — **proposed, not yet built**
+### Admin — Statistics — **live**
 
 One aggregate endpoint backs the whole Statistics dashboard — the client
 makes a single call per range change rather than one per widget.
