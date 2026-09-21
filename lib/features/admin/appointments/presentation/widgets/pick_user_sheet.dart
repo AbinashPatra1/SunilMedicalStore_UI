@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sunil_medical_store/core/theme/app_palette.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/admin/users/domain/admin_user.dart';
@@ -85,10 +86,10 @@ class _PickUserSheetState extends ConsumerState<PickUserSheet> {
                       final AdminUser user = users[index];
                       return ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: theme.colorScheme.primaryContainer,
+                          backgroundColor: AppAccent.forSeed(user.fullName).pastel,
                           child: Text(
                             user.initials,
-                            style: TextStyle(color: theme.colorScheme.onPrimaryContainer),
+                            style: TextStyle(color: AppAccent.forSeed(user.fullName).ink),
                           ),
                         ),
                         title: Text(user.fullName),

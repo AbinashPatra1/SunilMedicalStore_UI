@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sunil_medical_store/core/theme/app_palette.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sunil_medical_store/core/routes/app_routes.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
@@ -65,11 +66,10 @@ class _MoreMenuTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return ListTile(
       leading: CircleAvatar(
-        backgroundColor: theme.colorScheme.primaryContainer,
-        child: Icon(icon, color: theme.colorScheme.onPrimaryContainer),
+        backgroundColor: AppAccent.forSeed(title).pastel,
+        child: Icon(icon, color: AppAccent.forSeed(title).ink),
       ),
       title: Text(title),
       subtitle: Text(subtitle),

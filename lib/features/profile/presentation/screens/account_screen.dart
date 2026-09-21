@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sunil_medical_store/core/theme/app_palette.dart';
 import 'package:sunil_medical_store/core/widgets/gradient_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -114,8 +115,8 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                     children: [
                       CircleAvatar(
                         radius: 48,
-                        backgroundColor: theme.colorScheme.primaryContainer,
-                        child: Icon(_genderIcon(_gender), size: 56, color: theme.colorScheme.onPrimaryContainer),
+                        backgroundColor: AppAccent.mint.pastel,
+                        child: Icon(_genderIcon(_gender), size: 56, color: AppAccent.mint.ink),
                       ),
                       const SizedBox(height: AppConstants.spacingMd),
                       Text(profile.fullName, style: theme.textTheme.titleLarge),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sunil_medical_store/core/theme/app_palette.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sunil_medical_store/core/models/order.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
@@ -281,8 +282,8 @@ class _TopProductRow extends StatelessWidget {
     final theme = Theme.of(context);
     return ListTile(
       leading: CircleAvatar(
-        backgroundColor: theme.colorScheme.primaryContainer,
-        child: Text('$rank', style: TextStyle(color: theme.colorScheme.onPrimaryContainer)),
+        backgroundColor: AppAccent.forSeed('$rank').pastel,
+        child: Text('$rank', style: TextStyle(color: AppAccent.forSeed('$rank').ink)),
       ),
       title: Text(product.name),
       subtitle: Text('${product.quantitySold} sold'),

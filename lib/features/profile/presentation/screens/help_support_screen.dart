@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sunil_medical_store/core/theme/app_palette.dart';
 import 'package:sunil_medical_store/core/widgets/gradient_card.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/core/utils/support_contact.dart';
@@ -56,8 +57,8 @@ class HelpSupportScreen extends StatelessWidget {
             padding: EdgeInsets.zero,
             child: ListTile(
               leading: CircleAvatar(
-                backgroundColor: theme.colorScheme.primaryContainer,
-                child: Icon(Icons.chat_outlined, color: theme.colorScheme.onPrimaryContainer),
+                backgroundColor: AppAccent.mint.pastel,
+                child: Icon(Icons.chat_outlined, color: AppAccent.mint.ink),
               ),
               title: const Text('Chat with us on WhatsApp'),
               subtitle: const Text('Get help from our support team'),

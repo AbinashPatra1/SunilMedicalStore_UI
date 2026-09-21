@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sunil_medical_store/core/theme/app_palette.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sunil_medical_store/core/routes/app_routes.dart';
@@ -24,10 +25,10 @@ class ProfileScreen extends ConsumerWidget {
             children: [
               CircleAvatar(
                 radius: 28,
-                backgroundColor: theme.colorScheme.primaryContainer,
+                backgroundColor: AppAccent.forSeed(user?.name ?? '').pastel,
                 child: Text(
                   user?.initials ?? '?',
-                  style: theme.textTheme.titleLarge?.copyWith(color: theme.colorScheme.onPrimaryContainer),
+                  style: theme.textTheme.titleLarge?.copyWith(color: AppAccent.forSeed(user?.name ?? '').ink),
                 ),
               ),
               const SizedBox(width: AppConstants.spacingMd),
@@ -46,14 +47,14 @@ class ProfileScreen extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: AppConstants.spacingXl),
-          ProfileOptionTile(icon: Icons.person_outline, label: 'Account', onTap: () => context.push(AppRoutes.profileAccount)),
-          ProfileOptionTile(icon: Icons.calendar_month_outlined, label: 'Appointments', onTap: () => context.push(AppRoutes.profileAppointments)),
-          ProfileOptionTile(icon: Icons.receipt_long_outlined, label: 'Orders', onTap: () => context.push(AppRoutes.profileOrders)),
-          ProfileOptionTile(icon: Icons.biotech_outlined, label: 'Lab Tests', onTap: () => context.push(AppRoutes.profileLabTests)),
-          ProfileOptionTile(icon: Icons.location_on_outlined, label: 'Addresses', onTap: () => context.push(AppRoutes.profileAddresses)),
-          ProfileOptionTile(icon: Icons.account_balance_wallet_outlined, label: 'Payment Methods', onTap: () => context.push(AppRoutes.profilePayments)),
-          ProfileOptionTile(icon: Icons.settings_outlined, label: 'Settings', onTap: () => context.push(AppRoutes.profileSettings)),
-          ProfileOptionTile(icon: Icons.help_outline, label: 'Help & Support', onTap: () => context.push(AppRoutes.profileHelpSupport)),
+          ProfileOptionTile(icon: Icons.person_outline, label: 'Account', accent: AppAccent.mint, onTap: () => context.push(AppRoutes.profileAccount)),
+          ProfileOptionTile(icon: Icons.calendar_month_outlined, label: 'Appointments', accent: AppAccent.lavender, onTap: () => context.push(AppRoutes.profileAppointments)),
+          ProfileOptionTile(icon: Icons.receipt_long_outlined, label: 'Orders', accent: AppAccent.peach, onTap: () => context.push(AppRoutes.profileOrders)),
+          ProfileOptionTile(icon: Icons.biotech_outlined, label: 'Lab Tests', accent: AppAccent.sky, onTap: () => context.push(AppRoutes.profileLabTests)),
+          ProfileOptionTile(icon: Icons.location_on_outlined, label: 'Addresses', accent: AppAccent.pink, onTap: () => context.push(AppRoutes.profileAddresses)),
+          ProfileOptionTile(icon: Icons.account_balance_wallet_outlined, label: 'Payment Methods', accent: AppAccent.amber, onTap: () => context.push(AppRoutes.profilePayments)),
+          ProfileOptionTile(icon: Icons.settings_outlined, label: 'Settings', accent: AppAccent.sky, onTap: () => context.push(AppRoutes.profileSettings)),
+          ProfileOptionTile(icon: Icons.help_outline, label: 'Help & Support', accent: AppAccent.mint, onTap: () => context.push(AppRoutes.profileHelpSupport)),
           const SizedBox(height: AppConstants.spacingLg),
           OutlinedButton.icon(
             onPressed: () => ref.read(authControllerProvider.notifier).signOut(),

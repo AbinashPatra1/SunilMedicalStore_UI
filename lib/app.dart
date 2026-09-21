@@ -34,7 +34,7 @@ class MyApp extends ConsumerWidget {
         final brightness = Theme.of(context).brightness;
         return DecoratedBox(
           decoration: BoxDecoration(
-            gradient: AppTabPalette.of(AppTab.pharmacy).background(brightness),
+            gradient: AppGradients.background(brightness),
           ),
           child: child,
         );

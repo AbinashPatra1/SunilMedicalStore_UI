@@ -204,7 +204,7 @@ class _Node extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: reached ? color : surface,
-        border: Border.all(color: reached ? color : Theme.of(context).colorScheme.outlineVariant, width: 2),
+        border: Border.all(color: reached ? color : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4), width: 2),
       ),
       child: reached
           ? Icon(cancelled ? Icons.close : Icons.check, size: 14, color: Colors.white)

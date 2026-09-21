@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:sunil_medical_store/core/theme/app_palette.dart';
 import 'package:sunil_medical_store/core/widgets/app_background.dart';
 import 'package:sunil_medical_store/core/widgets/app_bottom_nav_bar.dart';
 
@@ -27,7 +26,6 @@ class AdminScaffoldWithNavBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return AppBackground(
-      tab: AppTab.admin,
       child: Scaffold(
         body: navigationShell,
         bottomNavigationBar: AppBottomNavBar(

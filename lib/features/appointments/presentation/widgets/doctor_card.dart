@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sunil_medical_store/core/theme/app_palette.dart';
 import 'package:sunil_medical_store/core/widgets/gradient_card.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/core/utils/week_range.dart';
@@ -34,11 +35,11 @@ class DoctorCard extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 26,
-                  backgroundColor: theme.colorScheme.primaryContainer,
+                  backgroundColor: AppAccent.forSeed(doctor.name).pastel,
                   child: Text(
                     doctor.initials,
                     style: theme.textTheme.titleMedium?.copyWith(
-                      color: theme.colorScheme.onPrimaryContainer,
+                      color: AppAccent.forSeed(doctor.name).ink,
                     ),
                   ),
                 ),

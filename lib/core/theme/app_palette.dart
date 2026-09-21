@@ -47,94 +47,44 @@ class AppAccent {
   static const amber = AppAccent(Color(0xFFFFF0CC), Color(0xFFFFB020));
 
   static const all = [mint, peach, sky, lavender, pink, amber];
+
+  /// Dark, readable shade of [vivid] for text/icons drawn on [pastel].
+  Color get ink => Color.lerp(vivid, AppPalette.ink, 0.45)!;
+
+  /// A stable accent for [seed] (a name, say), so the same person or item
+  /// always gets the same colour.
+  static AppAccent forSeed(String seed) {
+    var h = 0;
+    for (final c in seed.codeUnits) {
+      h = (h * 31 + c) & 0x7fffffff;
+    }
+    return all[h % all.length];
+  }
 }
 
-/// The bottom-nav tabs that each get their own background gradient.
-enum AppTab { pharmacy, labTests, appointments, cart, profile, admin }
+/// The one app-wide background and large-card gradient (mint → peach in
+/// light mode, deep teal → brown in dark mode).
+abstract final class AppGradients {
+  static const _top = Color(0xFF9FE8D0);
+  static const _bottom = Color(0xFFFFD3B8);
+  static const _cardEnd = Color(0xFFCFF3E4);
+  static const _darkTop = Color(0xFF0F3A33);
+  static const _darkBottom = Color(0xFF3A2418);
+  static const _darkCardStart = Color(0xFF243230);
+  static const _darkCardEnd = Color(0xFF1D3B35);
 
-/// Background and large-card colours for one [AppTab].
-class AppTabPalette {
-  const AppTabPalette({
-    required this.top,
-    required this.bottom,
-    required this.cardEnd,
-    required this.darkTop,
-    required this.darkBottom,
-    required this.darkCardEnd,
-  });
-
-  final Color top;
-  final Color bottom;
-
-  /// Right-hand colour of a large card's horizontal gradient (the left is
-  /// near-white in light mode).
-  final Color cardEnd;
-  final Color darkTop;
-  final Color darkBottom;
-  final Color darkCardEnd;
-
-  static const _pharmacy = AppTabPalette(
-    top: Color(0xFF9FE8D0),
-    bottom: Color(0xFFFFD3B8),
-    cardEnd: Color(0xFFCFF3E4),
-    darkTop: Color(0xFF0F3A33),
-    darkBottom: Color(0xFF3A2418),
-    darkCardEnd: Color(0xFF1D3B35),
-  );
-  static const _labTests = AppTabPalette(
-    top: Color(0xFFA8D8FF),
-    bottom: Color(0xFFD4C8FF),
-    cardEnd: Color(0xFFD6EAFF),
-    darkTop: Color(0xFF102A48),
-    darkBottom: Color(0xFF231C4A),
-    darkCardEnd: Color(0xFF1C3350),
-  );
-  static const _appointments = AppTabPalette(
-    top: Color(0xFFCFC2FF),
-    bottom: Color(0xFFFFB8D2),
-    cardEnd: Color(0xFFE9E2FF),
-    darkTop: Color(0xFF231C4A),
-    darkBottom: Color(0xFF4A1A32),
-    darkCardEnd: Color(0xFF2E2650),
-  );
-  static const _cart = AppTabPalette(
-    top: Color(0xFFFFCFA3),
-    bottom: Color(0xFFFFE58F),
-    cardEnd: Color(0xFFFFE9C9),
-    darkTop: Color(0xFF4A2A10),
-    darkBottom: Color(0xFF4A3F10),
-    darkCardEnd: Color(0xFF3F3220),
-  );
-  static const _profile = AppTabPalette(
-    top: Color(0xFF8FE3D6),
-    bottom: Color(0xFFB5D9FF),
-    cardEnd: Color(0xFFD3F3EE),
-    darkTop: Color(0xFF0F3A3A),
-    darkBottom: Color(0xFF102A48),
-    darkCardEnd: Color(0xFF1B3838),
-  );
-
-  static AppTabPalette of(AppTab tab) => switch (tab) {
-    AppTab.pharmacy => _pharmacy,
-    AppTab.labTests => _labTests,
-    AppTab.appointments => _appointments,
-    AppTab.cart => _cart,
-    AppTab.profile => _profile,
-    // The admin console is a working tool: one calm gradient for every tab.
-    AppTab.admin => _profile,
-  };
-
-  LinearGradient background(Brightness b) => LinearGradient(
+  static LinearGradient background(Brightness b) => LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
-    colors: b == Brightness.dark ? [darkTop, darkBottom] : [top, bottom],
+    colors: b == Brightness.dark ? [_darkTop, _darkBottom] : [_top, _bottom],
   );
 
-  LinearGradient card(Brightness b) => LinearGradient(
+  /// Horizontal gradient for large cards.
+  static LinearGradient card(Brightness b) => LinearGradient(
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
     colors: b == Brightness.dark
-        ? [const Color(0xFF243230), darkCardEnd]
-        : [const Color(0xFFFFFFFF), cardEnd],
+        ? [_darkCardStart, _darkCardEnd]
+        : [const Color(0xFFFFFFFF), _cardEnd],
   );
 }

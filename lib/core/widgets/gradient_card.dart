@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/core/theme/app_palette.dart';
-import 'package:sunil_medical_store/core/widgets/app_background.dart';
 
-/// A large rounded card with the current tab's horizontal pastel gradient.
+/// A large rounded card with the app's horizontal pastel gradient.
 /// Use for summaries and hero blocks; product and list rows stay flat
 /// (plain [Card]).
 class GradientCard extends StatelessWidget {
@@ -24,7 +23,7 @@ class GradientCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final brightness = Theme.of(context).brightness;
     final radius = BorderRadius.circular(AppConstants.radiusLg);
-    final gradient = AppTabPalette.of(AppTabScope.of(context)).card(brightness);
+    final gradient = AppGradients.card(brightness);
     return Padding(
       padding: margin ?? const EdgeInsets.all(4),
       // A plain DecoratedBox rather than `Ink`: an Ink decoration keeps the

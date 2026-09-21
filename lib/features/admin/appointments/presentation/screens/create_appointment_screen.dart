@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sunil_medical_store/core/theme/app_palette.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -106,10 +107,10 @@ class _CreateAppointmentScreenState extends ConsumerState<CreateAppointmentScree
           Card(
             child: ListTile(
               leading: CircleAvatar(
-                backgroundColor: theme.colorScheme.primaryContainer,
+                backgroundColor: AppAccent.forSeed(_user?.fullName ?? '').pastel,
                 child: Text(
                   _user?.initials ?? '?',
-                  style: TextStyle(color: theme.colorScheme.onPrimaryContainer),
+                  style: TextStyle(color: AppAccent.forSeed(_user?.fullName ?? '').ink),
                 ),
               ),
               title: Text(_user?.fullName ?? 'Choose a user'),

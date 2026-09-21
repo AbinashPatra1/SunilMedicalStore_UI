@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sunil_medical_store/core/theme/app_palette.dart';
 import 'package:sunil_medical_store/core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -158,12 +159,12 @@ class _AddressCardState extends ConsumerState<_AddressCard> {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: AppConstants.spacingSm, vertical: 2),
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer,
+                      color: AppAccent.peach.pastel,
                       borderRadius: BorderRadius.circular(AppConstants.radiusFull),
                     ),
                     child: Text(
                       'Default',
-                      style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onPrimaryContainer),
+                      style: theme.textTheme.labelSmall?.copyWith(color: AppAccent.peach.ink),
                     ),
                   ),
                 const Spacer(),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sunil_medical_store/core/theme/app_palette.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/lab_tests/domain/lab_test.dart';
 
@@ -30,10 +31,10 @@ class LabTestCard extends StatelessWidget {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: theme.colorScheme.primaryContainer,
+                      color: AppAccent.sky.pastel,
                       borderRadius: BorderRadius.circular(AppConstants.radiusMd),
                     ),
-                    child: Icon(Icons.biotech_outlined, color: theme.colorScheme.onPrimaryContainer),
+                    child: Icon(Icons.biotech_outlined, color: AppAccent.sky.ink),
                   ),
                   const SizedBox(width: AppConstants.spacingMd),
                   Expanded(

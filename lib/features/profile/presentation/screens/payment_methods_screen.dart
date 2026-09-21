@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sunil_medical_store/core/theme/app_palette.dart';
 import 'package:sunil_medical_store/core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
@@ -151,8 +152,8 @@ class _PaymentMethodCardState extends ConsumerState<_PaymentMethodCard> {
     return Card(
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: theme.colorScheme.primaryContainer,
-          child: Icon(Icons.account_balance_outlined, color: theme.colorScheme.onPrimaryContainer),
+          backgroundColor: AppAccent.sky.pastel,
+          child: Icon(Icons.account_balance_outlined, color: AppAccent.sky.ink),
         ),
         title: Text(method.upiId),
         subtitle: const Text('UPI'),

@@ -35,10 +35,20 @@ abstract final class AppTheme {
         onTertiaryContainer: const Color(0xFF2E2470),
       );
 
-  static final ColorScheme _darkColorScheme = ColorScheme.fromSeed(
-    seedColor: AppColors.primary,
-    brightness: Brightness.dark,
-  );
+  static final ColorScheme _darkColorScheme =
+      ColorScheme.fromSeed(
+        seedColor: AppColors.primary,
+        brightness: Brightness.dark,
+      ).copyWith(
+        // Deep versions of the light mint/peach/lavender containers, so the nav
+        // pill, chips and tonal buttons keep their colour identity in the dark.
+        primaryContainer: const Color(0xFF0F4D43),
+        onPrimaryContainer: AppAccent.mint.pastel,
+        secondaryContainer: const Color(0xFF5A2E18),
+        onSecondaryContainer: AppAccent.peach.pastel,
+        tertiaryContainer: const Color(0xFF3A2F73),
+        onTertiaryContainer: AppAccent.lavender.pastel,
+      );
 
   /// Every filled/elevated button: the deeper-orange gradient with white
   /// text, pill-shaped. Applied through `backgroundBuilder` so no call site

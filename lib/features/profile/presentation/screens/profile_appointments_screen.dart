@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sunil_medical_store/core/theme/app_palette.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -217,8 +218,8 @@ class _AppointmentCardState extends ConsumerState<_AppointmentCard> {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: theme.colorScheme.primaryContainer,
-                  child: Icon(Icons.medical_services_outlined, color: theme.colorScheme.onPrimaryContainer),
+                  backgroundColor: AppAccent.forSeed(appointment.doctorName).pastel,
+                  child: Icon(Icons.medical_services_outlined, color: AppAccent.forSeed(appointment.doctorName).ink),
                 ),
                 const SizedBox(width: AppConstants.spacingMd),
                 Expanded(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sunil_medical_store/core/theme/app_palette.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/admin/users/domain/admin_user.dart';
 
@@ -21,10 +22,10 @@ class AdminUserTile extends StatelessWidget {
           child: Row(
             children: [
               CircleAvatar(
-                backgroundColor: theme.colorScheme.primaryContainer,
+                backgroundColor: AppAccent.forSeed(user.fullName).pastel,
                 child: Text(
                   user.initials,
-                  style: TextStyle(color: theme.colorScheme.onPrimaryContainer),
+                  style: TextStyle(color: AppAccent.forSeed(user.fullName).ink),
                 ),
               ),
               const SizedBox(width: AppConstants.spacingMd),

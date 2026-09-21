@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sunil_medical_store/core/theme/app_palette.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/admin/inventory/presentation/widgets/stock_badge.dart';
 import 'package:sunil_medical_store/features/medicines/domain/product.dart';
@@ -32,10 +33,10 @@ class InventoryItemTile extends StatelessWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: theme.colorScheme.primaryContainer,
+                  color: AppAccent.mint.pastel,
                   borderRadius: BorderRadius.circular(AppConstants.radiusMd),
                 ),
-                child: Icon(Icons.medication_outlined, color: theme.colorScheme.onPrimaryContainer),
+                child: Icon(Icons.medication_outlined, color: AppAccent.mint.ink),
               ),
               const SizedBox(width: AppConstants.spacingMd),
               Expanded(
