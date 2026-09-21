@@ -277,8 +277,9 @@ by Fri, 18th Sept") is computed entirely client-side (today + a fixed
 number of days) — there's no real logistics/ETA system yet, so this is
 cosmetic only and needs no backend field.
 
-**⚠ `Product` gains a new `barcode` field, not yet implemented on the
-backend, 2026-09-17 — backlog #13, barcode scanning (second pass)**: a
+**`Product` gains a new `barcode` field — live, verified by the user 2026-09-21
+(originally not implemented, 2026-09-17) — backlog #13, barcode scanning
+(second pass)**: a
 free-text scannable barcode/SKU, optional, `null`/omitted degrades cleanly
 (no UI depends on it being present). Applies to #30–33 (admin CRUD) only —
 not exposed on the customer-facing catalog reads (#5–8), since this is an
@@ -290,11 +291,11 @@ quick action on the Inventory list (scans, then looks up a match by
 `barcode` against the already-fetched product list — same client-side
 matching pattern as the Excel import's Name+Brand upsert lookup — and
 either opens that product's Edit screen or opens Add pre-filled with the
-scanned code if nothing matches). **Verified live**: confirmed the client
-correctly sends `barcode` in the `POST /v1/admin/products` request body,
-but the current backend response omits the field entirely (silently
-dropped, not persisted) — same degrade-cleanly behavior as every other
-built-ahead-of-backend field on this model. No new endpoint, just a new
+scanned code if nothing matches). **Verified live 2026-09-17**: the client
+correctly sends `barcode` in the `POST /v1/admin/products` request body;
+at that time the backend response omitted the field (silently dropped).
+The backend now persists and returns it; the round trip was verified live by
+the user. No new endpoint, just a new
 field on the existing admin create/update/read requests/responses.
 
 **⚠ Category taxonomy replaced (6 → 22 categories) and `Product` gains a
