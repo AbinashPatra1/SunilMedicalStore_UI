@@ -60,7 +60,9 @@ class AppBottomNavBar extends StatelessWidget {
     final scaledBaseFontSize = scaler.scale(baseStyle.fontSize ?? 12);
 
     return Material(
-      color: colors.surfaceContainer,
+      color: Theme.of(context).brightness == Brightness.dark
+          ? colors.surfaceContainer
+          : Colors.white.withValues(alpha: 0.85),
       child: SafeArea(
         top: false,
         child: SizedBox(

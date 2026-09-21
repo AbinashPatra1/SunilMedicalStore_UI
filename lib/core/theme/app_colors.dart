@@ -7,12 +7,12 @@ import 'dart:ui';
 /// pharmacy, and to pair well with the flat character illustrations in
 /// `core/illustrations/`.
 class AppColors {
-  static const Color primary = Color(0xFF0E7C7B);
-  static const Color secondary = Color(0xFF2A9D8F);
+  static const Color primary = Color(0xFF0A6B5E);
+  static const Color secondary = Color(0xFF1FB59B);
 
-  /// [primary] as a `#RRGGBB` string — for APIs that want a hex color
+  /// The button colour (`AppPalette.orangeStart`) as a `#RRGGBB` string — for APIs that want a hex color
   /// literal rather than a [Color] (e.g. the Razorpay checkout SDK's theme).
-  static const String primaryHex = '#0E7C7B';
+  static const String primaryHex = '#E85A0C';
 
   static const Color success = Color(0xFF2E7D32);
   static const Color warning = Color(0xFFF9A825);
@@ -28,8 +28,8 @@ class AppColors {
   /// `builder` (behind every screen's now-transparent `Scaffold`) rather
   /// than per-screen. Deliberately more visible than a bare tint so it
   /// reads as a gradient rather than a near-solid color.
-  static const Color gradientLightTop = Color(0xFFCFEEE8);
-  static const Color gradientLightBottom = Color(0xFFFFFFFF);
-  static const Color gradientDarkTop = Color(0xFF0A211F);
-  static const Color gradientDarkBottom = Color(0xFF141F1E);
+  static const Color gradientLightTop = Color(0xFF9FE8D0);
+  static const Color gradientLightBottom = Color(0xFFFFD3B8);
+  static const Color gradientDarkTop = Color(0xFF0F3A33);
+  static const Color gradientDarkBottom = Color(0xFF3A2418);
 }

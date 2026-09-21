@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sunil_medical_store/core/theme/app_theme.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -163,6 +164,7 @@ class _DoctorFormState extends ConsumerState<_DoctorForm> {
             style: FilledButton.styleFrom(
               foregroundColor: Theme.of(dialogCtx).colorScheme.onErrorContainer,
               backgroundColor: Theme.of(dialogCtx).colorScheme.errorContainer,
+              backgroundBuilder: flatButtonBackground,
             ),
             onPressed: () => Navigator.of(dialogCtx).pop(true),
             child: const Text('Delete'),

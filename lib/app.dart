@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sunil_medical_store/core/routes/app_router.dart';
-import 'package:sunil_medical_store/core/theme/app_colors.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
+import 'package:sunil_medical_store/core/theme/app_palette.dart';
 import 'package:sunil_medical_store/core/theme/app_theme.dart';
 import 'package:sunil_medical_store/features/profile/presentation/providers/theme_controller.dart';
 
@@ -26,21 +26,15 @@ class MyApp extends ConsumerWidget {
       // Settings, and the choice persists across restarts.
       themeMode: themeMode,
       routerConfig: router,
-      // A single top-to-bottom gradient behind the whole app, in place of a
+      // Fallback gradient for routes outside the tab shells (splash, login), in place of a
       // flat scaffold color (backlog #14). Painted once here — every
       // Scaffold's own background is transparent (see `AppTheme`) so this
       // shows through on every screen without each one needing its own copy.
       builder: (context, child) {
-        final isDark = Theme.of(context).brightness == Brightness.dark;
+        final brightness = Theme.of(context).brightness;
         return DecoratedBox(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: isDark
-                  ? const [AppColors.gradientDarkTop, AppColors.gradientDarkBottom]
-                  : const [AppColors.gradientLightTop, AppColors.gradientLightBottom],
-            ),
+            gradient: AppTabPalette.of(AppTab.pharmacy).background(brightness),
           ),
           child: child,
         );
