@@ -776,12 +776,12 @@ degrades cleanly (hides the affected section) while they're missing:
   by design) — still to confirm it is populated on a *new* order, and that
   `deliveredOn` is set after delivery and #45 now rejects `processing` with
   `409 order_not_cancellable`.
-- **Live check 2026-09-22 — backend bug**: `PUT /admin/delivery-settings` with
-  `returnsEnabled: true` returns `returnsEnabled: true` in its response, but a
-  later `GET /delivery-settings` returns `returnsEnabled: false` — the flag is
-  not being stored (or not read back). `returnWindowDays` is unaffected. Needs a
-  fix before the customer return-window messages can work.
-  `deliveredOn` **is** set correctly when an order is marked delivered (#48).
+- **Live check 2026-09-22 — fixed and reverified**: the `returnsEnabled`
+  persistence bug (saved `true`, read back as `false`) is fixed. Confirmed via
+  a full cold app restart after saving, then again from the customer side —
+  a delivered order now correctly shows "This order can be returned by <date>"
+  using the configured window. `deliveredOn` **is** set correctly when an
+  order is marked delivered (#48).
 - **Cancellation rule change (#45)**: the customer can now cancel **only
   while `status` is `created`** (previously `created` or `processing`). Reject
   `processing`/`shipped`/`delivered`/`cancelled` with `409
