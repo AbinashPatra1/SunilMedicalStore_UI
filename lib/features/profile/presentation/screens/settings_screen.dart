@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:sunil_medical_store/core/widgets/gradient_card.dart';
+import 'package:sunil_medical_store/core/widgets/app_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/profile/presentation/providers/theme_controller.dart';
@@ -18,14 +18,15 @@ class SettingsScreen extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(AppConstants.spacingLg),
         children: [
-          GradientCard(
+          AppCard(
             padding: EdgeInsets.zero,
             child: SwitchListTile(
               secondary: const Icon(Icons.dark_mode_outlined),
               title: const Text('Dark mode'),
               subtitle: const Text('Use a dark color scheme'),
               value: themeMode == ThemeMode.dark,
-              onChanged: (v) => ref.read(themeModeProvider.notifier).setDarkMode(v),
+              onChanged: (v) =>
+                  ref.read(themeModeProvider.notifier).setDarkMode(v),
             ),
           ),
         ],

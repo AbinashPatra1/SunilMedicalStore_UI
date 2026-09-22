@@ -1,35 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:sunil_medical_store/core/theme/app_colors.dart';
 
-/// Colour palette for the "bright & rounded" redesign (backlog #22).
-///
-/// One place for every brand colour, so screens never hard-code hex values:
-/// button/progress gradients, the pastel + vivid accent pairs used for tiles
-/// and chips, and the per-tab background and large-card gradients.
+/// Small helpers that sit on top of [AppColors] for the "premium
+/// healthcare" refresh (backlog #23): the accent button style reserved for
+/// cart/checkout actions, and the pastel + vivid accent pairs used for
+/// category tiles, avatars and status chips (unchanged from backlog #22 —
+/// the new palette keeps these multi-coloured).
 abstract final class AppPalette {
-  /// Dark ink used for text on the light pastel gradients.
-  static const Color ink = Color(0xFF12312B);
+  /// Dark, readable text colour for the light pastel [AppAccent] tiles.
+  static const Color ink = AppColors.textPrimary;
 
   /// Background of the sticky bottom action bars (cart, checkout, product
-  /// detail): the same soft white tint as the bottom nav in light mode.
+  /// detail) and the bottom nav bar — plain white in light mode, a dark
+  /// surface tone in dark mode.
   static Color barColor(ThemeData theme) => theme.brightness == Brightness.dark
       ? theme.colorScheme.surfaceContainer
-      : Colors.white.withValues(alpha: 0.85);
+      : Colors.white;
 
-  // Buttons: one deeper-orange gradient everywhere, white text on top.
-  static const Color orangeStart = Color(0xFFE85A0C);
-  static const Color orangeEnd = Color(0xFFFF8A2B);
-  static const LinearGradient buttonGradient = LinearGradient(
-    colors: [orangeStart, orangeEnd],
-  );
-
-  // Progress: amber → teal → green (the order-details bar, now app-wide).
-  static const Color amber = Color(0xFFFFB020);
-  static const Color teal = Color(0xFF1FB59B);
-  static const Color green = Color(0xFF3CC46A);
-  static const LinearGradient progressGradient = LinearGradient(
-    colors: [amber, teal, green],
-    stops: [0, 0.6, 1],
-  );
+  /// Style for buttons that add to the cart or complete a purchase ("Add",
+  /// "Add to cart", "Payment", "Order Now", "Reorder") — the one place
+  /// [AppColors.accent] is used. Every other primary button stays the
+  /// theme's default flat [AppColors.primary].
+  static ButtonStyle cartActionButtonStyle(BuildContext context) {
+    final base =
+        Theme.of(context).filledButtonTheme.style ?? const ButtonStyle();
+    return base.copyWith(
+      backgroundColor: const WidgetStatePropertyAll(AppColors.accent),
+      foregroundColor: const WidgetStatePropertyAll(Colors.white),
+    );
+  }
 }
 
 /// A pastel tile colour with the vivid colour of its icon badge.
@@ -60,31 +59,4 @@ class AppAccent {
     }
     return all[h % all.length];
   }
-}
-
-/// The one app-wide background and large-card gradient (mint → peach in
-/// light mode, deep teal → brown in dark mode).
-abstract final class AppGradients {
-  static const _top = Color(0xFF9FE8D0);
-  static const _bottom = Color(0xFFFFD3B8);
-  static const _cardEnd = Color(0xFFCFF3E4);
-  static const _darkTop = Color(0xFF0F3A33);
-  static const _darkBottom = Color(0xFF3A2418);
-  static const _darkCardStart = Color(0xFF243230);
-  static const _darkCardEnd = Color(0xFF1D3B35);
-
-  static LinearGradient background(Brightness b) => LinearGradient(
-    begin: Alignment.topCenter,
-    end: Alignment.bottomCenter,
-    colors: b == Brightness.dark ? [_darkTop, _darkBottom] : [_top, _bottom],
-  );
-
-  /// Horizontal gradient for large cards.
-  static LinearGradient card(Brightness b) => LinearGradient(
-    begin: Alignment.centerLeft,
-    end: Alignment.centerRight,
-    colors: b == Brightness.dark
-        ? [_darkCardStart, _darkCardEnd]
-        : [const Color(0xFFFFFFFF), _cardEnd],
-  );
 }

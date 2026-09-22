@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:sunil_medical_store/core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sunil_medical_store/core/models/order.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
@@ -22,11 +21,14 @@ class AdminOrderDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(adminOrderByIdProvider(orderId));
     return async.when(
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (error, _) => Scaffold(
         appBar: AppBar(title: const Text('Order')),
         body: Center(
-          child: Text(error is ApiException ? error.message : 'Could not load order.'),
+          child: Text(
+            error is ApiException ? error.message : 'Could not load order.',
+          ),
         ),
       ),
       data: (order) => _DetailForm(existing: order),
@@ -56,7 +58,9 @@ class _DetailFormState extends ConsumerState<_DetailForm> {
       _error = null;
     });
     try {
-      final updated = await ref.read(adminOrderRepositoryProvider).updateStatus(_order.id, next);
+      final updated = await ref
+          .read(adminOrderRepositoryProvider)
+          .updateStatus(_order.id, next);
       ref.invalidate(adminOrdersProvider);
       if (mounted) {
         setState(() => _order = updated);
@@ -76,7 +80,9 @@ class _DetailFormState extends ConsumerState<_DetailForm> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Cancel order?'),
-        content: Text('This will cancel order ${_order.orderNumber}. This can\'t be undone.'),
+        content: Text(
+          'This will cancel order ${_order.orderNumber}. This can\'t be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -84,9 +90,12 @@ class _DetailFormState extends ConsumerState<_DetailForm> {
           ),
           FilledButton.tonal(
             style: FilledButton.styleFrom(
-              foregroundColor: Theme.of(dialogContext).colorScheme.onErrorContainer,
-              backgroundColor: Theme.of(dialogContext).colorScheme.errorContainer,
-              backgroundBuilder: flatButtonBackground,
+              foregroundColor: Theme.of(
+                dialogContext,
+              ).colorScheme.onErrorContainer,
+              backgroundColor: Theme.of(
+                dialogContext,
+              ).colorScheme.errorContainer,
             ),
             onPressed: () => Navigator.of(dialogContext).pop(true),
             child: const Text('Cancel order'),
@@ -101,7 +110,9 @@ class _DetailFormState extends ConsumerState<_DetailForm> {
       _error = null;
     });
     try {
-      final updated = await ref.read(adminOrderRepositoryProvider).updateStatus(_order.id, OrderStatus.cancelled);
+      final updated = await ref
+          .read(adminOrderRepositoryProvider)
+          .updateStatus(_order.id, OrderStatus.cancelled);
       ref.invalidate(adminOrdersProvider);
       if (mounted) {
         setState(() => _order = updated);
@@ -128,7 +139,11 @@ class _DetailFormState extends ConsumerState<_DetailForm> {
       body: ListView(
         padding: const EdgeInsets.all(AppConstants.spacingLg),
         children: [
-          OrderSummaryCard(status: o.status, placedOn: o.placedOn, deliveredOn: o.deliveredOn),
+          OrderSummaryCard(
+            status: o.status,
+            placedOn: o.placedOn,
+            deliveredOn: o.deliveredOn,
+          ),
           if (o.refundStatus != null) ...[
             const SizedBox(height: AppConstants.spacingMd),
             RefundStatusBanner(status: o.refundStatus!),
@@ -162,23 +177,40 @@ class _DetailFormState extends ConsumerState<_DetailForm> {
             ),
           if (_error != null) ...[
             const SizedBox(height: AppConstants.spacingMd),
-            Text(_error!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),
+            Text(
+              _error!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.error,
+              ),
+            ),
           ],
           const SizedBox(height: AppConstants.spacingSm),
           OutlinedButton.icon(
-            onPressed: (_busy || o.status == OrderStatus.cancelled) ? null : _cancel,
-            style: OutlinedButton.styleFrom(foregroundColor: theme.colorScheme.error),
+            onPressed: (_busy || o.status == OrderStatus.cancelled)
+                ? null
+                : _cancel,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: theme.colorScheme.error,
+            ),
             icon: const Icon(Icons.cancel_outlined),
             label: const Text('Cancel order'),
           ),
           const SizedBox(height: AppConstants.spacingLg),
           OrderPolicySection(
-            order: OrderPolicyInput(status: o.status, deliveredOn: o.deliveredOn, orderNumber: o.orderNumber),
+            order: OrderPolicyInput(
+              status: o.status,
+              deliveredOn: o.deliveredOn,
+              orderNumber: o.orderNumber,
+            ),
             settings: settings,
             showCancelNote: false,
           ),
           const SizedBox(height: AppConstants.spacingLg),
-          OrderInfoCard(address: o.deliveryAddress?.formatted, orderNumber: o.orderNumber, placedOn: o.placedOn),
+          OrderInfoCard(
+            address: o.deliveryAddress?.formatted,
+            orderNumber: o.orderNumber,
+            placedOn: o.placedOn,
+          ),
         ],
       ),
     );

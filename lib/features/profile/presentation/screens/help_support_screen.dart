@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sunil_medical_store/core/theme/app_palette.dart';
-import 'package:sunil_medical_store/core/widgets/gradient_card.dart';
+import 'package:sunil_medical_store/core/widgets/app_card.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/core/utils/support_contact.dart';
 
@@ -53,7 +53,7 @@ class HelpSupportScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.all(AppConstants.spacingLg),
         children: [
-          GradientCard(
+          AppCard(
             padding: EdgeInsets.zero,
             child: ListTile(
               leading: CircleAvatar(
@@ -67,9 +67,12 @@ class HelpSupportScreen extends StatelessWidget {
             ),
           ),
           const SizedBox(height: AppConstants.spacingXl),
-          Text('Frequently asked questions', style: theme.textTheme.titleMedium),
+          Text(
+            'Frequently asked questions',
+            style: theme.textTheme.titleMedium,
+          ),
           const SizedBox(height: AppConstants.spacingSm),
-          GradientCard(
+          AppCard(
             padding: EdgeInsets.zero,
             child: Column(
               children: [
@@ -78,7 +81,10 @@ class HelpSupportScreen extends StatelessWidget {
                   ExpansionTile(
                     shape: const Border(),
                     collapsedShape: const Border(),
-                    title: Text(_faqs[i].question, style: theme.textTheme.bodyMedium),
+                    title: Text(
+                      _faqs[i].question,
+                      style: theme.textTheme.bodyMedium,
+                    ),
                     childrenPadding: const EdgeInsets.fromLTRB(
                       AppConstants.spacingMd,
                       0,
@@ -89,7 +95,9 @@ class HelpSupportScreen extends StatelessWidget {
                     children: [
                       Text(
                         _faqs[i].answer,
-                        style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                        ),
                       ),
                     ],
                   ),

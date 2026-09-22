@@ -22,7 +22,8 @@ class MedicineDetailScreen extends ConsumerWidget {
     final productAsync = ref.watch(productByIdProvider(productId));
 
     return productAsync.when(
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (_, _) => Scaffold(
         appBar: AppBar(title: const Text('Medicine')),
         body: Center(
@@ -56,7 +57,10 @@ class _Detail extends ConsumerWidget {
       ..showSnackBar(
         SnackBar(
           content: Text('${p.name} added to cart'),
-          action: SnackBarAction(label: 'View cart', onPressed: () => context.go(AppRoutes.cart)),
+          action: SnackBarAction(
+            label: 'View cart',
+            onPressed: () => context.go(AppRoutes.cart),
+          ),
         ),
       );
   }
@@ -75,26 +79,44 @@ class _Detail extends ConsumerWidget {
             child: ListView(
               padding: const EdgeInsets.all(AppConstants.spacingLg),
               children: [
-                ProductIllustration.forProduct(product: product, height: 180, width: double.infinity, radius: AppConstants.radiusLg),
+                ProductIllustration.forProduct(
+                  product: product,
+                  height: 180,
+                  width: double.infinity,
+                  radius: AppConstants.radiusLg,
+                ),
                 const SizedBox(height: AppConstants.spacingLg),
                 Text(product.name, style: theme.textTheme.titleLarge),
                 const SizedBox(height: AppConstants.spacingXs),
                 Text(
                   product.brand,
-                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.primary),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.primary,
+                  ),
                 ),
                 if (product.requiresPrescription) ...[
                   const SizedBox(height: AppConstants.spacingSm),
-                  _Badge(label: 'Prescription required', color: theme.colorScheme.errorContainer, onColor: theme.colorScheme.onErrorContainer),
+                  _Badge(
+                    label: 'Prescription required',
+                    color: theme.colorScheme.errorContainer,
+                    onColor: theme.colorScheme.onErrorContainer,
+                  ),
                 ],
                 if (product.isOutOfStock) ...[
                   const SizedBox(height: AppConstants.spacingSm),
-                  _Badge(label: 'Out of stock', color: theme.colorScheme.surfaceContainerHighest, onColor: theme.colorScheme.onSurfaceVariant),
+                  _Badge(
+                    label: 'Out of stock',
+                    color: theme.colorScheme.surfaceContainerHighest,
+                    onColor: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ],
                 const SizedBox(height: AppConstants.spacingMd),
                 Row(
                   children: [
-                    Text('₹${product.price}', style: theme.textTheme.headlineSmall),
+                    Text(
+                      '₹${product.price}',
+                      style: theme.textTheme.headlineSmall,
+                    ),
                     if (discount != null) ...[
                       const SizedBox(width: AppConstants.spacingMd),
                       Text(
@@ -105,7 +127,12 @@ class _Detail extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(width: AppConstants.spacingSm),
-                      Text('$discount% off', style: theme.textTheme.titleSmall?.copyWith(color: theme.colorScheme.primary)),
+                      Text(
+                        '$discount% off',
+                        style: theme.textTheme.titleSmall?.copyWith(
+                          color: theme.colorScheme.primary,
+                        ),
+                      ),
                     ],
                   ],
                 ),
@@ -114,16 +141,31 @@ class _Detail extends ConsumerWidget {
                   Text(product.description, style: theme.textTheme.bodyMedium),
                 ],
                 if (product.composition != null)
-                  _Section(title: 'Composition', child: Text(product.composition!, style: theme.textTheme.bodyMedium)),
+                  _Section(
+                    title: 'Composition',
+                    child: Text(
+                      product.composition!,
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ),
                 if (product.dosage != null)
-                  _Section(title: 'Dosage', child: Text(product.dosage!, style: theme.textTheme.bodyMedium)),
+                  _Section(
+                    title: 'Dosage',
+                    child: Text(
+                      product.dosage!,
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ),
                 if (product.ingredients.isNotEmpty)
                   _Section(
                     title: 'Ingredients',
                     child: Wrap(
                       spacing: AppConstants.spacingSm,
                       runSpacing: AppConstants.spacingSm,
-                      children: [for (final i in product.ingredients) Chip(label: Text(i))],
+                      children: [
+                        for (final i in product.ingredients)
+                          Chip(label: Text(i)),
+                      ],
                     ),
                   ),
                 similarAsync.when(
@@ -138,20 +180,26 @@ class _Detail extends ConsumerWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: AppConstants.spacingLg),
-                        Text('Similar products', style: theme.textTheme.titleMedium),
+                        Text(
+                          'Similar products',
+                          style: theme.textTheme.titleMedium,
+                        ),
                         const SizedBox(height: AppConstants.spacingMd),
                         SizedBox(
                           height: 280,
                           child: ListView.separated(
                             scrollDirection: Axis.horizontal,
                             itemCount: similar.length,
-                            separatorBuilder: (_, _) => const SizedBox(width: AppConstants.spacingMd),
+                            separatorBuilder: (_, _) =>
+                                const SizedBox(width: AppConstants.spacingMd),
                             itemBuilder: (context, index) {
                               final p = similar[index];
                               return SuggestedProductCard(
                                 product: p,
                                 onAdd: () => _added(context, ref, p),
-                                onTap: () => context.push('${AppRoutes.medicineDetail}/${p.id}'),
+                                onTap: () => context.push(
+                                  '${AppRoutes.medicineDetail}/${p.id}',
+                                ),
                               );
                             },
                           ),
@@ -166,7 +214,13 @@ class _Detail extends ConsumerWidget {
           DecoratedBox(
             decoration: BoxDecoration(
               color: AppPalette.barColor(theme),
-              border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4))),
+              border: Border(
+                top: BorderSide(
+                  color: theme.colorScheme.outlineVariant.withValues(
+                    alpha: 0.4,
+                  ),
+                ),
+              ),
             ),
             child: SafeArea(
               top: false,
@@ -175,9 +229,14 @@ class _Detail extends ConsumerWidget {
                 child: SizedBox(
                   width: double.infinity,
                   child: FilledButton.icon(
-                    onPressed: product.isOutOfStock ? null : () => _added(context, ref, product),
+                    style: AppPalette.cartActionButtonStyle(context),
+                    onPressed: product.isOutOfStock
+                        ? null
+                        : () => _added(context, ref, product),
                     icon: const Icon(Icons.add_shopping_cart_outlined),
-                    label: Text(product.isOutOfStock ? 'Out of stock' : 'Add to cart'),
+                    label: Text(
+                      product.isOutOfStock ? 'Out of stock' : 'Add to cart',
+                    ),
                   ),
                 ),
               ),
@@ -211,7 +270,11 @@ class _Section extends StatelessWidget {
 }
 
 class _Badge extends StatelessWidget {
-  const _Badge({required this.label, required this.color, required this.onColor});
+  const _Badge({
+    required this.label,
+    required this.color,
+    required this.onColor,
+  });
 
   final String label;
   final Color color;
@@ -222,9 +285,20 @@ class _Badge extends StatelessWidget {
     return Align(
       alignment: Alignment.centerLeft,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: AppConstants.spacingSm, vertical: 2),
-        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(AppConstants.radiusSm)),
-        child: Text(label, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: onColor)),
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppConstants.spacingSm,
+          vertical: 2,
+        ),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(AppConstants.radiusSm),
+        ),
+        child: Text(
+          label,
+          style: Theme.of(
+            context,
+          ).textTheme.labelSmall?.copyWith(color: onColor),
+        ),
       ),
     );
   }

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:sunil_medical_store/core/widgets/gradient_card.dart';
+import 'package:sunil_medical_store/core/widgets/app_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/cart/presentation/providers/cart_providers.dart';
@@ -17,7 +17,7 @@ class PriceBreakdown extends ConsumerWidget {
     final platformFee = ref.watch(cartPlatformFeeLineProvider);
     final total = ref.watch(cartTotalProvider);
 
-    return GradientCard(
+    return AppCard(
       padding: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(AppConstants.spacingMd),
@@ -62,8 +62,12 @@ class _Row extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final style = bold ? theme.textTheme.titleMedium : theme.textTheme.bodyMedium;
-    final valueStyle = highlight ? style?.copyWith(color: theme.colorScheme.primary) : style;
+    final style = bold
+        ? theme.textTheme.titleMedium
+        : theme.textTheme.bodyMedium;
+    final valueStyle = highlight
+        ? style?.copyWith(color: theme.colorScheme.primary)
+        : style;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,

@@ -29,12 +29,19 @@ class CartScreen extends ConsumerWidget {
                     children: [
                       for (final item in items)
                         Padding(
-                          padding: const EdgeInsets.only(bottom: AppConstants.spacingMd),
+                          padding: const EdgeInsets.only(
+                            bottom: AppConstants.spacingMd,
+                          ),
                           child: CartItemTile(
                             item: item,
-                            onIncrement: () => ref.read(cartProvider.notifier).increment(item.id),
-                            onDecrement: () => ref.read(cartProvider.notifier).decrement(item.id),
-                            onRemove: () => ref.read(cartProvider.notifier).remove(item.id),
+                            onIncrement: () => ref
+                                .read(cartProvider.notifier)
+                                .increment(item.id),
+                            onDecrement: () => ref
+                                .read(cartProvider.notifier)
+                                .decrement(item.id),
+                            onRemove: () =>
+                                ref.read(cartProvider.notifier).remove(item.id),
                           ),
                         ),
                       const SizedBox(height: AppConstants.spacingSm),
@@ -64,13 +71,19 @@ class _EmptyCart extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.shopping_cart_outlined, size: 64, color: theme.colorScheme.primary),
+            Icon(
+              Icons.shopping_cart_outlined,
+              size: 64,
+              color: theme.colorScheme.primary,
+            ),
             const SizedBox(height: AppConstants.spacingMd),
             Text('Your cart is empty', style: theme.textTheme.titleMedium),
             const SizedBox(height: AppConstants.spacingXs),
             Text(
               'Add medicines and health products to get started.',
-              style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: AppConstants.spacingLg),
@@ -97,7 +110,11 @@ class _PaymentBar extends StatelessWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: AppPalette.barColor(theme),
-        border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4))),
+        border: Border(
+          top: BorderSide(
+            color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+          ),
+        ),
       ),
       child: SafeArea(
         top: false,
@@ -109,13 +126,19 @@ class _PaymentBar extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text('Total', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                  Text(
+                    'Total',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
                   Text('₹$total', style: theme.textTheme.titleLarge),
                 ],
               ),
               const SizedBox(width: AppConstants.spacingLg),
               Expanded(
                 child: FilledButton(
+                  style: AppPalette.cartActionButtonStyle(context),
                   onPressed: onPressed,
                   child: const Text('Payment'),
                 ),

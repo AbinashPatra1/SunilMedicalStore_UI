@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sunil_medical_store/core/theme/app_palette.dart';
-import 'package:sunil_medical_store/core/widgets/gradient_card.dart';
+import 'package:sunil_medical_store/core/widgets/app_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sunil_medical_store/core/routes/app_routes.dart';
@@ -21,7 +21,8 @@ class LabTestCatalogDetailScreen extends ConsumerWidget {
     final testAsync = ref.watch(labTestByIdProvider(testId));
 
     return testAsync.when(
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (_, _) => Scaffold(
         appBar: AppBar(title: const Text('Lab Test')),
         body: Center(
@@ -57,13 +58,18 @@ class _Detail extends ConsumerWidget {
     if (result == null || !context.mounted) return;
     final (scheduledDate, timeSlot) = result;
 
-    ref.read(cartProvider.notifier).addLabTest(test, scheduledDate: scheduledDate, timeSlot: timeSlot);
+    ref
+        .read(cartProvider.notifier)
+        .addLabTest(test, scheduledDate: scheduledDate, timeSlot: timeSlot);
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(
         SnackBar(
           content: Text('${test.name} added to cart'),
-          action: SnackBarAction(label: 'View cart', onPressed: () => context.go(AppRoutes.cart)),
+          action: SnackBarAction(
+            label: 'View cart',
+            onPressed: () => context.go(AppRoutes.cart),
+          ),
         ),
       );
   }
@@ -85,38 +91,56 @@ class _Detail extends ConsumerWidget {
                 const SizedBox(height: AppConstants.spacingXs),
                 Text(
                   test.labName,
-                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.primary),
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.primary,
+                  ),
                 ),
                 const SizedBox(height: AppConstants.spacingMd),
                 Text(test.description, style: theme.textTheme.bodyMedium),
                 const SizedBox(height: AppConstants.spacingLg),
-                GradientCard(
+                AppCard(
                   padding: EdgeInsets.zero,
                   child: Column(
                     children: [
-                      _InfoRow(icon: Icons.water_drop_outlined, label: 'Sample', value: test.sampleType),
+                      _InfoRow(
+                        icon: Icons.water_drop_outlined,
+                        label: 'Sample',
+                        value: test.sampleType,
+                      ),
                       const Divider(height: 1),
-                      _InfoRow(icon: Icons.schedule_outlined, label: 'Report', value: test.reportTime),
+                      _InfoRow(
+                        icon: Icons.schedule_outlined,
+                        label: 'Report',
+                        value: test.reportTime,
+                      ),
                       const Divider(height: 1),
                       _InfoRow(
                         icon: Icons.restaurant_outlined,
                         label: 'Fasting',
-                        value: test.fastingRequired ? 'Required (10-12 hrs)' : 'Not required',
+                        value: test.fastingRequired
+                            ? 'Required (10-12 hrs)'
+                            : 'Not required',
                       ),
                     ],
                   ),
                 ),
                 const SizedBox(height: AppConstants.spacingLg),
-                Text('Parameters included (${test.parameters.length})', style: theme.textTheme.titleMedium),
+                Text(
+                  'Parameters included (${test.parameters.length})',
+                  style: theme.textTheme.titleMedium,
+                ),
                 const SizedBox(height: AppConstants.spacingSm),
-                GradientCard(
+                AppCard(
                   padding: EdgeInsets.zero,
                   child: Column(
                     children: [
                       for (final parameter in test.parameters)
                         ListTile(
                           dense: true,
-                          leading: Icon(Icons.check_circle_outline, color: theme.colorScheme.primary),
+                          leading: Icon(
+                            Icons.check_circle_outline,
+                            color: theme.colorScheme.primary,
+                          ),
                           title: Text(parameter),
                         ),
                     ],
@@ -128,7 +152,13 @@ class _Detail extends ConsumerWidget {
           DecoratedBox(
             decoration: BoxDecoration(
               color: AppPalette.barColor(theme),
-              border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4))),
+              border: Border(
+                top: BorderSide(
+                  color: theme.colorScheme.outlineVariant.withValues(
+                    alpha: 0.4,
+                  ),
+                ),
+              ),
             ),
             child: SafeArea(
               top: false,
@@ -142,7 +172,10 @@ class _Detail extends ConsumerWidget {
                       children: [
                         Row(
                           children: [
-                            Text('₹${test.price}', style: theme.textTheme.titleLarge),
+                            Text(
+                              '₹${test.price}',
+                              style: theme.textTheme.titleLarge,
+                            ),
                             if (discount != null) ...[
                               const SizedBox(width: AppConstants.spacingSm),
                               Text(
@@ -156,12 +189,18 @@ class _Detail extends ConsumerWidget {
                           ],
                         ),
                         if (discount != null)
-                          Text('$discount% off', style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.primary)),
+                          Text(
+                            '$discount% off',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
                       ],
                     ),
                     const SizedBox(width: AppConstants.spacingLg),
                     Expanded(
                       child: FilledButton.icon(
+                        style: AppPalette.cartActionButtonStyle(context),
                         onPressed: () => _addToCart(context, ref),
                         icon: const Icon(Icons.add_shopping_cart_outlined),
                         label: const Text('Add to cart'),
@@ -179,7 +218,11 @@ class _Detail extends ConsumerWidget {
 }
 
 class _InfoRow extends StatelessWidget {
-  const _InfoRow({required this.icon, required this.label, required this.value});
+  const _InfoRow({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
 
   final IconData icon;
   final String label;
@@ -190,7 +233,12 @@ class _InfoRow extends StatelessWidget {
     final theme = Theme.of(context);
     return ListTile(
       leading: Icon(icon, color: theme.colorScheme.primary),
-      title: Text(label, style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+      title: Text(
+        label,
+        style: theme.textTheme.bodyMedium?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+      ),
       trailing: Text(value, style: theme.textTheme.bodyMedium),
     );
   }

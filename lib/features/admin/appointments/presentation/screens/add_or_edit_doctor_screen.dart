@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:sunil_medical_store/core/theme/app_theme.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -23,11 +22,14 @@ class AddOrEditDoctorScreen extends ConsumerWidget {
     }
     final async = ref.watch(adminDoctorByIdProvider(doctorId!));
     return async.when(
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (error, _) => Scaffold(
         appBar: AppBar(title: const Text('Edit doctor')),
         body: Center(
-          child: Text(error is ApiException ? error.message : 'Could not load doctor.'),
+          child: Text(
+            error is ApiException ? error.message : 'Could not load doctor.',
+          ),
         ),
       ),
       data: (doctor) => _DoctorForm(existing: doctor),
@@ -69,7 +71,9 @@ class _DoctorFormState extends ConsumerState<_DoctorForm> {
     _name = TextEditingController(text: d?.name ?? '');
     _specialization = TextEditingController(text: d?.specialization ?? '');
     _qualification = TextEditingController(text: d?.qualification ?? '');
-    _experience = TextEditingController(text: d?.experienceYears.toString() ?? '');
+    _experience = TextEditingController(
+      text: d?.experienceYears.toString() ?? '',
+    );
     _fee = TextEditingController(text: d?.consultationFee.toString() ?? '');
     _hours = TextEditingController(text: d?.availableTime ?? '');
     _photoUrl = TextEditingController(text: d?.photoUrl ?? '');
@@ -133,9 +137,11 @@ class _DoctorFormState extends ConsumerState<_DoctorForm> {
       if (mounted) {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(
-            content: Text(widget.isEdit ? 'Doctor updated' : 'Doctor added'),
-          ));
+          ..showSnackBar(
+            SnackBar(
+              content: Text(widget.isEdit ? 'Doctor updated' : 'Doctor added'),
+            ),
+          );
         context.pop();
       }
     } on ApiException catch (e) {
@@ -164,7 +170,6 @@ class _DoctorFormState extends ConsumerState<_DoctorForm> {
             style: FilledButton.styleFrom(
               foregroundColor: Theme.of(dialogCtx).colorScheme.onErrorContainer,
               backgroundColor: Theme.of(dialogCtx).colorScheme.errorContainer,
-              backgroundBuilder: flatButtonBackground,
             ),
             onPressed: () => Navigator.of(dialogCtx).pop(true),
             child: const Text('Delete'),
@@ -272,7 +277,9 @@ class _DoctorFormState extends ConsumerState<_DoctorForm> {
               enabled: !busy,
               keyboardType: TextInputType.number,
               inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-              decoration: const InputDecoration(labelText: 'Consultation fee (₹)'),
+              decoration: const InputDecoration(
+                labelText: 'Consultation fee (₹)',
+              ),
               validator: (v) => _requiredInt(v, min: 0),
             ),
             const Divider(height: AppConstants.spacingXl),
@@ -280,7 +287,9 @@ class _DoctorFormState extends ConsumerState<_DoctorForm> {
             const SizedBox(height: AppConstants.spacingSm),
             Text(
               'Weekdays',
-              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: AppConstants.spacingXs),
             WeekdaySelector(
@@ -309,13 +318,22 @@ class _DoctorFormState extends ConsumerState<_DoctorForm> {
             ),
             if (_error != null) ...[
               const SizedBox(height: AppConstants.spacingMd),
-              Text(_error!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),
+              Text(
+                _error!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              ),
             ],
             const SizedBox(height: AppConstants.spacingLg),
             FilledButton(
               onPressed: busy ? null : _save,
               child: _saving
-                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
                   : Text(widget.isEdit ? 'Save changes' : 'Add doctor'),
             ),
           ],

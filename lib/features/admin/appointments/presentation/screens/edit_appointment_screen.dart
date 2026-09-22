@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:sunil_medical_store/core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
@@ -24,11 +23,16 @@ class EditAppointmentScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(adminAppointmentByIdProvider(appointmentId));
     return async.when(
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (error, _) => Scaffold(
         appBar: AppBar(title: const Text('Appointment')),
         body: Center(
-          child: Text(error is ApiException ? error.message : 'Could not load appointment.'),
+          child: Text(
+            error is ApiException
+                ? error.message
+                : 'Could not load appointment.',
+          ),
         ),
       ),
       data: (appointment) => _EditForm(existing: appointment),
@@ -74,7 +78,10 @@ class _EditFormState extends ConsumerState<_EditForm> {
   Future<void> _advance() async {
     final next = _appointment.status.next;
     if (next == null) return;
-    await _apply(status: next, successMessage: 'Appointment marked ${next.label}');
+    await _apply(
+      status: next,
+      successMessage: 'Appointment marked ${next.label}',
+    );
   }
 
   Future<void> _cancel() async {
@@ -93,9 +100,12 @@ class _EditFormState extends ConsumerState<_EditForm> {
           ),
           FilledButton.tonal(
             style: FilledButton.styleFrom(
-              foregroundColor: Theme.of(dialogContext).colorScheme.onErrorContainer,
-              backgroundColor: Theme.of(dialogContext).colorScheme.errorContainer,
-              backgroundBuilder: flatButtonBackground,
+              foregroundColor: Theme.of(
+                dialogContext,
+              ).colorScheme.onErrorContainer,
+              backgroundColor: Theme.of(
+                dialogContext,
+              ).colorScheme.errorContainer,
             ),
             onPressed: () => Navigator.of(dialogContext).pop(true),
             child: const Text('Cancel appointment'),
@@ -104,7 +114,10 @@ class _EditFormState extends ConsumerState<_EditForm> {
       ),
     );
     if (confirmed != true) return;
-    await _apply(status: AppointmentStatus.cancelled, successMessage: 'Appointment cancelled');
+    await _apply(
+      status: AppointmentStatus.cancelled,
+      successMessage: 'Appointment cancelled',
+    );
   }
 
   Future<void> _apply({
@@ -157,17 +170,23 @@ class _EditFormState extends ConsumerState<_EditForm> {
                   if (a.appointmentNumber != null)
                     Text(
                       a.appointmentNumber!,
-                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   Text(a.userName, style: theme.textTheme.titleSmall),
                   Text(
                     a.userPhone,
-                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                   const SizedBox(height: AppConstants.spacingSm),
                   Text(
                     '${a.doctorName} · ${a.specialization}',
-                    style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.primary),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.primary,
+                    ),
                   ),
                   Text('₹${a.fee}', style: theme.textTheme.bodySmall),
                 ],
@@ -193,7 +212,10 @@ class _EditFormState extends ConsumerState<_EditForm> {
             children: [
               Text('Status', style: theme.textTheme.titleMedium),
               const SizedBox(width: AppConstants.spacingSm),
-              StatusChip(label: a.status.label, positive: a.status != AppointmentStatus.cancelled),
+              StatusChip(
+                label: a.status.label,
+                positive: a.status != AppointmentStatus.cancelled,
+              ),
             ],
           ),
           const SizedBox(height: AppConstants.spacingSm),
@@ -205,12 +227,21 @@ class _EditFormState extends ConsumerState<_EditForm> {
             ),
           if (_error != null) ...[
             const SizedBox(height: AppConstants.spacingMd),
-            Text(_error!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),
+            Text(
+              _error!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.error,
+              ),
+            ),
           ],
           const SizedBox(height: AppConstants.spacingLg),
           OutlinedButton.icon(
-            onPressed: (_busy || a.status == AppointmentStatus.cancelled) ? null : _cancel,
-            style: OutlinedButton.styleFrom(foregroundColor: theme.colorScheme.error),
+            onPressed: (_busy || a.status == AppointmentStatus.cancelled)
+                ? null
+                : _cancel,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: theme.colorScheme.error,
+            ),
             icon: const Icon(Icons.cancel_outlined),
             label: const Text('Cancel appointment'),
           ),

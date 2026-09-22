@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sunil_medical_store/core/theme/app_palette.dart';
 import 'package:sunil_medical_store/core/illustrations/product_illustration.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/core/utils/delivery_estimate.dart';
@@ -38,7 +39,11 @@ class SuggestedProductCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  ProductIllustration.forProduct(product: product, height: 72, width: double.infinity),
+                  ProductIllustration.forProduct(
+                    product: product,
+                    height: 72,
+                    width: double.infinity,
+                  ),
                   const SizedBox(height: AppConstants.spacingSm),
                   Text(
                     product.name,
@@ -52,26 +57,36 @@ class SuggestedProductCard extends StatelessWidget {
                         if (product.requiresPrescription)
                           TextSpan(
                             text: 'Rx  ',
-                            style: TextStyle(color: theme.colorScheme.error, fontWeight: FontWeight.w700),
+                            style: TextStyle(
+                              color: theme.colorScheme.error,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         TextSpan(text: product.brand),
                       ],
                     ),
-                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                   if (product.packSize != null)
                     Text(
                       product.packSize!,
-                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
                   const SizedBox(height: AppConstants.spacingXs),
                   Row(
                     children: [
-                      Text('₹${product.price}', style: theme.textTheme.titleSmall),
+                      Text(
+                        '₹${product.price}',
+                        style: theme.textTheme.titleSmall,
+                      ),
                       if (product.discountPercent != null) ...[
                         const SizedBox(width: AppConstants.spacingXs),
                         Expanded(
@@ -91,7 +106,9 @@ class SuggestedProductCard extends StatelessWidget {
                     const SizedBox(height: AppConstants.spacingXs),
                     Text(
                       deliveryEstimateLabel(),
-                      style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.primary),
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.primary,
+                      ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -101,6 +118,7 @@ class SuggestedProductCard extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     child: FilledButton.tonal(
+                      style: AppPalette.cartActionButtonStyle(context),
                       onPressed: oos ? null : onAdd,
                       child: Text(oos ? 'Out of stock' : 'Add'),
                     ),

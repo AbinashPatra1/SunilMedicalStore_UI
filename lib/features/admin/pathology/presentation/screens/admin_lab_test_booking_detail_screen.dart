@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:sunil_medical_store/core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
@@ -21,11 +20,14 @@ class AdminLabTestBookingDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(adminLabTestBookingByIdProvider(bookingId));
     return async.when(
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (error, _) => Scaffold(
         appBar: AppBar(title: const Text('Lab Test')),
         body: Center(
-          child: Text(error is ApiException ? error.message : 'Could not load booking.'),
+          child: Text(
+            error is ApiException ? error.message : 'Could not load booking.',
+          ),
         ),
       ),
       data: (booking) => _DetailForm(existing: booking),
@@ -55,13 +57,17 @@ class _DetailFormState extends ConsumerState<_DetailForm> {
       _error = null;
     });
     try {
-      final updated = await ref.read(adminLabTestRepositoryProvider).updateStatus(_booking.id, next);
+      final updated = await ref
+          .read(adminLabTestRepositoryProvider)
+          .updateStatus(_booking.id, next);
       ref.invalidate(adminLabTestBookingsProvider);
       if (mounted) {
         setState(() => _booking = updated);
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(content: Text('Booking marked ${next.label}')));
+          ..showSnackBar(
+            SnackBar(content: Text('Booking marked ${next.label}')),
+          );
       }
     } on ApiException catch (e) {
       if (mounted) setState(() => _error = e.message);
@@ -75,7 +81,9 @@ class _DetailFormState extends ConsumerState<_DetailForm> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Cancel booking?'),
-        content: Text('This will cancel ${_booking.name} for ${_booking.userName}. This can\'t be undone.'),
+        content: Text(
+          'This will cancel ${_booking.name} for ${_booking.userName}. This can\'t be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -83,9 +91,12 @@ class _DetailFormState extends ConsumerState<_DetailForm> {
           ),
           FilledButton.tonal(
             style: FilledButton.styleFrom(
-              foregroundColor: Theme.of(dialogContext).colorScheme.onErrorContainer,
-              backgroundColor: Theme.of(dialogContext).colorScheme.errorContainer,
-              backgroundBuilder: flatButtonBackground,
+              foregroundColor: Theme.of(
+                dialogContext,
+              ).colorScheme.onErrorContainer,
+              backgroundColor: Theme.of(
+                dialogContext,
+              ).colorScheme.errorContainer,
             ),
             onPressed: () => Navigator.of(dialogContext).pop(true),
             child: const Text('Cancel booking'),
@@ -137,12 +148,16 @@ class _DetailFormState extends ConsumerState<_DetailForm> {
                   if (b.bookingNumber != null)
                     Text(
                       b.bookingNumber!,
-                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   Text(b.userName, style: theme.textTheme.titleSmall),
                   Text(
                     b.userPhone,
-                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                   const SizedBox(height: AppConstants.spacingSm),
                   Text(
@@ -164,13 +179,19 @@ class _DetailFormState extends ConsumerState<_DetailForm> {
                 for (final parameter in b.parameters)
                   ListTile(
                     dense: true,
-                    leading: Icon(Icons.check_circle_outline, color: theme.colorScheme.primary),
+                    leading: Icon(
+                      Icons.check_circle_outline,
+                      color: theme.colorScheme.primary,
+                    ),
                     title: Text(parameter),
                   ),
                 const Divider(height: 1),
                 ListTile(
                   title: Text('Amount', style: theme.textTheme.titleMedium),
-                  trailing: Text('₹${b.amount}', style: theme.textTheme.titleMedium),
+                  trailing: Text(
+                    '₹${b.amount}',
+                    style: theme.textTheme.titleMedium,
+                  ),
                 ),
               ],
             ),
@@ -180,7 +201,10 @@ class _DetailFormState extends ConsumerState<_DetailForm> {
             children: [
               Text('Status', style: theme.textTheme.titleMedium),
               const SizedBox(width: AppConstants.spacingSm),
-              StatusChip(label: b.status.label, positive: b.status != LabTestStatus.cancelled),
+              StatusChip(
+                label: b.status.label,
+                positive: b.status != LabTestStatus.cancelled,
+              ),
             ],
           ),
           const SizedBox(height: AppConstants.spacingSm),
@@ -192,12 +216,21 @@ class _DetailFormState extends ConsumerState<_DetailForm> {
             ),
           if (_error != null) ...[
             const SizedBox(height: AppConstants.spacingMd),
-            Text(_error!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),
+            Text(
+              _error!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.error,
+              ),
+            ),
           ],
           const SizedBox(height: AppConstants.spacingLg),
           OutlinedButton.icon(
-            onPressed: (_busy || b.status == LabTestStatus.cancelled) ? null : _cancel,
-            style: OutlinedButton.styleFrom(foregroundColor: theme.colorScheme.error),
+            onPressed: (_busy || b.status == LabTestStatus.cancelled)
+                ? null
+                : _cancel,
+            style: OutlinedButton.styleFrom(
+              foregroundColor: theme.colorScheme.error,
+            ),
             icon: const Icon(Icons.cancel_outlined),
             label: const Text('Cancel booking'),
           ),

@@ -2,7 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:sunil_medical_store/core/theme/app_palette.dart';
-import 'package:sunil_medical_store/core/widgets/gradient_card.dart';
+import 'package:sunil_medical_store/core/widgets/app_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
@@ -83,7 +83,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           shrinkWrap: true,
           padding: const EdgeInsets.all(AppConstants.spacingLg),
           children: [
-            Text('Select delivery address', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              'Select delivery address',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: AppConstants.spacingMd),
             for (final address in addresses)
               ListTile(
@@ -91,10 +94,15 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 title: Text(address.type.label),
                 subtitle: Text(address.formatted),
                 trailing: address.id == selectedId
-                    ? Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary)
+                    ? Icon(
+                        Icons.check_circle,
+                        color: Theme.of(context).colorScheme.primary,
+                      )
                     : null,
                 onTap: () {
-                  ref.read(selectedAddressIdProvider.notifier).select(address.id);
+                  ref
+                      .read(selectedAddressIdProvider.notifier)
+                      .select(address.id);
                   Navigator.of(context).pop();
                 },
               ),
@@ -111,12 +119,17 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   };
 
   Future<void> _uploadPrescription(ImageSource source) async {
-    final picked = await ImagePicker().pickImage(source: source, imageQuality: 85);
+    final picked = await ImagePicker().pickImage(
+      source: source,
+      imageQuality: 85,
+    );
     if (picked == null || !mounted) return;
 
     setState(() => _uploadingPrescription = true);
     try {
-      final prescription = await ref.read(prescriptionRepositoryProvider).upload(File(picked.path));
+      final prescription = await ref
+          .read(prescriptionRepositoryProvider)
+          .upload(File(picked.path));
       ref.invalidate(prescriptionsProvider);
       if (mounted) setState(() => _selectedPrescriptionId = prescription.id);
     } on ApiException catch (e) {
@@ -133,19 +146,29 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       showDragHandle: true,
       builder: (sheetContext) => SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppConstants.spacingLg),
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppConstants.spacingLg,
+          ),
           child: ListView(
             shrinkWrap: true,
             children: [
-              Text('Attach a prescription', style: Theme.of(sheetContext).textTheme.titleMedium),
+              Text(
+                'Attach a prescription',
+                style: Theme.of(sheetContext).textTheme.titleMedium,
+              ),
               const SizedBox(height: AppConstants.spacingMd),
-              for (final p in existing.where((p) => p.status != PrescriptionStatus.rejected))
+              for (final p in existing.where(
+                (p) => p.status != PrescriptionStatus.rejected,
+              ))
                 ListTile(
                   leading: const Icon(Icons.description_outlined),
                   title: Text(DateFormat('d MMM yyyy').format(p.uploadedOn)),
                   subtitle: Text(p.status.label),
                   trailing: p.id == _selectedPrescriptionId
-                      ? Icon(Icons.check_circle, color: Theme.of(sheetContext).colorScheme.primary)
+                      ? Icon(
+                          Icons.check_circle,
+                          color: Theme.of(sheetContext).colorScheme.primary,
+                        )
                       : null,
                   onTap: () {
                     setState(() => _selectedPrescriptionId = p.id);
@@ -190,16 +213,21 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
       _snack('Please select a payment method.');
       return;
     }
-    if (ref.read(cartRequiresPrescriptionProvider) && _selectedPrescriptionId == null) {
+    if (ref.read(cartRequiresPrescriptionProvider) &&
+        _selectedPrescriptionId == null) {
       _snack('Please attach a prescription for the Rx item(s) in your cart.');
       return;
     }
-    final hasPharmacyItems = ref.read(cartProvider).any((item) => item.kind == CartItemKind.medicine);
+    final hasPharmacyItems = ref
+        .read(cartProvider)
+        .any((item) => item.kind == CartItemKind.medicine);
     // Fail open when we can't verify distance: an address with no captured
     // coordinates (manually entered, or added before this existed) or no
     // configured delivery settings (not deployed yet on the backend) never
     // blocks the order — only a confirmed out-of-radius address does.
-    if (hasPharmacyItems && address.latitude != null && address.longitude != null) {
+    if (hasPharmacyItems &&
+        address.latitude != null &&
+        address.longitude != null) {
       final settings = ref.read(deliverySettingsProvider).value;
       if (settings != null) {
         final distanceKm = haversineKm(
@@ -241,11 +269,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
   Future<void> _payOnline(Address address) async {
     setState(() => _placing = true);
     try {
-      final details = await ref.read(orderRepositoryProvider).createRazorpayOrder(
-        items: _cartAsRequestItems(),
-        addressId: address.id,
-        promoCode: ref.read(appliedPromoProvider)?.code,
-      );
+      final details = await ref
+          .read(orderRepositoryProvider)
+          .createRazorpayOrder(
+            items: _cartAsRequestItems(),
+            addressId: address.id,
+            promoCode: ref.read(appliedPromoProvider)?.code,
+          );
       if (!mounted) return;
       _checkoutAddress = address;
       _razorpay.open({
@@ -286,14 +316,20 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     // The native bridge sometimes hands back the literal string "undefined"
     // (or "null") instead of a real message/null — never show that verbatim.
     final message = response.message;
-    final hasRealMessage = message != null && message.isNotEmpty && message != 'undefined' && message != 'null';
+    final hasRealMessage =
+        message != null &&
+        message.isNotEmpty &&
+        message != 'undefined' &&
+        message != 'null';
     _snack(hasRealMessage ? message : 'Payment failed. Please try again.');
   }
 
   void _onRazorpayExternalWallet(ExternalWalletResponse response) {
     if (!mounted) return;
     setState(() => _placing = false);
-    _snack('Selected wallet: ${response.walletName}. Please complete the payment there and try again.');
+    _snack(
+      'Selected wallet: ${response.walletName}. Please complete the payment there and try again.',
+    );
   }
 
   Future<void> _placeOrder(
@@ -307,16 +343,18 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final payment = _payment!;
 
     try {
-      final order = await ref.read(orderRepositoryProvider).placeOrder(
-        items: _cartAsRequestItems(),
-        addressId: address.id,
-        promoCode: ref.read(appliedPromoProvider)?.code,
-        paymentMethod: payment.wireValue,
-        prescriptionId: _selectedPrescriptionId,
-        razorpayOrderId: razorpayOrderId,
-        razorpayPaymentId: razorpayPaymentId,
-        razorpaySignature: razorpaySignature,
-      );
+      final order = await ref
+          .read(orderRepositoryProvider)
+          .placeOrder(
+            items: _cartAsRequestItems(),
+            addressId: address.id,
+            promoCode: ref.read(appliedPromoProvider)?.code,
+            paymentMethod: payment.wireValue,
+            prescriptionId: _selectedPrescriptionId,
+            razorpayOrderId: razorpayOrderId,
+            razorpayPaymentId: razorpayPaymentId,
+            razorpaySignature: razorpaySignature,
+          );
 
       if (!mounted) return;
 
@@ -366,7 +404,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     final address = ref.watch(selectedAddressProvider);
     final total = ref.watch(cartTotalProvider);
     final needsPrescription = ref.watch(cartRequiresPrescriptionProvider);
-    final prescriptions = ref.watch(prescriptionsProvider).value ?? const <Prescription>[];
+    final prescriptions =
+        ref.watch(prescriptionsProvider).value ?? const <Prescription>[];
     Prescription? selectedPrescription;
     for (final p in prescriptions) {
       if (p.id == _selectedPrescriptionId) {
@@ -385,35 +424,52 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               children: [
                 Text('Delivery address', style: theme.textTheme.titleMedium),
                 const SizedBox(height: AppConstants.spacingSm),
-                GradientCard(
+                AppCard(
                   padding: EdgeInsets.zero,
                   child: ListTile(
-                    leading: Icon(address == null ? Icons.location_off_outlined : _addressIcon(address.type)),
+                    leading: Icon(
+                      address == null
+                          ? Icons.location_off_outlined
+                          : _addressIcon(address.type),
+                    ),
                     title: Text(address?.type.label ?? 'No address'),
-                    subtitle: Text(address?.formatted ?? 'Add one from Profile → Addresses'),
+                    subtitle: Text(
+                      address?.formatted ?? 'Add one from Profile → Addresses',
+                    ),
                     trailing: addresses.isEmpty
                         ? null
                         : TextButton(
-                            onPressed: _placing ? null : () => _changeAddress(addresses),
+                            onPressed: _placing
+                                ? null
+                                : () => _changeAddress(addresses),
                             child: const Text('Change'),
                           ),
                   ),
                 ),
                 if (needsPrescription) ...[
                   const SizedBox(height: AppConstants.spacingLg),
-                  Text('Prescription required', style: theme.textTheme.titleMedium),
+                  Text(
+                    'Prescription required',
+                    style: theme.textTheme.titleMedium,
+                  ),
                   const SizedBox(height: AppConstants.spacingSm),
-                  GradientCard(
+                  AppCard(
                     padding: EdgeInsets.zero,
                     child: ListTile(
                       leading: Icon(
-                        selectedPrescription == null ? Icons.warning_amber_outlined : Icons.description_outlined,
-                        color: selectedPrescription == null ? theme.colorScheme.error : null,
+                        selectedPrescription == null
+                            ? Icons.warning_amber_outlined
+                            : Icons.description_outlined,
+                        color: selectedPrescription == null
+                            ? theme.colorScheme.error
+                            : null,
                       ),
                       title: Text(
                         selectedPrescription == null
                             ? 'No prescription attached'
-                            : DateFormat('d MMM yyyy').format(selectedPrescription.uploadedOn),
+                            : DateFormat(
+                                'd MMM yyyy',
+                              ).format(selectedPrescription.uploadedOn),
                       ),
                       subtitle: Text(
                         selectedPrescription == null
@@ -428,7 +484,11 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                             )
                           : TextButton(
                               onPressed: () => _pickPrescription(prescriptions),
-                              child: Text(selectedPrescription == null ? 'Attach' : 'Change'),
+                              child: Text(
+                                selectedPrescription == null
+                                    ? 'Attach'
+                                    : 'Change',
+                              ),
                             ),
                     ),
                   ),
@@ -441,7 +501,9 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   title: _PaymentChoice.online.label,
                   subtitle: 'UPI, cards, netbanking and wallets via Razorpay',
                   selected: _payment == _PaymentChoice.online,
-                  onTap: _placing ? () {} : () => _select(_PaymentChoice.online),
+                  onTap: _placing
+                      ? () {}
+                      : () => _select(_PaymentChoice.online),
                 ),
                 PaymentOptionTile(
                   icon: _PaymentChoice.cod.icon,
@@ -460,7 +522,13 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           DecoratedBox(
             decoration: BoxDecoration(
               color: AppPalette.barColor(theme),
-              border: Border(top: BorderSide(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4))),
+              border: Border(
+                top: BorderSide(
+                  color: theme.colorScheme.outlineVariant.withValues(
+                    alpha: 0.4,
+                  ),
+                ),
+              ),
             ),
             child: SafeArea(
               top: false,
@@ -469,9 +537,14 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 child: SizedBox(
                   width: double.infinity,
                   child: FilledButton(
+                    style: AppPalette.cartActionButtonStyle(context),
                     onPressed: _placing ? null : () => _orderNow(address),
                     child: _placing
-                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
                         : Text('Order Now · ₹$total'),
                   ),
                 ),

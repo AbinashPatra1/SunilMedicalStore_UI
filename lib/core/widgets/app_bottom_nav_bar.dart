@@ -2,7 +2,11 @@ import 'package:flutter/material.dart';
 
 /// One destination in an [AppBottomNavBar].
 class AppNavDestination {
-  const AppNavDestination({required this.icon, required this.selectedIcon, required this.label});
+  const AppNavDestination({
+    required this.icon,
+    required this.selectedIcon,
+    required this.label,
+  });
 
   /// Usually an [Icon] (or a [Badge]-wrapped one, e.g. the customer Cart tab).
   final Widget icon;
@@ -62,7 +66,7 @@ class AppBottomNavBar extends StatelessWidget {
     return Material(
       color: Theme.of(context).brightness == Brightness.dark
           ? colors.surfaceContainer
-          : Colors.white.withValues(alpha: 0.85),
+          : Colors.white,
       child: SafeArea(
         top: false,
         child: SizedBox(
@@ -99,7 +103,9 @@ class AppBottomNavBar extends StatelessWidget {
                         destination: destinations[i],
                         selected: i == selectedIndex,
                         onTap: () => onDestinationSelected(i),
-                        labelFontSize: showLabels ? scaledBaseFontSize * sharedScale : null,
+                        labelFontSize: showLabels
+                            ? scaledBaseFontSize * sharedScale
+                            : null,
                       ),
                     ),
                 ],
@@ -132,7 +138,9 @@ class _NavItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final textTheme = Theme.of(context).textTheme;
-    final iconColor = selected ? colors.onSecondaryContainer : colors.onSurfaceVariant;
+    final iconColor = selected
+        ? colors.onSecondaryContainer
+        : colors.onSurfaceVariant;
     final labelColor = selected ? colors.onSurface : colors.onSurfaceVariant;
 
     return Semantics(
@@ -149,9 +157,14 @@ class _NavItem extends StatelessWidget {
             children: [
               AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 4,
+                ),
                 decoration: ShapeDecoration(
-                  color: selected ? colors.secondaryContainer : Colors.transparent,
+                  color: selected
+                      ? colors.secondaryContainer
+                      : Colors.transparent,
                   shape: const StadiumBorder(),
                 ),
                 child: IconTheme(
@@ -169,7 +182,10 @@ class _NavItem extends StatelessWidget {
                     softWrap: false,
                     overflow: TextOverflow.clip,
                     textScaler: TextScaler.noScaling,
-                    style: textTheme.labelMedium?.copyWith(color: labelColor, fontSize: labelFontSize),
+                    style: textTheme.labelMedium?.copyWith(
+                      color: labelColor,
+                      fontSize: labelFontSize,
+                    ),
                   ),
                 ),
               ],

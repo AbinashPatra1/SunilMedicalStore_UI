@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:sunil_medical_store/core/widgets/gradient_card.dart';
+import 'package:sunil_medical_store/core/widgets/app_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
@@ -16,7 +16,8 @@ class LabTestDetailScreen extends ConsumerStatefulWidget {
   final LabTest? labTest;
 
   @override
-  ConsumerState<LabTestDetailScreen> createState() => _LabTestDetailScreenState();
+  ConsumerState<LabTestDetailScreen> createState() =>
+      _LabTestDetailScreenState();
 }
 
 class _LabTestDetailScreenState extends ConsumerState<LabTestDetailScreen> {
@@ -27,12 +28,19 @@ class _LabTestDetailScreenState extends ConsumerState<LabTestDetailScreen> {
     if (test == null) return;
     setState(() => _downloadingInvoice = true);
     try {
-      final url = await ref.read(profileRepositoryProvider).labTestInvoiceUrl(test.id);
-      final launched = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+      final url = await ref
+          .read(profileRepositoryProvider)
+          .labTestInvoiceUrl(test.id);
+      final launched = await launchUrl(
+        Uri.parse(url),
+        mode: LaunchMode.externalApplication,
+      );
       if (!launched && mounted) {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
-          ..showSnackBar(const SnackBar(content: Text('Could not open the invoice.')));
+          ..showSnackBar(
+            const SnackBar(content: Text('Could not open the invoice.')),
+          );
       }
     } on ApiException catch (e) {
       if (mounted) {
@@ -63,52 +71,71 @@ class _LabTestDetailScreenState extends ConsumerState<LabTestDetailScreen> {
         children: [
           Row(
             children: [
-              Expanded(child: Text(test.labName, style: theme.textTheme.titleMedium)),
-              StatusChip(label: test.status.label, positive: test.status != LabTestStatus.cancelled),
+              Expanded(
+                child: Text(test.labName, style: theme.textTheme.titleMedium),
+              ),
+              StatusChip(
+                label: test.status.label,
+                positive: test.status != LabTestStatus.cancelled,
+              ),
             ],
           ),
           if (test.bookingNumber != null) ...[
             const SizedBox(height: AppConstants.spacingXs),
             Text(
               test.bookingNumber!,
-              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
           const SizedBox(height: AppConstants.spacingXs),
           Text(
             'Scheduled for ${DateFormat('d MMM yyyy').format(test.bookedOn)}'
             '${test.timeSlot != null ? ' • ${test.timeSlot}' : ''}',
-            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
           ),
           const SizedBox(height: AppConstants.spacingLg),
           Text('Parameters', style: theme.textTheme.titleMedium),
           const SizedBox(height: AppConstants.spacingSm),
-          GradientCard(
+          AppCard(
             padding: EdgeInsets.zero,
             child: Column(
               children: [
                 for (final parameter in test.parameters)
                   ListTile(
                     dense: true,
-                    leading: Icon(Icons.check_circle_outline, color: theme.colorScheme.primary),
+                    leading: Icon(
+                      Icons.check_circle_outline,
+                      color: theme.colorScheme.primary,
+                    ),
                     title: Text(parameter),
                   ),
               ],
             ),
           ),
           const SizedBox(height: AppConstants.spacingMd),
-          GradientCard(
+          AppCard(
             padding: EdgeInsets.zero,
             child: ListTile(
               title: Text('Amount', style: theme.textTheme.titleMedium),
-              trailing: Text('₹${test.amount}', style: theme.textTheme.titleMedium),
+              trailing: Text(
+                '₹${test.amount}',
+                style: theme.textTheme.titleMedium,
+              ),
             ),
           ),
           const SizedBox(height: AppConstants.spacingLg),
           OutlinedButton.icon(
             onPressed: _downloadingInvoice ? null : _downloadInvoice,
             icon: _downloadingInvoice
-                ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                ? const SizedBox(
+                    height: 16,
+                    width: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
                 : const Icon(Icons.download_outlined),
             label: const Text('Download invoice'),
           ),

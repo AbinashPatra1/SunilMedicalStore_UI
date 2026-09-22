@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:sunil_medical_store/core/theme/app_theme.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -16,7 +15,11 @@ import 'package:sunil_medical_store/features/medicines/domain/product_type.dart'
 /// product. Add mode when [productId] is null; edit mode fetches the
 /// existing product to pre-fill.
 class AddOrEditProductScreen extends ConsumerWidget {
-  const AddOrEditProductScreen({super.key, this.productId, this.initialBarcode});
+  const AddOrEditProductScreen({
+    super.key,
+    this.productId,
+    this.initialBarcode,
+  });
 
   final String? productId;
 
@@ -31,11 +34,14 @@ class AddOrEditProductScreen extends ConsumerWidget {
     }
     final async = ref.watch(adminProductByIdProvider(productId!));
     return async.when(
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (error, _) => Scaffold(
         appBar: AppBar(title: const Text('Edit product')),
         body: Center(
-          child: Text(error is ApiException ? error.message : 'Could not load product.'),
+          child: Text(
+            error is ApiException ? error.message : 'Could not load product.',
+          ),
         ),
       ),
       data: (product) => _ProductForm(existing: product, initialBarcode: null),
@@ -88,7 +94,9 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
     _mrp = TextEditingController(text: p?.mrp?.toString() ?? '');
     _stock = TextEditingController(text: p?.stock.toString() ?? '');
     _packSize = TextEditingController(text: p?.packSize ?? '');
-    _barcode = TextEditingController(text: p?.barcode ?? widget.initialBarcode ?? '');
+    _barcode = TextEditingController(
+      text: p?.barcode ?? widget.initialBarcode ?? '',
+    );
     _composition = TextEditingController(text: p?.composition ?? '');
     _description = TextEditingController(text: p?.description ?? '');
     _dosage = TextEditingController(text: p?.dosage ?? '');
@@ -148,7 +156,9 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
       price: int.parse(_price.text.trim()),
       stock: int.parse(_stock.text.trim()),
       requiresPrescription: _requiresPrescription,
-      composition: _composition.text.trim().isEmpty ? null : _composition.text.trim(),
+      composition: _composition.text.trim().isEmpty
+          ? null
+          : _composition.text.trim(),
       mrp: _mrp.text.trim().isEmpty ? null : int.parse(_mrp.text.trim()),
       description: _description.text.trim(),
       dosage: _dosage.text.trim().isEmpty ? null : _dosage.text.trim(),
@@ -194,9 +204,13 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
       if (mounted) {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(
-            content: Text(widget.isEdit ? 'Product updated' : 'Product added'),
-          ));
+          ..showSnackBar(
+            SnackBar(
+              content: Text(
+                widget.isEdit ? 'Product updated' : 'Product added',
+              ),
+            ),
+          );
         context.pop();
       }
     } on ApiException catch (e) {
@@ -224,7 +238,6 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
             style: FilledButton.styleFrom(
               foregroundColor: Theme.of(dialogCtx).colorScheme.onErrorContainer,
               backgroundColor: Theme.of(dialogCtx).colorScheme.errorContainer,
-              backgroundBuilder: flatButtonBackground,
             ),
             onPressed: () => Navigator.of(dialogCtx).pop(true),
             child: const Text('Delete'),
@@ -330,7 +343,9 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
                     enabled: !busy,
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: const InputDecoration(labelText: 'MRP (₹, optional)'),
+                    decoration: const InputDecoration(
+                      labelText: 'MRP (₹, optional)',
+                    ),
                     validator: (v) => _optionalInt(v, min: 1),
                   ),
                 ),
@@ -383,7 +398,9 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
               contentPadding: EdgeInsets.zero,
               title: const Text('Requires prescription'),
               value: _requiresPrescription,
-              onChanged: busy ? null : (v) => setState(() => _requiresPrescription = v),
+              onChanged: busy
+                  ? null
+                  : (v) => setState(() => _requiresPrescription = v),
             ),
             const Divider(height: AppConstants.spacingXl),
             Text('Optional details', style: theme.textTheme.titleMedium),
@@ -421,13 +438,22 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
             ),
             if (_error != null) ...[
               const SizedBox(height: AppConstants.spacingMd),
-              Text(_error!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),
+              Text(
+                _error!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              ),
             ],
             const SizedBox(height: AppConstants.spacingLg),
             FilledButton(
               onPressed: busy ? null : _save,
               child: _saving
-                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
                   : Text(widget.isEdit ? 'Save changes' : 'Add product'),
             ),
           ],

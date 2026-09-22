@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:sunil_medical_store/core/widgets/app_background.dart';
 import 'package:sunil_medical_store/core/widgets/app_bottom_nav_bar.dart';
 import 'package:sunil_medical_store/features/cart/presentation/providers/cart_providers.dart';
 
@@ -26,48 +25,46 @@ class ScaffoldWithNavBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final cartCount = ref.watch(cartItemCountProvider);
 
-    return AppBackground(
-      child: Scaffold(
-        body: navigationShell,
-        bottomNavigationBar: AppBottomNavBar(
-          selectedIndex: navigationShell.currentIndex,
-          onDestinationSelected: _onTap,
-          destinations: [
-            const AppNavDestination(
-              icon: Icon(Icons.local_pharmacy_outlined),
-              selectedIcon: Icon(Icons.local_pharmacy),
-              label: 'Pharmacy',
+    return Scaffold(
+      body: navigationShell,
+      bottomNavigationBar: AppBottomNavBar(
+        selectedIndex: navigationShell.currentIndex,
+        onDestinationSelected: _onTap,
+        destinations: [
+          const AppNavDestination(
+            icon: Icon(Icons.local_pharmacy_outlined),
+            selectedIcon: Icon(Icons.local_pharmacy),
+            label: 'Pharmacy',
+          ),
+          const AppNavDestination(
+            icon: Icon(Icons.biotech_outlined),
+            selectedIcon: Icon(Icons.biotech),
+            label: 'Lab Tests',
+          ),
+          const AppNavDestination(
+            icon: Icon(Icons.calendar_month_outlined),
+            selectedIcon: Icon(Icons.calendar_month),
+            label: 'Appointments',
+          ),
+          AppNavDestination(
+            icon: Badge(
+              isLabelVisible: cartCount > 0,
+              label: Text('$cartCount'),
+              child: const Icon(Icons.shopping_cart_outlined),
             ),
-            const AppNavDestination(
-              icon: Icon(Icons.biotech_outlined),
-              selectedIcon: Icon(Icons.biotech),
-              label: 'Lab Tests',
+            selectedIcon: Badge(
+              isLabelVisible: cartCount > 0,
+              label: Text('$cartCount'),
+              child: const Icon(Icons.shopping_cart),
             ),
-            const AppNavDestination(
-              icon: Icon(Icons.calendar_month_outlined),
-              selectedIcon: Icon(Icons.calendar_month),
-              label: 'Appointments',
-            ),
-            AppNavDestination(
-              icon: Badge(
-                isLabelVisible: cartCount > 0,
-                label: Text('$cartCount'),
-                child: const Icon(Icons.shopping_cart_outlined),
-              ),
-              selectedIcon: Badge(
-                isLabelVisible: cartCount > 0,
-                label: Text('$cartCount'),
-                child: const Icon(Icons.shopping_cart),
-              ),
-              label: 'Cart',
-            ),
-            const AppNavDestination(
-              icon: Icon(Icons.person_outline),
-              selectedIcon: Icon(Icons.person),
-              label: 'Profile',
-            ),
-          ],
-        ),
+            label: 'Cart',
+          ),
+          const AppNavDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
       ),
     );
   }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:sunil_medical_store/core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -13,7 +12,10 @@ import 'package:sunil_medical_store/features/profile/presentation/widgets/status
 /// Admin reviews a single prescription: full-size image + Approve/Reject.
 /// Rejecting prompts for an optional note (shown to the customer).
 class AdminPrescriptionDetailScreen extends ConsumerWidget {
-  const AdminPrescriptionDetailScreen({super.key, required this.prescriptionId});
+  const AdminPrescriptionDetailScreen({
+    super.key,
+    required this.prescriptionId,
+  });
 
   final String prescriptionId;
 
@@ -21,11 +23,16 @@ class AdminPrescriptionDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(adminPrescriptionByIdProvider(prescriptionId));
     return async.when(
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (error, _) => Scaffold(
         appBar: AppBar(title: const Text('Prescription')),
         body: Center(
-          child: Text(error is ApiException ? error.message : 'Could not load prescription.'),
+          child: Text(
+            error is ApiException
+                ? error.message
+                : 'Could not load prescription.',
+          ),
         ),
       ),
       data: (prescription) => _ReviewView(prescription: prescription),
@@ -72,7 +79,6 @@ class _ReviewViewState extends ConsumerState<_ReviewView> {
             style: FilledButton.styleFrom(
               foregroundColor: Theme.of(dialogCtx).colorScheme.onErrorContainer,
               backgroundColor: Theme.of(dialogCtx).colorScheme.errorContainer,
-              backgroundBuilder: flatButtonBackground,
             ),
             onPressed: () => Navigator.of(dialogCtx).pop(true),
             child: const Text('Reject'),
@@ -81,7 +87,10 @@ class _ReviewViewState extends ConsumerState<_ReviewView> {
       ),
     );
     if (confirmed != true || !mounted) return;
-    await _review(PrescriptionStatus.rejected, note: noteController.text.trim());
+    await _review(
+      PrescriptionStatus.rejected,
+      note: noteController.text.trim(),
+    );
   }
 
   Future<void> _review(PrescriptionStatus status, {String? note}) async {
@@ -90,19 +99,27 @@ class _ReviewViewState extends ConsumerState<_ReviewView> {
       _error = null;
     });
     try {
-      await ref.read(adminPrescriptionRepositoryProvider).review(
-        widget.prescription.id,
-        status: status,
-        note: note?.isEmpty ?? true ? null : note,
-      );
+      await ref
+          .read(adminPrescriptionRepositoryProvider)
+          .review(
+            widget.prescription.id,
+            status: status,
+            note: note?.isEmpty ?? true ? null : note,
+          );
       ref.invalidate(adminPrescriptionByIdProvider(widget.prescription.id));
       ref.invalidate(adminPrescriptionsProvider);
       if (mounted) {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(
-            content: Text(status == PrescriptionStatus.approved ? 'Prescription approved' : 'Prescription rejected'),
-          ));
+          ..showSnackBar(
+            SnackBar(
+              content: Text(
+                status == PrescriptionStatus.approved
+                    ? 'Prescription approved'
+                    : 'Prescription rejected',
+              ),
+            ),
+          );
         context.pop();
       }
     } on ApiException catch (e) {
@@ -133,7 +150,9 @@ class _ReviewViewState extends ConsumerState<_ReviewView> {
                   Text(p.userName, style: theme.textTheme.titleSmall),
                   Text(
                     p.userPhone,
-                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                   const SizedBox(height: AppConstants.spacingSm),
                   Text(
@@ -156,23 +175,35 @@ class _ReviewViewState extends ConsumerState<_ReviewView> {
             child: Image.network(
               p.imageUrl,
               fit: BoxFit.contain,
-              loadingBuilder: (context, child, progress) =>
-                  progress == null ? child : const Center(child: Padding(
-                    padding: EdgeInsets.all(AppConstants.spacingXl),
-                    child: CircularProgressIndicator(),
-                  )),
+              loadingBuilder: (context, child, progress) => progress == null
+                  ? child
+                  : const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(AppConstants.spacingXl),
+                        child: CircularProgressIndicator(),
+                      ),
+                    ),
               errorBuilder: (_, _, _) => Container(
                 height: 200,
                 color: theme.colorScheme.surfaceContainerHighest,
                 child: Center(
-                  child: Icon(Icons.broken_image_outlined, color: theme.colorScheme.onSurfaceVariant, size: 48),
+                  child: Icon(
+                    Icons.broken_image_outlined,
+                    color: theme.colorScheme.onSurfaceVariant,
+                    size: 48,
+                  ),
                 ),
               ),
             ),
           ),
           if (_error != null) ...[
             const SizedBox(height: AppConstants.spacingMd),
-            Text(_error!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),
+            Text(
+              _error!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.error,
+              ),
+            ),
           ],
           if (pending) ...[
             const SizedBox(height: AppConstants.spacingLg),
@@ -181,7 +212,9 @@ class _ReviewViewState extends ConsumerState<_ReviewView> {
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: _saving ? null : _reject,
-                    style: OutlinedButton.styleFrom(foregroundColor: theme.colorScheme.error),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: theme.colorScheme.error,
+                    ),
                     icon: const Icon(Icons.close),
                     label: const Text('Reject'),
                   ),
@@ -191,7 +224,11 @@ class _ReviewViewState extends ConsumerState<_ReviewView> {
                   child: FilledButton.icon(
                     onPressed: _saving ? null : _approve,
                     icon: _saving
-                        ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                        ? const SizedBox(
+                            height: 18,
+                            width: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
                         : const Icon(Icons.check),
                     label: const Text('Approve'),
                   ),

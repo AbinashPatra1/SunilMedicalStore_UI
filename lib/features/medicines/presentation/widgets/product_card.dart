@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sunil_medical_store/core/theme/app_palette.dart';
 import 'package:sunil_medical_store/core/illustrations/product_illustration.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/core/utils/delivery_estimate.dart';
@@ -36,27 +37,41 @@ class ProductCard extends StatelessWidget {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ProductIllustration.forProduct(product: product, width: 64, height: 64),
+                    ProductIllustration.forProduct(
+                      product: product,
+                      width: 64,
+                      height: 64,
+                    ),
                     const SizedBox(width: AppConstants.spacingMd),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(product.name, style: theme.textTheme.titleSmall, maxLines: 2, overflow: TextOverflow.ellipsis),
+                          Text(
+                            product.name,
+                            style: theme.textTheme.titleSmall,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                           Text(
                             product.brand,
-                            style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
                           ),
                           if (product.packSize != null)
                             Text(
                               product.packSize!,
-                              style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
                             ),
                           if (product.requiresPrescription || oos) ...[
                             const SizedBox(height: AppConstants.spacingXs),
                             Row(
                               children: [
-                                if (product.requiresPrescription) const _RxBadge(),
+                                if (product.requiresPrescription)
+                                  const _RxBadge(),
                                 if (product.requiresPrescription && oos)
                                   const SizedBox(width: AppConstants.spacingXs),
                                 if (oos) const _OutOfStockBadge(),
@@ -69,7 +84,9 @@ class ProductCard extends StatelessWidget {
                             const SizedBox(height: AppConstants.spacingXs),
                             Text(
                               deliveryEstimateLabel(),
-                              style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.primary),
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: theme.colorScheme.primary,
+                              ),
                             ),
                           ],
                         ],
@@ -81,6 +98,7 @@ class ProductCard extends StatelessWidget {
                 Align(
                   alignment: Alignment.centerRight,
                   child: FilledButton.tonal(
+                    style: AppPalette.cartActionButtonStyle(context),
                     onPressed: oos ? null : onAdd,
                     child: const Text('Add'),
                   ),
@@ -101,14 +119,19 @@ class _OutOfStockBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppConstants.spacingSm, vertical: 2),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppConstants.spacingSm,
+        vertical: 2,
+      ),
       decoration: BoxDecoration(
         color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(AppConstants.radiusSm),
       ),
       child: Text(
         'Out of stock',
-        style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
       ),
     );
   }
@@ -122,14 +145,19 @@ class _RxBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: AppConstants.spacingSm, vertical: 2),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppConstants.spacingSm,
+        vertical: 2,
+      ),
       decoration: BoxDecoration(
         color: theme.colorScheme.errorContainer,
         borderRadius: BorderRadius.circular(AppConstants.radiusSm),
       ),
       child: Text(
         'Rx required',
-        style: theme.textTheme.labelSmall?.copyWith(color: theme.colorScheme.onErrorContainer),
+        style: theme.textTheme.labelSmall?.copyWith(
+          color: theme.colorScheme.onErrorContainer,
+        ),
       ),
     );
   }

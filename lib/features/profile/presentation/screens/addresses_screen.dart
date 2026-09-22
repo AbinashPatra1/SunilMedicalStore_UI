@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:sunil_medical_store/core/theme/app_palette.dart';
-import 'package:sunil_medical_store/core/theme/app_theme.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
@@ -31,9 +30,16 @@ class AddressesScreen extends ConsumerWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(error is ApiException ? error.message : 'Could not load addresses.'),
+              Text(
+                error is ApiException
+                    ? error.message
+                    : 'Could not load addresses.',
+              ),
               const SizedBox(height: AppConstants.spacingSm),
-              TextButton(onPressed: () => ref.invalidate(addressesProvider), child: const Text('Retry')),
+              TextButton(
+                onPressed: () => ref.invalidate(addressesProvider),
+                child: const Text('Retry'),
+              ),
             ],
           ),
         ),
@@ -47,8 +53,10 @@ class AddressesScreen extends ConsumerWidget {
                   AppConstants.spacingXxl + AppConstants.spacingLg,
                 ),
                 itemCount: addresses.length,
-                separatorBuilder: (_, _) => const SizedBox(height: AppConstants.spacingMd),
-                itemBuilder: (context, index) => _AddressCard(address: addresses[index]),
+                separatorBuilder: (_, _) =>
+                    const SizedBox(height: AppConstants.spacingMd),
+                itemBuilder: (context, index) =>
+                    _AddressCard(address: addresses[index]),
               ),
       ),
     );
@@ -94,7 +102,10 @@ class _AddressCardState extends ConsumerState<_AddressCard> {
   }
 
   void _edit() {
-    context.push('${AppRoutes.profileEditAddress}/${widget.address.id}', extra: widget.address);
+    context.push(
+      '${AppRoutes.profileEditAddress}/${widget.address.id}',
+      extra: widget.address,
+    );
   }
 
   Future<void> _delete() async {
@@ -102,7 +113,9 @@ class _AddressCardState extends ConsumerState<_AddressCard> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Delete address?'),
-        content: Text('This will remove your ${widget.address.type.label.toLowerCase()} address. This can\'t be undone.'),
+        content: Text(
+          'This will remove your ${widget.address.type.label.toLowerCase()} address. This can\'t be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -110,9 +123,12 @@ class _AddressCardState extends ConsumerState<_AddressCard> {
           ),
           FilledButton.tonal(
             style: FilledButton.styleFrom(
-              foregroundColor: Theme.of(dialogContext).colorScheme.onErrorContainer,
-              backgroundColor: Theme.of(dialogContext).colorScheme.errorContainer,
-              backgroundBuilder: flatButtonBackground,
+              foregroundColor: Theme.of(
+                dialogContext,
+              ).colorScheme.onErrorContainer,
+              backgroundColor: Theme.of(
+                dialogContext,
+              ).colorScheme.errorContainer,
             ),
             onPressed: () => Navigator.of(dialogContext).pop(true),
             child: const Text('Delete'),
@@ -151,20 +167,31 @@ class _AddressCardState extends ConsumerState<_AddressCard> {
           children: [
             Row(
               children: [
-                Icon(_icon(address.type), size: 20, color: theme.colorScheme.primary),
+                Icon(
+                  _icon(address.type),
+                  size: 20,
+                  color: theme.colorScheme.primary,
+                ),
                 const SizedBox(width: AppConstants.spacingSm),
                 Text(address.type.label, style: theme.textTheme.titleSmall),
                 const SizedBox(width: AppConstants.spacingSm),
                 if (address.isDefault)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: AppConstants.spacingSm, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppConstants.spacingSm,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: AppAccent.peach.pastel,
-                      borderRadius: BorderRadius.circular(AppConstants.radiusFull),
+                      borderRadius: BorderRadius.circular(
+                        AppConstants.radiusFull,
+                      ),
                     ),
                     child: Text(
                       'Default',
-                      style: theme.textTheme.labelSmall?.copyWith(color: AppAccent.peach.ink),
+                      style: theme.textTheme.labelSmall?.copyWith(
+                        color: AppAccent.peach.ink,
+                      ),
                     ),
                   ),
                 const Spacer(),
@@ -178,8 +205,16 @@ class _AddressCardState extends ConsumerState<_AddressCard> {
                   tooltip: 'Delete',
                   visualDensity: VisualDensity.compact,
                   icon: _deleting
-                      ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                      : Icon(Icons.delete_outline, size: 20, color: theme.colorScheme.error),
+                      ? const SizedBox(
+                          height: 16,
+                          width: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Icon(
+                          Icons.delete_outline,
+                          size: 20,
+                          color: theme.colorScheme.error,
+                        ),
                   onPressed: busy ? null : _delete,
                 ),
               ],
@@ -192,7 +227,11 @@ class _AddressCardState extends ConsumerState<_AddressCard> {
                 child: TextButton(
                   onPressed: busy ? null : _setDefault,
                   child: _settingDefault
-                      ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                      ? const SizedBox(
+                          height: 16,
+                          width: 16,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
                       : const Text('Set as default'),
                 ),
               ),

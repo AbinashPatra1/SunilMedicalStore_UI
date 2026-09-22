@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:sunil_medical_store/core/widgets/gradient_card.dart';
+import 'package:sunil_medical_store/core/widgets/app_card.dart';
 import 'package:intl/intl.dart';
 import 'package:sunil_medical_store/core/models/order.dart';
 import 'package:sunil_medical_store/core/theme/app_colors.dart';
@@ -43,12 +43,13 @@ class OrderSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final showDelivered = status == OrderStatus.delivered && deliveredOn != null;
+    final showDelivered =
+        status == OrderStatus.delivered && deliveredOn != null;
     final dateText = showDelivered
         ? 'Delivered on ${_dateFormat.format(deliveredOn!.toLocal())}'
         : 'Placed on ${_dateFormat.format(placedOn.toLocal())}';
 
-    return GradientCard(
+    return AppCard(
       padding: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(AppConstants.spacingLg),
@@ -57,13 +58,18 @@ class OrderSummaryCard extends StatelessWidget {
           children: [
             Row(
               children: [
-                StatusChip(label: status.label, positive: status != OrderStatus.cancelled),
+                StatusChip(
+                  label: status.label,
+                  positive: status != OrderStatus.cancelled,
+                ),
                 const SizedBox(width: AppConstants.spacingMd),
                 Expanded(
                   child: Text(
                     dateText,
                     textAlign: TextAlign.end,
-                    style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   ),
                 ),
               ],
@@ -103,7 +109,11 @@ class OrderProgressBar extends StatelessWidget {
   /// Amber at the start, teal in the middle, green at the end.
   static Color _colorAt(double f) => f <= 0.5
       ? Color.lerp(const Color(0xFFF9A825), AppColors.primary, f / 0.5)!
-      : Color.lerp(AppColors.primary, const Color(0xFF2E7D32), (f - 0.5) / 0.5)!;
+      : Color.lerp(
+          AppColors.primary,
+          const Color(0xFF2E7D32),
+          (f - 0.5) / 0.5,
+        )!;
 
   @override
   Widget build(BuildContext context) {
@@ -111,7 +121,8 @@ class OrderProgressBar extends StatelessWidget {
     final cancelled = status == OrderStatus.cancelled;
     final fraction = _fraction;
 
-    Color nodeColor(int i) => cancelled ? theme.colorScheme.error : _colorAt(_nodeFractions[i]);
+    Color nodeColor(int i) =>
+        cancelled ? theme.colorScheme.error : _colorAt(_nodeFractions[i]);
 
     return Semantics(
       label: 'Order progress: ${status.label}',
@@ -121,8 +132,12 @@ class OrderProgressBar extends StatelessWidget {
             builder: (context, constraints) {
               final trackWidth = constraints.maxWidth - _nodeSize;
               final fillWidth = trackWidth * fraction;
-              final fillEnd = cancelled ? theme.colorScheme.error : _colorAt(fraction);
-              final fillStart = cancelled ? theme.colorScheme.error : _colorAt(0);
+              final fillEnd = cancelled
+                  ? theme.colorScheme.error
+                  : _colorAt(fraction);
+              final fillStart = cancelled
+                  ? theme.colorScheme.error
+                  : _colorAt(0);
               return SizedBox(
                 height: _nodeSize,
                 child: Stack(
@@ -137,7 +152,9 @@ class OrderProgressBar extends StatelessWidget {
                           color: cancelled
                               ? theme.colorScheme.errorContainer
                               : theme.colorScheme.surfaceContainerHighest,
-                          borderRadius: BorderRadius.circular(AppConstants.radiusFull),
+                          borderRadius: BorderRadius.circular(
+                            AppConstants.radiusFull,
+                          ),
                         ),
                       ),
                     ),
@@ -147,8 +164,12 @@ class OrderProgressBar extends StatelessWidget {
                       child: Container(
                         height: _trackHeight,
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(colors: [fillStart, fillEnd]),
-                          borderRadius: BorderRadius.circular(AppConstants.radiusFull),
+                          gradient: LinearGradient(
+                            colors: [fillStart, fillEnd],
+                          ),
+                          borderRadius: BorderRadius.circular(
+                            AppConstants.radiusFull,
+                          ),
                         ),
                       ),
                     ),
@@ -174,9 +195,13 @@ class OrderProgressBar extends StatelessWidget {
                 Text(
                   cancelled && i == 0 ? 'Cancelled' : _labels[i],
                   style: theme.textTheme.labelMedium?.copyWith(
-                    fontWeight: fraction >= _nodeFractions[i] ? FontWeight.w700 : FontWeight.w500,
+                    fontWeight: fraction >= _nodeFractions[i]
+                        ? FontWeight.w700
+                        : FontWeight.w500,
                     color: fraction >= _nodeFractions[i]
-                        ? (cancelled ? theme.colorScheme.error : theme.colorScheme.onSurface)
+                        ? (cancelled
+                              ? theme.colorScheme.error
+                              : theme.colorScheme.onSurface)
                         : theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
@@ -189,7 +214,11 @@ class OrderProgressBar extends StatelessWidget {
 }
 
 class _Node extends StatelessWidget {
-  const _Node({required this.reached, required this.color, required this.cancelled});
+  const _Node({
+    required this.reached,
+    required this.color,
+    required this.cancelled,
+  });
 
   final bool reached;
   final Color color;
@@ -204,10 +233,19 @@ class _Node extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: reached ? color : surface,
-        border: Border.all(color: reached ? color : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4), width: 2),
+        border: Border.all(
+          color: reached
+              ? color
+              : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.4),
+          width: 2,
+        ),
       ),
       child: reached
-          ? Icon(cancelled ? Icons.close : Icons.check, size: 14, color: Colors.white)
+          ? Icon(
+              cancelled ? Icons.close : Icons.check,
+              size: 14,
+              color: Colors.white,
+            )
           : null,
     );
   }
@@ -242,7 +280,7 @@ class OrderItemsBillCard extends StatelessWidget {
       fontWeight: FontWeight.w700,
     );
 
-    return GradientCard(
+    return AppCard(
       padding: EdgeInsets.zero,
       child: Column(
         children: [
@@ -250,7 +288,10 @@ class OrderItemsBillCard extends StatelessWidget {
             ListTile(
               title: Text(item.name),
               subtitle: Text('Qty ${item.quantity} × ₹${item.price}'),
-              trailing: Text('₹${item.lineTotal}', style: theme.textTheme.titleSmall),
+              trailing: Text(
+                '₹${item.lineTotal}',
+                style: theme.textTheme.titleSmall,
+              ),
             ),
           const Divider(height: 1),
           Padding(
@@ -272,7 +313,8 @@ class OrderItemsBillCard extends StatelessWidget {
                   value: delivery == 0 ? 'Free' : '₹$delivery',
                   valueStyle: delivery == 0 ? free : null,
                 ),
-                if (platformFee > 0) _BillRow(label: 'Platform fee', value: '₹$platformFee'),
+                if (platformFee > 0)
+                  _BillRow(label: 'Platform fee', value: '₹$platformFee'),
                 const Divider(height: AppConstants.spacingXl),
                 _BillRow(
                   label: 'Total',
@@ -296,7 +338,12 @@ class OrderItemsBillCard extends StatelessWidget {
 }
 
 class _BillRow extends StatelessWidget {
-  const _BillRow({required this.label, required this.value, this.labelStyle, this.valueStyle});
+  const _BillRow({
+    required this.label,
+    required this.value,
+    this.labelStyle,
+    this.valueStyle,
+  });
 
   final String label;
   final String value;
@@ -341,40 +388,58 @@ class OrderPolicySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final cancelNote = showCancelNote ? cancelPolicyMessage(order.status) : null;
+    final cancelNote = showCancelNote
+        ? cancelPolicyMessage(order.status)
+        : null;
     final returnInfo = evaluateReturn(
       status: order.status,
       deliveredOn: order.deliveredOn,
       returnsEnabled: settings?.returnsEnabled ?? false,
-      windowDays: settings?.returnWindowDays ?? DeliverySettings.defaultReturnWindowDays,
+      windowDays:
+          settings?.returnWindowDays ??
+          DeliverySettings.defaultReturnWindowDays,
     );
     final returnNote = switch (returnInfo.state) {
       ReturnState.hidden => null,
-      ReturnState.notStarted => 'Returns are accepted within ${returnInfo.days} days of delivery.',
-      ReturnState.open => 'This order can be returned by ${_dateFormat.format(returnInfo.date!)}.',
-      ReturnState.closed => 'The return window closed on ${_dateFormat.format(returnInfo.date!)}.',
+      ReturnState.notStarted =>
+        'Returns are accepted within ${returnInfo.days} days of delivery.',
+      ReturnState.open =>
+        'This order can be returned by ${_dateFormat.format(returnInfo.date!)}.',
+      ReturnState.closed =>
+        'The return window closed on ${_dateFormat.format(returnInfo.date!)}.',
     };
-    if (cancelNote == null && returnNote == null && !showHelp) return const SizedBox.shrink();
+    if (cancelNote == null && returnNote == null && !showHelp)
+      return const SizedBox.shrink();
 
-    return GradientCard(
+    return AppCard(
       padding: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.all(AppConstants.spacingLg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            if (cancelNote != null) _NoteRow(icon: Icons.cancel_outlined, text: cancelNote),
-            if (returnNote != null) _NoteRow(icon: Icons.assignment_return_outlined, text: returnNote),
+            if (cancelNote != null)
+              _NoteRow(icon: Icons.cancel_outlined, text: cancelNote),
+            if (returnNote != null)
+              _NoteRow(
+                icon: Icons.assignment_return_outlined,
+                text: returnNote,
+              ),
             if (showHelp) ...[
-              if (cancelNote != null || returnNote != null) const Divider(height: AppConstants.spacingXl),
+              if (cancelNote != null || returnNote != null)
+                const Divider(height: AppConstants.spacingXl),
               Wrap(
                 crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  Text('Need help with an order? ', style: theme.textTheme.bodyMedium),
+                  Text(
+                    'Need help with an order? ',
+                    style: theme.textTheme.bodyMedium,
+                  ),
                   GestureDetector(
                     onTap: () => openSupportWhatsApp(
                       context,
-                      message: 'Hi, I need help with order ${order.orderNumber}.',
+                      message:
+                          'Hi, I need help with order ${order.orderNumber}.',
                     ),
                     child: Text(
                       'Contact us',
@@ -398,7 +463,11 @@ class OrderPolicySection extends StatelessWidget {
 /// The few order fields [OrderPolicySection] needs — lets the customer's
 /// `Order` and the admin's `AdminOrder` share it.
 class OrderPolicyInput {
-  const OrderPolicyInput({required this.status, required this.deliveredOn, required this.orderNumber});
+  const OrderPolicyInput({
+    required this.status,
+    required this.deliveredOn,
+    required this.orderNumber,
+  });
 
   final OrderStatus status;
   final DateTime? deliveredOn;
@@ -449,14 +518,19 @@ class OrderInfoCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: theme.textTheme.labelMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+          Text(
+            label,
+            style: theme.textTheme.labelMedium?.copyWith(
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
           const SizedBox(height: 2),
           Text(value, style: theme.textTheme.bodyMedium),
         ],
       ),
     );
 
-    return GradientCard(
+    return AppCard(
       padding: EdgeInsets.zero,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(
@@ -472,7 +546,10 @@ class OrderInfoCard extends StatelessWidget {
             const SizedBox(height: AppConstants.spacingMd),
             block('Delivery address', address ?? 'Not available'),
             block('Order ID', orderNumber),
-            block('Order date', DateFormat('d MMM yyyy, h:mm a').format(placedOn.toLocal())),
+            block(
+              'Order date',
+              DateFormat('d MMM yyyy, h:mm a').format(placedOn.toLocal()),
+            ),
           ],
         ),
       ),

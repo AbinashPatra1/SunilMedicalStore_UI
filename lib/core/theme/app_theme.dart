@@ -2,21 +2,21 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:sunil_medical_store/core/theme/app_colors.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
-import 'package:sunil_medical_store/core/theme/app_palette.dart';
 import 'package:sunil_medical_store/core/theme/app_text_theme.dart';
 
 /// Builds the app's light and dark [ThemeData].
 ///
 /// Brand colors come from [AppColors]; [ColorScheme.fromSeed] fills in the
-/// rest of the Material 3 tonal palette around them. Part of the "calm
-/// clinical minimal" redesign (backlog #14): flat tonal cards (no drop
-/// shadow), pill-shaped buttons, and a transparent scaffold/app-bar so the
-/// gradient background painted once in [MyApp]'s `builder` shows through
-/// every screen instead of each Scaffold painting an opaque background.
+/// rest of the Material 3 tonal palette around them. "Premium healthcare"
+/// refresh (backlog #23): flat colours everywhere — a plain scaffold
+/// background instead of the gradient painted in backlog #22, flat tonal
+/// cards, and flat pill-shaped buttons (teal by default; see
+/// `AppPalette.cartActionButtonStyle` for the orange cart/checkout accent).
 abstract final class AppTheme {
-  static ThemeData get light => _build(_lightColorScheme);
+  static ThemeData get light => _build(_lightColorScheme, AppColors.background);
 
-  static ThemeData get dark => _build(_darkColorScheme);
+  static ThemeData get dark =>
+      _build(_darkColorScheme, AppColors.darkBackground);
 
   static final ColorScheme _lightColorScheme =
       ColorScheme.fromSeed(
@@ -24,15 +24,13 @@ abstract final class AppTheme {
         brightness: Brightness.light,
       ).copyWith(
         primary: AppColors.primary,
+        onPrimary: Colors.white,
         secondary: AppColors.secondary,
+        onSecondary: Colors.white,
+        tertiary: AppColors.accent,
+        onTertiary: Colors.white,
         error: AppColors.error,
         surface: AppColors.surface,
-        primaryContainer: AppAccent.mint.pastel,
-        onPrimaryContainer: const Color(0xFF0A4A40),
-        secondaryContainer: AppAccent.peach.pastel,
-        onSecondaryContainer: const Color(0xFF7A2E0A),
-        tertiaryContainer: AppAccent.lavender.pastel,
-        onTertiaryContainer: const Color(0xFF2E2470),
       );
 
   static final ColorScheme _darkColorScheme =
@@ -40,58 +38,37 @@ abstract final class AppTheme {
         seedColor: AppColors.primary,
         brightness: Brightness.dark,
       ).copyWith(
-        // Deep versions of the light mint/peach/lavender containers, so the nav
-        // pill, chips and tonal buttons keep their colour identity in the dark.
-        primaryContainer: const Color(0xFF0F4D43),
-        onPrimaryContainer: AppAccent.mint.pastel,
-        secondaryContainer: const Color(0xFF5A2E18),
-        onSecondaryContainer: AppAccent.peach.pastel,
-        tertiaryContainer: const Color(0xFF3A2F73),
-        onTertiaryContainer: AppAccent.lavender.pastel,
+        primary: const Color(0xFF2DD4BF),
+        onPrimary: const Color(0xFF042F2E),
+        secondary: const Color(0xFF5EEAD4),
+        onSecondary: const Color(0xFF042F2E),
+        tertiary: const Color(0xFFFBBF24),
+        onTertiary: const Color(0xFF451A03),
+        error: AppColors.error,
+        surface: AppColors.darkSurface,
       );
 
-  /// Every filled/elevated button: the deeper-orange gradient with white
-  /// text, pill-shaped. Applied through `backgroundBuilder` so no call site
-  /// needs to know about it. Buttons that must look different (destructive
-  /// dialog actions) pass [flatButtonBackground] to opt out.
-  static ButtonStyle _gradientButtonStyle(ColorScheme colorScheme) {
-    return ButtonStyle(
-      elevation: const WidgetStatePropertyAll(0),
-      backgroundColor: const WidgetStatePropertyAll(Colors.transparent),
-      shadowColor: const WidgetStatePropertyAll(Colors.transparent),
-      foregroundColor: WidgetStateProperty.resolveWith(
-        (states) => states.contains(WidgetState.disabled)
-            ? colorScheme.onSurface.withValues(alpha: 0.38)
-            : Colors.white,
+  /// Every filled/elevated button: a flat teal fill with white text,
+  /// pill-shaped. Buttons that touch the cart/checkout instead use
+  /// `AppPalette.cartActionButtonStyle` for the orange accent.
+  static ButtonStyle _filledButtonStyle(ColorScheme colorScheme) {
+    return ElevatedButton.styleFrom(
+      backgroundColor: colorScheme.primary,
+      foregroundColor: colorScheme.onPrimary,
+      disabledBackgroundColor: colorScheme.onSurface.withValues(alpha: 0.12),
+      disabledForegroundColor: colorScheme.onSurface.withValues(alpha: 0.38),
+      elevation: 0,
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppConstants.spacingLg,
+        vertical: AppConstants.spacingSm,
       ),
-      padding: const WidgetStatePropertyAll(
-        EdgeInsets.symmetric(
-          horizontal: AppConstants.spacingLg,
-          vertical: AppConstants.spacingSm,
-        ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppConstants.radiusFull),
       ),
-      shape: WidgetStatePropertyAll(
-        RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppConstants.radiusFull),
-        ),
-      ),
-      backgroundBuilder: (context, states, child) {
-        final disabled = states.contains(WidgetState.disabled);
-        return DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppConstants.radiusFull),
-            gradient: disabled ? null : AppPalette.buttonGradient,
-            color: disabled
-                ? colorScheme.onSurface.withValues(alpha: 0.12)
-                : null,
-          ),
-          child: child,
-        );
-      },
     );
   }
 
-  static ThemeData _build(ColorScheme colorScheme) {
+  static ThemeData _build(ColorScheme colorScheme, Color scaffoldBackground) {
     // Manrope: a geometric, modern sans — swapped in for the system default
     // to move away from the "generic Flutter app" look. Keeps the existing
     // Material 3 type scale (sizes/weights/line-heights in [AppTextTheme]),
@@ -107,9 +84,7 @@ abstract final class AppTheme {
     return ThemeData(
       useMaterial3: true,
       colorScheme: colorScheme,
-      // Transparent so `MyApp`'s gradient background paints through every
-      // screen instead of being covered by an opaque Scaffold.
-      scaffoldBackgroundColor: Colors.transparent,
+      scaffoldBackgroundColor: scaffoldBackground,
       textTheme: textTheme,
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
@@ -124,9 +99,7 @@ abstract final class AppTheme {
       ),
       cardTheme: CardThemeData(
         elevation: 0,
-        color: colorScheme.brightness == Brightness.light
-            ? Colors.white.withValues(alpha: 0.82)
-            : colorScheme.surfaceContainerHigh,
+        color: colorScheme.surface,
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppConstants.radiusLg),
@@ -136,10 +109,10 @@ abstract final class AppTheme {
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
-        style: _gradientButtonStyle(colorScheme),
+        style: _filledButtonStyle(colorScheme),
       ),
       filledButtonTheme: FilledButtonThemeData(
-        style: _gradientButtonStyle(colorScheme),
+        style: _filledButtonStyle(colorScheme),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
@@ -181,11 +154,3 @@ abstract final class AppTheme {
     );
   }
 }
-
-/// `backgroundBuilder` that draws nothing extra, so a button keeps its own
-/// `backgroundColor` instead of the themed orange gradient.
-Widget flatButtonBackground(
-  BuildContext context,
-  Set<WidgetState> states,
-  Widget? child,
-) => child!;

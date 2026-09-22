@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sunil_medical_store/core/theme/app_palette.dart';
-import 'package:sunil_medical_store/core/widgets/gradient_card.dart';
+import 'package:sunil_medical_store/core/widgets/app_card.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
@@ -116,7 +116,11 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                       CircleAvatar(
                         radius: 48,
                         backgroundColor: AppAccent.mint.pastel,
-                        child: Icon(_genderIcon(_gender), size: 56, color: AppAccent.mint.ink),
+                        child: Icon(
+                          _genderIcon(_gender),
+                          size: 56,
+                          color: AppAccent.mint.ink,
+                        ),
                       ),
                       const SizedBox(height: AppConstants.spacingMd),
                       Text(profile.fullName, style: theme.textTheme.titleLarge),
@@ -126,7 +130,7 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                 const SizedBox(height: AppConstants.spacingXl),
                 Text('Personal details', style: theme.textTheme.titleMedium),
                 const SizedBox(height: AppConstants.spacingSm),
-                GradientCard(
+                AppCard(
                   padding: EdgeInsets.zero,
                   child: Padding(
                     padding: const EdgeInsets.all(AppConstants.spacingMd),
@@ -137,10 +141,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                           controller: _nameController,
                           enabled: !_saving,
                           textCapitalization: TextCapitalization.words,
-                          decoration: const InputDecoration(labelText: 'Full name'),
+                          decoration: const InputDecoration(
+                            labelText: 'Full name',
+                          ),
                           validator: (v) {
                             final value = v?.trim() ?? '';
-                            if (value.length < 2 || !RegExp(r'[A-Za-z]').hasMatch(value)) {
+                            if (value.length < 2 ||
+                                !RegExp(r'[A-Za-z]').hasMatch(value)) {
                               return 'Enter a valid name';
                             }
                             return null;
@@ -149,24 +156,39 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                         const SizedBox(height: AppConstants.spacingMd),
                         DropdownButtonFormField<Gender?>(
                           initialValue: _gender,
-                          decoration: const InputDecoration(labelText: 'Gender'),
+                          decoration: const InputDecoration(
+                            labelText: 'Gender',
+                          ),
                           items: [
-                            const DropdownMenuItem(value: null, child: Text('Not set')),
-                            for (final g in Gender.values) DropdownMenuItem(value: g, child: Text(g.label)),
+                            const DropdownMenuItem(
+                              value: null,
+                              child: Text('Not set'),
+                            ),
+                            for (final g in Gender.values)
+                              DropdownMenuItem(value: g, child: Text(g.label)),
                           ],
-                          onChanged: _saving ? null : (v) => setState(() => _gender = v),
+                          onChanged: _saving
+                              ? null
+                              : (v) => setState(() => _gender = v),
                         ),
                         const SizedBox(height: AppConstants.spacingMd),
                         InkWell(
                           onTap: _saving ? null : _pickDateOfBirth,
-                          borderRadius: BorderRadius.circular(AppConstants.radiusMd),
+                          borderRadius: BorderRadius.circular(
+                            AppConstants.radiusMd,
+                          ),
                           child: InputDecorator(
                             decoration: const InputDecoration(
                               labelText: 'Date of birth',
-                              suffixIcon: Icon(Icons.calendar_today_outlined, size: 20),
+                              suffixIcon: Icon(
+                                Icons.calendar_today_outlined,
+                                size: 20,
+                              ),
                             ),
                             child: Text(
-                              _dateOfBirth == null ? 'Not set' : _dateFormat.format(_dateOfBirth!),
+                              _dateOfBirth == null
+                                  ? 'Not set'
+                                  : _dateFormat.format(_dateOfBirth!),
                               style: theme.textTheme.bodyLarge,
                             ),
                           ),
@@ -176,10 +198,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                           controller: _emailController,
                           enabled: !_saving,
                           keyboardType: TextInputType.emailAddress,
-                          decoration: const InputDecoration(labelText: 'Email ID'),
+                          decoration: const InputDecoration(
+                            labelText: 'Email ID',
+                          ),
                           validator: (v) {
                             final value = v?.trim() ?? '';
-                            if (value.isNotEmpty && !_emailPattern.hasMatch(value)) {
+                            if (value.isNotEmpty &&
+                                !_emailPattern.hasMatch(value)) {
                               return 'Enter a valid email address';
                             }
                             return null;
@@ -200,7 +225,13 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                           child: FilledButton(
                             onPressed: _saving ? null : _save,
                             child: _saving
-                                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  )
                                 : const Text('Save changes'),
                           ),
                         ),
@@ -214,18 +245,25 @@ class _AccountScreenState extends ConsumerState<AccountScreen> {
                 if (profile.medicalRecords.isEmpty)
                   Text(
                     'No medical records yet.',
-                    style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
                   )
                 else
-                  GradientCard(
+                  AppCard(
                     padding: EdgeInsets.zero,
                     child: Column(
                       children: [
                         for (final record in profile.medicalRecords)
                           ListTile(
-                            leading: Icon(Icons.description_outlined, color: theme.colorScheme.primary),
+                            leading: Icon(
+                              Icons.description_outlined,
+                              color: theme.colorScheme.primary,
+                            ),
                             title: Text(record.title),
-                            subtitle: Text('${record.type} • ${DateFormat('d MMM yyyy').format(record.date)}'),
+                            subtitle: Text(
+                              '${record.type} • ${DateFormat('d MMM yyyy').format(record.date)}',
+                            ),
                           ),
                       ],
                     ),

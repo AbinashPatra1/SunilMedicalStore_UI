@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:sunil_medical_store/core/theme/app_theme.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -25,11 +24,16 @@ class AddOrEditPromoCodeScreen extends ConsumerWidget {
     }
     final async = ref.watch(adminPromoCodeByIdProvider(promoCodeId!));
     return async.when(
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (error, _) => Scaffold(
         appBar: AppBar(title: const Text('Edit code')),
         body: Center(
-          child: Text(error is ApiException ? error.message : 'Could not load promo code.'),
+          child: Text(
+            error is ApiException
+                ? error.message
+                : 'Could not load promo code.',
+          ),
         ),
       ),
       data: (promoCode) => _PromoCodeForm(existing: promoCode),
@@ -73,9 +77,15 @@ class _PromoCodeFormState extends ConsumerState<_PromoCodeForm> {
     _code = TextEditingController(text: p?.code ?? '');
     _label = TextEditingController(text: p?.label ?? '');
     _value = TextEditingController(text: p?.value.toString() ?? '');
-    _minOrder = TextEditingController(text: p != null && p.minOrder > 0 ? p.minOrder.toString() : '');
-    _maxRedemptions = TextEditingController(text: p?.maxRedemptions?.toString() ?? '');
-    _perUserLimit = TextEditingController(text: p?.perUserLimit?.toString() ?? '');
+    _minOrder = TextEditingController(
+      text: p != null && p.minOrder > 0 ? p.minOrder.toString() : '',
+    );
+    _maxRedemptions = TextEditingController(
+      text: p?.maxRedemptions?.toString() ?? '',
+    );
+    _perUserLimit = TextEditingController(
+      text: p?.perUserLimit?.toString() ?? '',
+    );
     _type = p?.type ?? PromoType.percentage;
     _active = p?.active ?? true;
     _expiresAt = p?.expiresAt;
@@ -127,11 +137,17 @@ class _PromoCodeFormState extends ConsumerState<_PromoCodeForm> {
     label: _label.text.trim(),
     type: _type,
     value: int.parse(_value.text.trim()),
-    minOrder: _minOrder.text.trim().isEmpty ? 0 : int.parse(_minOrder.text.trim()),
+    minOrder: _minOrder.text.trim().isEmpty
+        ? 0
+        : int.parse(_minOrder.text.trim()),
     active: _active,
     expiresAt: _expiresAt,
-    maxRedemptions: _maxRedemptions.text.trim().isEmpty ? null : int.parse(_maxRedemptions.text.trim()),
-    perUserLimit: _perUserLimit.text.trim().isEmpty ? null : int.parse(_perUserLimit.text.trim()),
+    maxRedemptions: _maxRedemptions.text.trim().isEmpty
+        ? null
+        : int.parse(_maxRedemptions.text.trim()),
+    perUserLimit: _perUserLimit.text.trim().isEmpty
+        ? null
+        : int.parse(_perUserLimit.text.trim()),
   );
 
   Future<void> _save() async {
@@ -156,9 +172,13 @@ class _PromoCodeFormState extends ConsumerState<_PromoCodeForm> {
       if (mounted) {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(
-            content: Text(widget.isEdit ? 'Promo code updated' : 'Promo code added'),
-          ));
+          ..showSnackBar(
+            SnackBar(
+              content: Text(
+                widget.isEdit ? 'Promo code updated' : 'Promo code added',
+              ),
+            ),
+          );
         context.pop();
       }
     } on ApiException catch (e) {
@@ -174,7 +194,9 @@ class _PromoCodeFormState extends ConsumerState<_PromoCodeForm> {
       context: context,
       builder: (dialogCtx) => AlertDialog(
         title: const Text('Delete promo code?'),
-        content: Text('This will permanently remove "${widget.existing!.code}".'),
+        content: Text(
+          'This will permanently remove "${widget.existing!.code}".',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogCtx).pop(false),
@@ -184,7 +206,6 @@ class _PromoCodeFormState extends ConsumerState<_PromoCodeForm> {
             style: FilledButton.styleFrom(
               foregroundColor: Theme.of(dialogCtx).colorScheme.onErrorContainer,
               backgroundColor: Theme.of(dialogCtx).colorScheme.errorContainer,
-              backgroundBuilder: flatButtonBackground,
             ),
             onPressed: () => Navigator.of(dialogCtx).pop(true),
             child: const Text('Delete'),
@@ -245,7 +266,9 @@ class _PromoCodeFormState extends ConsumerState<_PromoCodeForm> {
               decoration: InputDecoration(
                 labelText: 'Code',
                 hintText: 'e.g. SAVE10',
-                helperText: widget.isEdit ? "Can't be changed after creation" : null,
+                helperText: widget.isEdit
+                    ? "Can't be changed after creation"
+                    : null,
               ),
               validator: _required,
             ),
@@ -253,7 +276,10 @@ class _PromoCodeFormState extends ConsumerState<_PromoCodeForm> {
             TextFormField(
               controller: _label,
               enabled: !busy,
-              decoration: const InputDecoration(labelText: 'Label', hintText: 'e.g. 10% off your order'),
+              decoration: const InputDecoration(
+                labelText: 'Label',
+                hintText: 'e.g. 10% off your order',
+              ),
               validator: _required,
             ),
             const SizedBox(height: AppConstants.spacingMd),
@@ -261,8 +287,14 @@ class _PromoCodeFormState extends ConsumerState<_PromoCodeForm> {
               initialValue: _type,
               decoration: const InputDecoration(labelText: 'Type'),
               items: const [
-                DropdownMenuItem(value: PromoType.percentage, child: Text('Percentage off')),
-                DropdownMenuItem(value: PromoType.flat, child: Text('Flat amount off')),
+                DropdownMenuItem(
+                  value: PromoType.percentage,
+                  child: Text('Percentage off'),
+                ),
+                DropdownMenuItem(
+                  value: PromoType.flat,
+                  child: Text('Flat amount off'),
+                ),
               ],
               onChanged: busy ? null : (v) => setState(() => _type = v!),
             ),
@@ -276,7 +308,9 @@ class _PromoCodeFormState extends ConsumerState<_PromoCodeForm> {
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                     decoration: InputDecoration(
-                      labelText: _type == PromoType.percentage ? 'Percent off' : 'Amount off (₹)',
+                      labelText: _type == PromoType.percentage
+                          ? 'Percent off'
+                          : 'Amount off (₹)',
                     ),
                     validator: (v) => _requiredInt(v, min: 1),
                   ),
@@ -288,7 +322,9 @@ class _PromoCodeFormState extends ConsumerState<_PromoCodeForm> {
                     enabled: !busy,
                     keyboardType: TextInputType.number,
                     inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                    decoration: const InputDecoration(labelText: 'Min order (₹, optional)'),
+                    decoration: const InputDecoration(
+                      labelText: 'Min order (₹, optional)',
+                    ),
                     validator: _optionalInt,
                   ),
                 ),
@@ -308,7 +344,11 @@ class _PromoCodeFormState extends ConsumerState<_PromoCodeForm> {
             Card(
               child: ListTile(
                 leading: const Icon(Icons.event_busy_outlined),
-                title: Text(_expiresAt == null ? 'No expiry date' : _dateFormat.format(_expiresAt!)),
+                title: Text(
+                  _expiresAt == null
+                      ? 'No expiry date'
+                      : _dateFormat.format(_expiresAt!),
+                ),
                 trailing: Wrap(
                   spacing: AppConstants.spacingXs,
                   children: [
@@ -320,7 +360,9 @@ class _PromoCodeFormState extends ConsumerState<_PromoCodeForm> {
                       IconButton(
                         tooltip: 'Clear',
                         icon: const Icon(Icons.clear),
-                        onPressed: busy ? null : () => setState(() => _expiresAt = null),
+                        onPressed: busy
+                            ? null
+                            : () => setState(() => _expiresAt = null),
                       ),
                   ],
                 ),
@@ -362,18 +404,29 @@ class _PromoCodeFormState extends ConsumerState<_PromoCodeForm> {
               const SizedBox(height: AppConstants.spacingMd),
               Text(
                 '${widget.existing!.redemptionCount} redemption(s) so far',
-                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
             if (_error != null) ...[
               const SizedBox(height: AppConstants.spacingMd),
-              Text(_error!, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.error)),
+              Text(
+                _error!,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.error,
+                ),
+              ),
             ],
             const SizedBox(height: AppConstants.spacingLg),
             FilledButton(
               onPressed: busy ? null : _save,
               child: _saving
-                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
                   : Text(widget.isEdit ? 'Save changes' : 'Add code'),
             ),
           ],

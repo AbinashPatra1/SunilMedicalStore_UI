@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sunil_medical_store/core/theme/app_palette.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
@@ -34,12 +35,19 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     if (order == null) return;
     setState(() => _downloadingInvoice = true);
     try {
-      final url = await ref.read(profileRepositoryProvider).orderInvoiceUrl(order.id);
-      final launched = await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+      final url = await ref
+          .read(profileRepositoryProvider)
+          .orderInvoiceUrl(order.id);
+      final launched = await launchUrl(
+        Uri.parse(url),
+        mode: LaunchMode.externalApplication,
+      );
       if (!launched && mounted) {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
-          ..showSnackBar(const SnackBar(content: Text('Could not open the invoice.')));
+          ..showSnackBar(
+            const SnackBar(content: Text('Could not open the invoice.')),
+          );
       }
     } on ApiException catch (e) {
       if (mounted) {
@@ -81,7 +89,9 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       context: context,
       builder: (dialogContext) => AlertDialog(
         title: const Text('Cancel order?'),
-        content: Text('This will cancel order ${order.orderNumber}. This can\'t be undone.'),
+        content: Text(
+          'This will cancel order ${order.orderNumber}. This can\'t be undone.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
@@ -98,7 +108,9 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
 
     setState(() => _cancelling = true);
     try {
-      final updated = await ref.read(orderRepositoryProvider).cancelOrder(order.id);
+      final updated = await ref
+          .read(orderRepositoryProvider)
+          .cancelOrder(order.id);
       ref.invalidate(pastOrdersProvider);
       if (mounted) {
         setState(() => _order = updated);
@@ -128,7 +140,10 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     // fresh network round-trip.
     final initialOrder = widget.order;
     if (initialOrder != null) {
-      ref.listen<AsyncValue<Order>>(orderByIdProvider(initialOrder.id), (previous, next) {
+      ref.listen<AsyncValue<Order>>(orderByIdProvider(initialOrder.id), (
+        previous,
+        next,
+      ) {
         next.whenData((updated) {
           if (mounted) setState(() => _order = updated);
         });
@@ -163,9 +178,14 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
             deliveredOn: order.deliveredOn,
             action: canReorder(order)
                 ? FilledButton.tonalIcon(
+                    style: AppPalette.cartActionButtonStyle(context),
                     onPressed: _reordering ? null : _reorder,
                     icon: _reordering
-                        ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                        ? const SizedBox(
+                            height: 16,
+                            width: 16,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
                         : const Icon(Icons.replay),
                     label: const Text('Reorder'),
                   )
@@ -191,7 +211,11 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
           OutlinedButton.icon(
             onPressed: _downloadingInvoice ? null : _downloadInvoice,
             icon: _downloadingInvoice
-                ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                ? const SizedBox(
+                    height: 16,
+                    width: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
                 : const Icon(Icons.download_outlined),
             label: const Text('Download invoice'),
           ),
@@ -199,9 +223,15 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
             const SizedBox(height: AppConstants.spacingSm),
             OutlinedButton.icon(
               onPressed: _cancelling ? null : _cancel,
-              style: OutlinedButton.styleFrom(foregroundColor: theme.colorScheme.error),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: theme.colorScheme.error,
+              ),
               icon: _cancelling
-                  ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  ? const SizedBox(
+                      height: 16,
+                      width: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
                   : const Icon(Icons.cancel_outlined),
               label: const Text('Cancel order'),
             ),
@@ -217,7 +247,11 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
             showHelp: true,
           ),
           const SizedBox(height: AppConstants.spacingLg),
-          OrderInfoCard(address: address, orderNumber: order.orderNumber, placedOn: order.placedOn),
+          OrderInfoCard(
+            address: address,
+            orderNumber: order.orderNumber,
+            placedOn: order.placedOn,
+          ),
         ],
       ),
     );

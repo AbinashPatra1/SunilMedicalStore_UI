@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:sunil_medical_store/core/theme/app_theme.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -22,11 +21,14 @@ class AddOrEditAdminUserScreen extends ConsumerWidget {
     }
     final async = ref.watch(adminUserByIdProvider(userId!));
     return async.when(
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (error, _) => Scaffold(
         appBar: AppBar(title: const Text('Edit user')),
         body: Center(
-          child: Text(error is ApiException ? error.message : 'Could not load user.'),
+          child: Text(
+            error is ApiException ? error.message : 'Could not load user.',
+          ),
         ),
       ),
       data: (user) => _AdminUserForm(existing: user),
@@ -78,11 +80,15 @@ class _AdminUserFormState extends ConsumerState<_AdminUserForm> {
       (value == null || value.trim().isEmpty) ? 'Required' : null;
 
   String? _validatePhone(String? value) =>
-      (value == null || !_indianMobile.hasMatch(value)) ? 'Enter a valid 10-digit mobile number' : null;
+      (value == null || !_indianMobile.hasMatch(value))
+      ? 'Enter a valid 10-digit mobile number'
+      : null;
 
   String? _validateEmail(String? value) {
     if (value == null || value.trim().isEmpty) return null;
-    return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value.trim()) ? null : 'Enter a valid email';
+    return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(value.trim())
+        ? null
+        : 'Enter a valid email';
   }
 
   Future<void> _save() async {
@@ -97,16 +103,28 @@ class _AdminUserFormState extends ConsumerState<_AdminUserForm> {
       final fullName = _fullName.text.trim();
       final email = _email.text.trim().isEmpty ? null : _email.text.trim();
       if (widget.isEdit) {
-        await repo.update(widget.existing!.id, fullName: fullName, email: email);
+        await repo.update(
+          widget.existing!.id,
+          fullName: fullName,
+          email: email,
+        );
         ref.invalidate(adminUserByIdProvider(widget.existing!.id));
       } else {
-        await repo.create(fullName: fullName, phoneNumber: _phoneNumber.text.trim(), email: email);
+        await repo.create(
+          fullName: fullName,
+          phoneNumber: _phoneNumber.text.trim(),
+          email: email,
+        );
       }
       ref.invalidate(adminUsersProvider);
       if (mounted) {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(content: Text(widget.isEdit ? 'User updated' : 'User added')));
+          ..showSnackBar(
+            SnackBar(
+              content: Text(widget.isEdit ? 'User updated' : 'User added'),
+            ),
+          );
         context.pop();
       }
     } on ApiException catch (e) {
@@ -122,7 +140,9 @@ class _AdminUserFormState extends ConsumerState<_AdminUserForm> {
       context: context,
       builder: (dialogCtx) => AlertDialog(
         title: const Text('Delete user?'),
-        content: Text('This will permanently remove "${widget.existing!.fullName}".'),
+        content: Text(
+          'This will permanently remove "${widget.existing!.fullName}".',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogCtx).pop(false),
@@ -132,7 +152,6 @@ class _AdminUserFormState extends ConsumerState<_AdminUserForm> {
             style: FilledButton.styleFrom(
               foregroundColor: Theme.of(dialogCtx).colorScheme.onErrorContainer,
               backgroundColor: Theme.of(dialogCtx).colorScheme.errorContainer,
-              backgroundBuilder: flatButtonBackground,
             ),
             onPressed: () => Navigator.of(dialogCtx).pop(true),
             child: const Text('Delete'),
@@ -210,7 +229,9 @@ class _AdminUserFormState extends ConsumerState<_AdminUserForm> {
                 labelText: 'Mobile number',
                 prefixText: '+91  ',
                 counterText: '',
-                helperText: widget.isEdit ? "Can't be changed after creation" : null,
+                helperText: widget.isEdit
+                    ? "Can't be changed after creation"
+                    : null,
               ),
               validator: _validatePhone,
             ),
@@ -224,13 +245,22 @@ class _AdminUserFormState extends ConsumerState<_AdminUserForm> {
             ),
             if (_error != null) ...[
               const SizedBox(height: AppConstants.spacingMd),
-              Text(_error!, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Theme.of(context).colorScheme.error)),
+              Text(
+                _error!,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.error,
+                ),
+              ),
             ],
             const SizedBox(height: AppConstants.spacingLg),
             FilledButton(
               onPressed: busy ? null : _save,
               child: _saving
-                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                  ? const SizedBox(
+                      height: 20,
+                      width: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
                   : Text(widget.isEdit ? 'Save changes' : 'Add user'),
             ),
           ],
