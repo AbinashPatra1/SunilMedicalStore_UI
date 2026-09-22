@@ -70,7 +70,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Center(child: Image.asset('assets/branding/logo.png', width: 160)),
+                Center(child: Image.asset('assets/branding/logo_light.png', width: 160)),
                 const SizedBox(height: AppConstants.spacingXs),
                 Text(
                   _step == _Step.phone
