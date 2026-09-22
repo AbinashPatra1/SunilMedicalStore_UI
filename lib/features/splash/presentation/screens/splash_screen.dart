@@ -17,6 +17,7 @@ class SplashScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final logoAsset = theme.brightness == Brightness.dark ? 'assets/branding/logo_dark.png' : 'assets/branding/logo_light.png';
     return Scaffold(
       body: SafeArea(
         child: Padding(
@@ -26,7 +27,7 @@ class SplashScreen extends StatelessWidget {
           child: Column(
             children: [
               const Spacer(flex: 3),
-              Center(child: Image.asset('assets/branding/logo.png', width: 180)),
+              Center(child: Image.asset(logoAsset, width: 180)),
               const SizedBox(height: AppConstants.spacingLg),
               Text(
                 AppConstants.appName,
