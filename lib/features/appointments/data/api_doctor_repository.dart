@@ -23,6 +23,19 @@ class ApiDoctorRepository implements DoctorRepository {
     }
   }
 
+  @override
+  Future<List<Doctor>> searchDoctors(String query) async {
+    try {
+      final response = await _dio.get<List<dynamic>>(
+        '/doctors',
+        queryParameters: {'search': query},
+      );
+      return (response.data ?? const []).cast<Map<String, dynamic>>().map(_fromJson).toList();
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
   Doctor _fromJson(Map<String, dynamic> json) => Doctor(
     id: json['id'] as String,
     name: json['name'] as String,
@@ -35,5 +48,7 @@ class ApiDoctorRepository implements DoctorRepository {
     availableWeekdays: ((json['availableWeekdays'] as List?) ?? const []).cast<int>(),
     availableTime: json['availableTime'] as String,
     photoUrl: json['photoUrl'] as String?,
+    description: json['description'] as String?,
+    tags: ((json['tags'] as List?) ?? const []).cast<String>(),
   );
 }

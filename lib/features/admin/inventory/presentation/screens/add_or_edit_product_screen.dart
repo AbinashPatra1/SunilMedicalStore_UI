@@ -76,6 +76,7 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
   late final TextEditingController _dosage;
   late final TextEditingController _ingredients;
   late final TextEditingController _imageUrl;
+  late final TextEditingController _tags;
 
   ProductCategory? _category;
   ProductType? _type;
@@ -102,6 +103,7 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
     _dosage = TextEditingController(text: p?.dosage ?? '');
     _ingredients = TextEditingController(text: p?.ingredients.join(', ') ?? '');
     _imageUrl = TextEditingController(text: p?.imageUrl ?? '');
+    _tags = TextEditingController(text: p?.tags.join(', ') ?? '');
     _category = p == null ? null : ProductCategory.fromLabel(p.category);
     _type = p?.type;
     _requiresPrescription = p?.requiresPrescription ?? false;
@@ -121,6 +123,7 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
     _dosage.dispose();
     _ingredients.dispose();
     _imageUrl.dispose();
+    _tags.dispose();
     super.dispose();
   }
 
@@ -167,6 +170,11 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
       packSize: _packSize.text.trim().isEmpty ? null : _packSize.text.trim(),
       type: _type,
       barcode: _barcode.text.trim().isEmpty ? null : _barcode.text.trim(),
+      tags: _tags.text
+          .split(',')
+          .map((s) => s.trim())
+          .where((s) => s.isNotEmpty)
+          .toList(),
     );
   }
 
@@ -394,6 +402,17 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
               validator: _required,
             ),
             const SizedBox(height: AppConstants.spacingMd),
+            TextFormField(
+              controller: _description,
+              enabled: !busy,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'Description',
+                hintText: 'What this product is for',
+              ),
+              validator: _required,
+            ),
+            const SizedBox(height: AppConstants.spacingMd),
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
               title: const Text('Requires prescription'),
@@ -405,13 +424,6 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
             const Divider(height: AppConstants.spacingXl),
             Text('Optional details', style: theme.textTheme.titleMedium),
             const SizedBox(height: AppConstants.spacingSm),
-            TextFormField(
-              controller: _description,
-              enabled: !busy,
-              maxLines: 2,
-              decoration: const InputDecoration(labelText: 'Description'),
-            ),
-            const SizedBox(height: AppConstants.spacingMd),
             TextFormField(
               controller: _dosage,
               enabled: !busy,
@@ -435,6 +447,15 @@ class _ProductFormState extends ConsumerState<_ProductForm> {
               enabled: !busy,
               keyboardType: TextInputType.url,
               decoration: const InputDecoration(labelText: 'Image URL'),
+            ),
+            const SizedBox(height: AppConstants.spacingMd),
+            TextFormField(
+              controller: _tags,
+              enabled: !busy,
+              decoration: const InputDecoration(
+                labelText: 'Tags',
+                hintText: 'Comma-separated, e.g. fever, body pain',
+              ),
             ),
             if (_error != null) ...[
               const SizedBox(height: AppConstants.spacingMd),

@@ -23,6 +23,7 @@ class Product {
     this.packSize,
     this.type,
     this.barcode,
+    this.tags = const [],
   });
 
   final String id;
@@ -75,6 +76,11 @@ class Product {
   /// backend — `null` for products without one, degrades cleanly). Used by
   /// Admin Inventory's barcode scanner to look up an existing product.
   final String? barcode;
+
+  /// Free-text keywords (including symptom-style ones, e.g. `fever`) the
+  /// admin adds purely to widen what search matches — never shown to
+  /// customers. Built ahead of the backend, empty for legacy products.
+  final List<String> tags;
 
   bool get isOutOfStock => stock <= 0;
 

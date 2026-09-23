@@ -34,6 +34,9 @@ abstract final class AppRoutes {
   static const adminUsers = '/admin/more/users';
   static const adminUserAdd = '/admin/more/users/new';
   static const adminUserEdit = '/admin/more/users/edit'; // + /<id>
+  static const adminLabTests = '/admin/more/lab-tests';
+  static const adminLabTestAdd = '/admin/more/lab-tests/new';
+  static const adminLabTestEdit = '/admin/more/lab-tests/edit'; // + /<id>
 
   // Customer bottom-navigation tabs.
   static const pharmacy = '/pharmacy';

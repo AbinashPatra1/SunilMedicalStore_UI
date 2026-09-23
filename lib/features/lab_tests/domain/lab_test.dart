@@ -14,6 +14,7 @@ class LabTest {
     required this.reportTime,
     required this.fastingRequired,
     required this.parameters,
+    this.tags = const [],
   });
 
   final String id;
@@ -36,6 +37,11 @@ class LabTest {
 
   /// The individual parameters covered by the test.
   final List<String> parameters;
+
+  /// Free-text keywords (including symptom-style ones, e.g. `diabetes`) the
+  /// admin adds purely to widen what search matches — never shown to
+  /// customers. Built ahead of the backend, empty for legacy tests.
+  final List<String> tags;
 
   int? get discountPercent {
     final m = mrp;

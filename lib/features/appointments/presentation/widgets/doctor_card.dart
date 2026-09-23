@@ -66,6 +66,17 @@ class DoctorCard extends StatelessWidget {
                 ),
               ],
             ),
+            if (doctor.description != null && doctor.description!.isNotEmpty) ...[
+              const SizedBox(height: AppConstants.spacingSm),
+              Text(
+                doctor.description!,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
             const SizedBox(height: AppConstants.spacingMd),
             Row(
               children: [

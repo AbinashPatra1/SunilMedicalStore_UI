@@ -62,5 +62,6 @@ class ApiProductRepository implements ProductRepository {
     stock: json['stock'] as int? ?? 0,
     packSize: json['packSize'] as String?,
     type: ProductType.fromWireName(json['type'] as String?),
+    tags: ((json['tags'] as List?) ?? const []).cast<String>(),
   );
 }

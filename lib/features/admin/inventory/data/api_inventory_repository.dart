@@ -128,6 +128,7 @@ class ApiInventoryRepository implements InventoryRepository {
     'packSize': ?input.packSize,
     'type': ?input.type?.name,
     'barcode': ?input.barcode,
+    'tags': input.tags,
   };
 
   Product _fromJson(Map<String, dynamic> json) => Product(
@@ -147,5 +148,6 @@ class ApiInventoryRepository implements InventoryRepository {
     packSize: json['packSize'] as String?,
     type: ProductType.fromWireName(json['type'] as String?),
     barcode: json['barcode'] as String?,
+    tags: ((json['tags'] as List?) ?? const []).cast<String>(),
   );
 }

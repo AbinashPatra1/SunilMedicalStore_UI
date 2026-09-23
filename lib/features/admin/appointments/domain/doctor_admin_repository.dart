@@ -23,7 +23,9 @@ class DoctorInput {
     required this.consultationFee,
     required this.availableWeekdays,
     required this.availableTime,
+    required this.description,
     this.photoUrl,
+    this.tags = const [],
   });
 
   final String name;
@@ -34,4 +36,11 @@ class DoctorInput {
   final List<int> availableWeekdays;
   final String availableTime;
   final String? photoUrl;
+
+  /// Short bio — what the doctor treats, their focus areas.
+  final String description;
+
+  /// Free-text keywords (including symptom-style ones) the admin adds
+  /// purely to widen what search matches — never shown to customers.
+  final List<String> tags;
 }

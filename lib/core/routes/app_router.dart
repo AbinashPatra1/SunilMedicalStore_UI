@@ -15,6 +15,8 @@ import 'package:sunil_medical_store/features/admin/inventory/presentation/screen
 import 'package:sunil_medical_store/features/admin/inventory/presentation/screens/barcode_scanner_screen.dart';
 import 'package:sunil_medical_store/features/admin/inventory/presentation/screens/bulk_import_screen.dart';
 import 'package:sunil_medical_store/features/admin/inventory/presentation/screens/inventory_list_screen.dart';
+import 'package:sunil_medical_store/features/admin/lab_tests/presentation/screens/add_or_edit_lab_test_screen.dart';
+import 'package:sunil_medical_store/features/admin/lab_tests/presentation/screens/lab_tests_admin_list_screen.dart';
 import 'package:sunil_medical_store/features/admin/banners/domain/home_banner.dart';
 import 'package:sunil_medical_store/features/admin/banners/presentation/screens/admin_banners_list_screen.dart';
 import 'package:sunil_medical_store/features/admin/banners/presentation/screens/edit_banner_screen.dart';
@@ -300,6 +302,22 @@ final routerProvider = Provider<GoRouter>((ref) {
                       GoRoute(
                         path: 'edit/:id',
                         builder: (context, state) => EditBannerScreen(banner: state.extra as HomeBanner?),
+                      ),
+                    ],
+                  ),
+                  GoRoute(
+                    path: 'lab-tests',
+                    builder: (context, state) => const LabTestsAdminListScreen(),
+                    routes: [
+                      GoRoute(
+                        path: 'new',
+                        builder: (context, state) => const AddOrEditLabTestScreen(),
+                      ),
+                      GoRoute(
+                        path: 'edit/:id',
+                        builder: (context, state) => AddOrEditLabTestScreen(
+                          testId: state.pathParameters['id'],
+                        ),
                       ),
                     ],
                   ),

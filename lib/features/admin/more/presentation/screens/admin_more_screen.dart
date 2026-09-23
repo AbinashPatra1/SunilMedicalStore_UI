@@ -6,8 +6,8 @@ import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/admin/presentation/widgets/admin_sign_out_button.dart';
 
 /// Admin > More: catch-all menu tab for admin destinations that don't
-/// warrant their own bottom-nav slot. Currently Statistics and Users;
-/// future admin-only screens append here the same way.
+/// warrant their own bottom-nav slot. Future admin-only screens append here
+/// the same way.
 class AdminMoreScreen extends StatelessWidget {
   const AdminMoreScreen({super.key});
 
@@ -44,6 +44,12 @@ class AdminMoreScreen extends StatelessWidget {
             title: 'Home Banners',
             subtitle: 'Configure the offers shown on the customer home screen',
             onTap: () => context.push(AppRoutes.adminBanners),
+          ),
+          _MoreMenuTile(
+            icon: Icons.biotech_outlined,
+            title: 'Lab Tests',
+            subtitle: 'Manage the bookable lab test catalog',
+            onTap: () => context.push(AppRoutes.adminLabTests),
           ),
         ],
       ),

@@ -16,15 +16,16 @@ const kBulkImportRequiredColumns = [
   'Quantity',
   'Composition',
   'Rx Required',
+  'Description',
 ];
 
 const kBulkImportOptionalColumns = [
   'MRP',
-  'Description',
   'Dosage',
   'Ingredients',
   'Image URL',
   'Pack Size',
+  'Tags',
 ];
 
 /// Validates and converts a raw spreadsheet grid (first row = headers) into
@@ -116,6 +117,9 @@ BulkImportParseResult parseBulkImportRows(List<List<String?>> grid) {
     final composition = cell(row, 'Composition');
     if (composition == null) errors.add('Composition is required');
 
+    final description = cell(row, 'Description');
+    if (description == null) errors.add('Description is required');
+
     bool? requiresPrescription;
     final rxText = cell(row, 'Rx Required');
     if (rxText == null) {
@@ -150,7 +154,7 @@ BulkImportParseResult parseBulkImportRows(List<List<String?>> grid) {
         requiresPrescription: requiresPrescription!,
         composition: composition,
         mrp: mrp,
-        description: cell(row, 'Description') ?? '',
+        description: description!,
         dosage: cell(row, 'Dosage'),
         ingredients: (cell(row, 'Ingredients') ?? '')
             .split(',')
@@ -159,6 +163,11 @@ BulkImportParseResult parseBulkImportRows(List<List<String?>> grid) {
             .toList(),
         imageUrl: cell(row, 'Image URL'),
         packSize: cell(row, 'Pack Size'),
+        tags: (cell(row, 'Tags') ?? '')
+            .split(',')
+            .map((s) => s.trim())
+            .where((s) => s.isNotEmpty)
+            .toList(),
         type: type,
       );
     }

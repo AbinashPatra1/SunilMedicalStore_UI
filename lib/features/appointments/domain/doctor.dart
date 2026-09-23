@@ -15,6 +15,8 @@ class Doctor {
     required this.availableWeekdays,
     required this.availableTime,
     this.photoUrl,
+    this.description,
+    this.tags = const [],
   });
 
   final String id;
@@ -42,6 +44,15 @@ class Doctor {
 
   /// Photo URL, when the catalog has one (`null` falls back to initials).
   final String? photoUrl;
+
+  /// Short bio shown on the doctor's card — what they treat, their focus
+  /// areas. Built ahead of the backend, `null` for legacy doctors.
+  final String? description;
+
+  /// Free-text keywords (including symptom-style ones, e.g. `diabetes`) the
+  /// admin adds purely to widen what search matches — never shown to
+  /// customers. Built ahead of the backend, empty for legacy doctors.
+  final List<String> tags;
 
   /// Up-to-two-letter initials for the avatar placeholder.
   String get initials {

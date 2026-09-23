@@ -37,12 +37,13 @@ Uint8List buildSampleImportWorkbookBytes() {
     IntCellValue(100),
     TextCellValue('Paracetamol 500mg'),
     TextCellValue('No'),
-    IntCellValue(35),
     TextCellValue('Relieves mild to moderate pain and reduces fever'),
+    IntCellValue(35),
     TextCellValue('1 tablet every 6 hours, as needed (max 4/day)'),
     TextCellValue('Paracetamol, Starch, Povidone'),
     TextCellValue(''),
     TextCellValue('10 tablets'),
+    TextCellValue('fever, body pain'),
   ]);
 
   final bytes = workbook.save();

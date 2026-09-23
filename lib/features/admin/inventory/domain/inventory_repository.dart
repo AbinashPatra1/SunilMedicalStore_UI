@@ -41,15 +41,16 @@ class ProductInput {
     required this.price,
     required this.stock,
     required this.requiresPrescription,
+    required this.description,
     this.composition,
     this.mrp,
-    this.description = '',
     this.dosage,
     this.ingredients = const [],
     this.imageUrl,
     this.packSize,
     this.type,
     this.barcode,
+    this.tags = const [],
   });
 
   final String name;
@@ -73,4 +74,8 @@ class ProductInput {
   /// Scannable barcode/SKU, when set via the barcode scanner or typed
   /// manually.
   final String? barcode;
+
+  /// Free-text keywords (including symptom-style ones) the admin adds
+  /// purely to widen what search matches — never shown to customers.
+  final List<String> tags;
 }

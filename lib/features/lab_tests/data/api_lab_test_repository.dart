@@ -29,6 +29,19 @@ class ApiLabTestRepository implements LabTestRepository {
     }
   }
 
+  @override
+  Future<List<LabTest>> searchTests(String query) async {
+    try {
+      final response = await _dio.get<List<dynamic>>(
+        '/catalog/lab-tests',
+        queryParameters: {'search': query},
+      );
+      return (response.data ?? const []).cast<Map<String, dynamic>>().map(_fromJson).toList();
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
   LabTest _fromJson(Map<String, dynamic> json) => LabTest(
     id: json['id'] as String,
     name: json['name'] as String,
@@ -40,5 +53,6 @@ class ApiLabTestRepository implements LabTestRepository {
     reportTime: json['reportTime'] as String,
     fastingRequired: json['fastingRequired'] as bool,
     parameters: ((json['parameters'] as List?) ?? const []).cast<String>(),
+    tags: ((json['tags'] as List?) ?? const []).cast<String>(),
   );
 }

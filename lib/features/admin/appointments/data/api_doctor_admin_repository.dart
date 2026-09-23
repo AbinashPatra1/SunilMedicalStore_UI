@@ -73,6 +73,8 @@ class ApiDoctorAdminRepository implements DoctorAdminRepository {
     'availableWeekdays': input.availableWeekdays,
     'availableTime': input.availableTime,
     'photoUrl': ?input.photoUrl,
+    'description': input.description,
+    'tags': input.tags,
   };
 
   Doctor _fromJson(Map<String, dynamic> json) => Doctor(
@@ -87,5 +89,7 @@ class ApiDoctorAdminRepository implements DoctorAdminRepository {
     availableWeekdays: ((json['availableWeekdays'] as List?) ?? const []).cast<int>(),
     availableTime: json['availableTime'] as String,
     photoUrl: json['photoUrl'] as String?,
+    description: json['description'] as String?,
+    tags: ((json['tags'] as List?) ?? const []).cast<String>(),
   );
 }

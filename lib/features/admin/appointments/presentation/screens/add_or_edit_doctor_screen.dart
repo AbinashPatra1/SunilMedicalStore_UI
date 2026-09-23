@@ -58,6 +58,8 @@ class _DoctorFormState extends ConsumerState<_DoctorForm> {
   late final TextEditingController _fee;
   late final TextEditingController _hours;
   late final TextEditingController _photoUrl;
+  late final TextEditingController _description;
+  late final TextEditingController _tags;
 
   late Set<int> _weekdays;
   bool _saving = false;
@@ -77,6 +79,8 @@ class _DoctorFormState extends ConsumerState<_DoctorForm> {
     _fee = TextEditingController(text: d?.consultationFee.toString() ?? '');
     _hours = TextEditingController(text: d?.availableTime ?? '');
     _photoUrl = TextEditingController(text: d?.photoUrl ?? '');
+    _description = TextEditingController(text: d?.description ?? '');
+    _tags = TextEditingController(text: d?.tags.join(', ') ?? '');
     _weekdays = {...?d?.availableWeekdays};
   }
 
@@ -89,6 +93,8 @@ class _DoctorFormState extends ConsumerState<_DoctorForm> {
     _fee.dispose();
     _hours.dispose();
     _photoUrl.dispose();
+    _description.dispose();
+    _tags.dispose();
     super.dispose();
   }
 
@@ -112,6 +118,12 @@ class _DoctorFormState extends ConsumerState<_DoctorForm> {
     availableWeekdays: _weekdays.toList()..sort(),
     availableTime: _hours.text.trim(),
     photoUrl: _photoUrl.text.trim().isEmpty ? null : _photoUrl.text.trim(),
+    description: _description.text.trim(),
+    tags: _tags.text
+        .split(',')
+        .map((s) => s.trim())
+        .where((s) => s.isNotEmpty)
+        .toList(),
   );
 
   Future<void> _save() async {
@@ -248,6 +260,17 @@ class _DoctorFormState extends ConsumerState<_DoctorForm> {
             ),
             const SizedBox(height: AppConstants.spacingMd),
             TextFormField(
+              controller: _description,
+              enabled: !busy,
+              maxLines: 3,
+              decoration: const InputDecoration(
+                labelText: 'Description',
+                hintText: 'What this doctor treats, their focus areas',
+              ),
+              validator: _required,
+            ),
+            const SizedBox(height: AppConstants.spacingMd),
+            TextFormField(
               controller: _experience,
               enabled: !busy,
               keyboardType: TextInputType.number,
@@ -315,6 +338,15 @@ class _DoctorFormState extends ConsumerState<_DoctorForm> {
               enabled: !busy,
               keyboardType: TextInputType.url,
               decoration: const InputDecoration(labelText: 'Photo URL'),
+            ),
+            const SizedBox(height: AppConstants.spacingMd),
+            TextFormField(
+              controller: _tags,
+              enabled: !busy,
+              decoration: const InputDecoration(
+                labelText: 'Tags',
+                hintText: 'Comma-separated, e.g. diabetes, fever',
+              ),
             ),
             if (_error != null) ...[
               const SizedBox(height: AppConstants.spacingMd),

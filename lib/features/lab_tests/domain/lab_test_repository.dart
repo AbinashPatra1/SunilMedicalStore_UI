@@ -6,4 +6,8 @@ abstract interface class LabTestRepository {
 
   /// A single test by id, for the detail screen.
   Future<LabTest> testById(String id);
+
+  /// Free-text search against name/description/parameters/tags — the
+  /// Pathology tab of the search screen.
+  Future<List<LabTest>> searchTests(String query);
 }
