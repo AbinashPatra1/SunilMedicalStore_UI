@@ -45,13 +45,13 @@ brief see [`API_SPEC.md`](API_SPEC.md); for backend internals see [`claude.md`](
 | 2 | PUT | `/v1/users/me` | ✔ | Upsert profile (onboarding bootstrap) |
 | 3 | GET | `/v1/users/me/medical-records` | ✔ | Medical records only |
 | 4 | GET | `/v1/catalog/categories` | **Public** | Home categories |
-| 5 | GET | `/v1/catalog/products?category={label}&search={q}` | ✔ | Product list (both filters optional; `search` live) |
+| 5 | GET | `/v1/catalog/products?category={label}&search={q}` | ✔ | Product list (both filters optional; `search` matches name/description/composition/tags) |
 | 6 | GET | `/v1/catalog/products/suggested` | ✔ | "Suggested for you" (6) |
 | 7 | GET | `/v1/catalog/products/{id}` | ✔ | Product detail |
 | 8 | GET | `/v1/catalog/products/{id}/similar` | ✔ | Same-category products |
-| 9 | GET | `/v1/catalog/lab-tests` | ✔ | Lab-test catalog |
+| 9 | GET | `/v1/catalog/lab-tests?search={q}` | ✔ | Lab-test catalog (`search` optional, matches name/description/parameters/tags) |
 | 10 | GET | `/v1/catalog/lab-tests/{id}` | ✔ | Lab-test detail |
-| 11 | GET | `/v1/doctors` | ✔ | Doctors + weekly availability |
+| 11 | GET | `/v1/doctors?search={q}` | ✔ | Doctors + weekly availability (`search` optional, matches name/specialization/qualification/description/tags) |
 | 12 | POST | `/v1/appointments` | ✔ | Book appointment → 201 |
 | 13 | GET | `/v1/appointments/me` | ✔ | Caller's appointments |
 | 14 | POST | `/v1/promo-codes/validate` | ✔ | Validate promo vs. subtotal |
@@ -118,6 +118,11 @@ brief see [`API_SPEC.md`](API_SPEC.md); for backend internals see [`claude.md`](
 | 78 | POST | `/v1/admin/products/bulk-import` | ✔ admin | Bulk create/update products parsed from an admin-uploaded spreadsheet |
 | 80 | POST | `/v1/payments/razorpay/order` | ✔ | Create a Razorpay order for the authoritatively-priced cart, before checkout |
 | 81 | POST | `/v1/payments/razorpay/webhook` | — (Razorpay-only, webhook secret) | Server-to-server: confirms captured payments (idempotent order creation) and refund outcomes |
+| 82 | GET | `/v1/admin/lab-tests` | ✔ admin | Full lab-test catalog for admin management |
+| 83 | GET | `/v1/admin/lab-tests/{id}` | ✔ admin | Single lab test for edit |
+| 84 | POST | `/v1/admin/lab-tests` | ✔ admin | Create lab test → 201 |
+| 85 | PUT | `/v1/admin/lab-tests/{id}` | ✔ admin | Update lab test → 200 |
+| 86 | DELETE | `/v1/admin/lab-tests/{id}` | ✔ admin | Delete lab test → 204 |
 
 **45–66 are live** (verified against Azure), including the push-notification
 send side described after §3 — real order placement/cancellation triggered
@@ -350,6 +355,52 @@ client-side gate) that when any ordered item's product has
 the caller; reject with `400 prescription_required` or
 `404 prescription_not_found` otherwise.
 
+**⚠ 82–86 are not yet implemented on the backend, 2026-09-23 — backlog #24,
+search overhaul.** Client work is starting ahead of the backend, same
+pattern as every other build-ahead-of-backend feature in this doc. Three
+things bundled together:
+
+1. **Product, Doctor and LabTest all gain a `tags: string[]` field**
+   (optional, `[]`/omitted is fine — admin adds free-text keywords, which
+   deliberately also cover symptoms rather than a separate field, e.g. a
+   pain-relief product might be tagged `["fever", "body pain", "headache"]`).
+   Applies to #5 (product reads), #32/#33 (product admin CRUD), #9/#10 (lab
+   test reads), #82–86 (lab test admin CRUD, new — see below), #11 (doctor
+   reads), #37/#38 (doctor admin CRUD).
+2. **`description` becomes mandatory going forward** on all three admin
+   Add/Edit forms (Product, Doctor, Lab Test) — client-enforced on
+   create/update, same "mandatory going forward, `null`-tolerant on read for
+   legacy rows, no backfill" policy as every other field like this in this
+   doc (e.g. `type` on Product). `Doctor` gains `description` as a brand-new
+   field (it never had one); `Product`/`LabTest` already have it, just
+   optional until now.
+3. **Brand-new Lab Test catalog admin CRUD (#82–86)** — there was **no**
+   admin-side management of the sellable lab-test catalog before this (only
+   #68–70, which manage customer *bookings* of already-existing tests, not
+   the test definitions themselves). Mirrors the Admin — Inventory pattern
+   (#30–34) almost exactly — see §Admin — Lab Tests below for the full
+   shapes.
+
+**Search — multi-field matching, extending #5/#9/#11** (backs the client's
+new 3-tab search screen — Pharmacy / Pathology / Doctors — which calls all
+three endpoints with the same query and buckets results by tab; predictive
+search just means the client debounces and calls these same endpoints
+~300ms after each keystroke once the query is 3+ characters, no separate
+typeahead endpoint):
+- `GET /catalog/products?search=` (#5) — was name+brand only; now also
+  matches `description`, `composition`, `tags` (case-insensitive substring,
+  OR'd across all fields — e.g. `search=fever` should match a product
+  tagged `"fever"` even if neither its name nor brand mentions it).
+- `GET /catalog/lab-tests?search=` (#9) — **new param**, matches `name`,
+  `description`, `parameters` (any element), `tags`.
+- `GET /doctors?search=` (#11) — **new param**, matches `name`,
+  `specialization`, `qualification`, `description`, `tags`.
+
+No new endpoint numbers for the search extension itself — just new optional
+query params on existing endpoints. See §Admin — Lab Tests, §Catalog —
+Lab Tests, §Appointments — Doctors and §Admin — Inventory below for the
+per-section field/shape details.
+
 **Admin endpoints (30–34)**: require the caller's role to be `admin` — either
 via the `role=admin` custom claim on the Firebase ID token, or (for
 early-development convenience) via a hard-coded phone-number allowlist enforced
@@ -449,12 +500,14 @@ Request (all fields optional; `fullName` required on first-ever create):
 
 #### 5. `GET /v1/catalog/products?category={label}&search={q}` → `200` — `Product[]`
 `category` and `search` are both optional and combinable; omit both for the
-full catalog. **`search` — live** — free-text match against `name` and
-`brand`, case-insensitive substring (e.g. `search=para` matches "Paracetamol
-500mg Tablets"). Powers the dashboard search bar (`SearchScreen`), which
-sends only `search` (no category). Verified live on the emulator: searching
-"para" now returns only Paracetamol, not the full catalog as it briefly did
-before this was implemented. **Product object:**
+full catalog. **`search` — live, matching widened 2026-09-23 (backlog
+#24)** — free-text match against `name`, `brand`, `description`,
+`composition` and `tags` (case-insensitive substring, OR'd across all
+fields — a hit on any one field is a match). Was name+brand only; broadened
+so e.g. `search=fever` also returns a product only tagged `"fever"`, and
+`search=paracetamol` matches products where that's the composition, not the
+name. Powers the new 3-tab search screen (`SearchScreen`, Pharmacy tab),
+which sends only `search` (no category). **Product object:**
 ```json
 {
   "id": "p1",
@@ -471,7 +524,8 @@ before this was implemented. **Product object:**
   "imageUrl": null,
   "stock": 42,
   "packSize": "10 tablets",
-  "type": "tabletDrug"
+  "type": "tabletDrug",
+  "tags": ["fever", "body pain", "headache"]
 }
 ```
 - `mrp`, `composition`, `dosage`, `imageUrl` may be `null`; `ingredients` may be `[]`
@@ -496,6 +550,18 @@ before this was implemented. **Product object:**
   `"1 piece"`/`"2 pieces"` for devices. `null`/omitted is fine — the card
   simply doesn't show that line. Admin-editable on the Add/Edit product form
   (#32/#33) alongside the other optional fields.
+- **`tags` — new field, not yet implemented, 2026-09-23 (backlog #24).**
+  Free-text list, admin-entered on the Add/Edit form, purely to widen what
+  `search` (above) matches — not shown to customers anywhere in the UI.
+  Deliberately covers symptom-style keywords too (`"fever"`, `"body
+  pain"`) rather than a separate symptoms field — one flexible list.
+  `[]`/omitted is fine.
+- **`description` becomes a mandatory field on the Add/Edit product form,
+  not yet implemented, 2026-09-23 (backlog #24)** — client-enforced on
+  create/update going forward; the field itself on this response stays
+  nullable/optional for **legacy products** that predate this (no backfill,
+  same policy as `type`/`packSize` above) — a product saved before this
+  ships and never re-edited can still come back with `description: null`.
 
 #### 6. `GET /v1/catalog/products/suggested` → `200` — `Product[]` (6 items)
 #### 7. `GET /v1/catalog/products/{id}` → `200` — `Product` — `404 not_found` if missing
@@ -505,7 +571,7 @@ before this was implemented. **Product object:**
 
 ### Catalog — Lab Tests
 
-#### 9. `GET /v1/catalog/lab-tests` → `200` — `LabTest[]`
+#### 9. `GET /v1/catalog/lab-tests?search={q}` → `200` — `LabTest[]`
 ```json
 {
   "id": "lt1",
@@ -517,10 +583,25 @@ before this was implemented. **Product object:**
   "sampleType": "Blood",
   "reportTime": "Within 24 hours",
   "fastingRequired": false,
-  "parameters": ["Hemoglobin", "WBC count", "RBC count", "Platelet count", "Hematocrit"]
+  "parameters": ["Hemoglobin", "WBC count", "RBC count", "Platelet count", "Hematocrit"],
+  "tags": ["diabetes", "sugar", "blood health"]
 }
 ```
 - `mrp` may be `null`.
+- **`search` — new param, not yet implemented, 2026-09-23 (backlog #24).**
+  Optional; omit for the full catalog. Free-text match against `name`,
+  `description`, `parameters` (any element) and `tags`, case-insensitive
+  substring, OR'd across all fields — e.g. `search=hemoglobin` should match
+  CBC via its `parameters`, `search=diabetes` should match "Fasting Blood
+  Sugar" via its `tags` even though neither the name nor description say
+  "diabetes". Powers the Pathology tab of the new 3-tab search screen.
+- **`tags` — new field, not yet implemented, 2026-09-23 (backlog #24).**
+  Same purpose/shape as `Product.tags` above — free-text, search-only, not
+  shown to customers, `[]`/omitted is fine.
+- **`description` becomes a mandatory field on the new admin Add/Edit lab
+  test form** (see §Admin — Lab Tests below) — client-enforced on
+  create/update going forward; stays nullable here for legacy rows (no
+  backfill).
 
 #### 10. `GET /v1/catalog/lab-tests/{id}` → `200` — `LabTest` — `404 not_found` if missing
 
@@ -528,7 +609,7 @@ before this was implemented. **Product object:**
 
 ### Appointments — Doctors
 
-#### 11. `GET /v1/doctors` → `200` — `Doctor[]`
+#### 11. `GET /v1/doctors?search={q}` → `200` — `Doctor[]`
 ```json
 {
   "id": "doc-1",
@@ -541,7 +622,9 @@ before this was implemented. **Product object:**
   "consultationFee": 400,
   "availableWeekdays": [1, 3, 5],
   "availableTime": "10:00 AM – 1:00 PM",
-  "photoUrl": null
+  "photoUrl": null,
+  "description": "General physician with 12 years of experience treating common illnesses, fevers, and chronic condition management.",
+  "tags": ["general physician", "fever", "diabetes management"]
 }
 ```
 - `availableWeekdays`: ISO **1 (Mon) – 7 (Sun)**. `photoUrl` may be `null` (fall back to initials).
@@ -549,6 +632,21 @@ before this was implemented. **Product object:**
   customer ratings (see #67) — `0.0`/`0` for a doctor nobody has rated yet.
   Previously `rating` was a plain admin-entered number; admin no longer sets
   it directly (see §Admin — Doctors, #37/#38).
+- **`description` — new field, not yet implemented, 2026-09-23 (backlog
+  #24).** Doctor never had one before. Shown as a short snippet on the
+  customer-facing `DoctorCard` (Appointments tab). Mandatory going forward
+  on the admin Add/Edit form (#37/#38); `null` for doctors added before
+  this (no backfill).
+- **`search` — new param, not yet implemented, 2026-09-23 (backlog #24).**
+  Optional; omit for the full weekly list. Free-text match against `name`,
+  `specialization`, `qualification`, `description` and `tags`,
+  case-insensitive substring, OR'd across all fields — e.g.
+  `search=diabetes` should match a doctor whose `tags` include it even if
+  their `specialization` just says "General Physician". Powers the Doctors
+  tab of the new 3-tab search screen.
+- **`tags` — new field, not yet implemented, 2026-09-23 (backlog #24).**
+  Same purpose/shape as `Product.tags` above — free-text, search-only, not
+  shown to customers, `[]`/omitted is fine.
 
 #### 12. `POST /v1/appointments` → `201`
 Request:
@@ -1183,16 +1281,19 @@ Request:
   "imageUrl": null,
   "packSize": "10 tablets",
   "type": "tabletDrug",
-  "barcode": null
+  "barcode": null,
+  "tags": ["fever", "body pain", "headache"]
 }
 ```
 - Mandatory (client validates): `name`, `brand`, `category`, `price`,
   `stock`, `requiresPrescription`, `composition`, `type` (new — the
   Add/Edit form requires a selection for new/edited products; see #5's
-  note on `type` for the value set).
-- Optional (omit or `null`): `mrp`, `description` (may be `""`), `dosage`,
-  `ingredients` (may be `[]`), `imageUrl`, `packSize`, `barcode` (new,
-  2026-09-17 — see the top-level ⚠ note above).
+  note on `type` for the value set), **`description` — mandatory as of
+  2026-09-23, backlog #24, not yet implemented** (previously optional; may
+  no longer be `""`/omitted on new create/update calls).
+- Optional (omit or `null`): `mrp`, `dosage`, `ingredients` (may be `[]`),
+  `imageUrl`, `packSize`, `barcode` (new, 2026-09-17 — see the top-level ⚠
+  note above), `tags` (new, 2026-09-23, backlog #24 — may be `[]`).
 - Server assigns the id.
 - Errors: `400 validation_error` (missing mandatory field or bad type),
   `400 invalid_category` (unknown category label),
@@ -1225,12 +1326,13 @@ backend never sees the spreadsheet itself):
 | `Quantity` | `stock` (integer) | ✔ |
 | `Composition` | `composition` | ✔ |
 | `Rx Required` | `requiresPrescription` (boolean — `Yes`/`No` or `TRUE`/`FALSE`) | ✔ |
+| `Description` | `description` (**required as of 2026-09-23, backlog #24** — previously optional) | ✔ |
 | `MRP` | `mrp` (number) | optional |
-| `Description` | `description` | optional |
 | `Dosage` | `dosage` | optional |
 | `Ingredients` | `ingredients` (comma-separated → array) | optional |
 | `Image URL` | `imageUrl` | optional |
 | `Pack Size` | `packSize` | optional |
+| `Tags` | `tags` (comma-separated → array, new 2026-09-23, backlog #24) | optional |
 
 Request — a JSON array, one entry per valid row, each shaped exactly like
 #32's create request body:
@@ -1247,11 +1349,12 @@ Request — a JSON array, one entry per valid row, each shaped exactly like
       "requiresPrescription": false,
       "composition": "Paracetamol 500mg",
       "mrp": 35,
-      "description": null,
+      "description": "Relieves mild to moderate pain and reduces fever.",
       "dosage": null,
       "ingredients": [],
       "imageUrl": null,
-      "packSize": "10 tablets"
+      "packSize": "10 tablets",
+      "tags": ["fever", "body pain"]
     }
   ]
 }
@@ -1321,13 +1424,17 @@ Request:
   "consultationFee": 400,
   "availableWeekdays": [1, 3, 5],
   "availableTime": "10:00 AM – 1:00 PM",
-  "photoUrl": null
+  "photoUrl": null,
+  "description": "General physician with 12 years of experience treating common illnesses, fevers, and chronic condition management.",
+  "tags": ["general physician", "fever", "diabetes management"]
 }
 ```
 - Client-mandatory: `name`, `specialization`, `qualification`,
   `experienceYears`, `consultationFee`, `availableWeekdays` (non-empty; ISO
-  Mon=1..Sun=7), `availableTime`.
-- Optional: `photoUrl`.
+  Mon=1..Sun=7), `availableTime`, **`description` (new, 2026-09-23, backlog
+  #24, not yet implemented)**.
+- Optional: `photoUrl`, `tags` (new, 2026-09-23, backlog #24 — may be `[]`;
+  same free-text search-only purpose as `Product.tags`).
 - **No `rating`/`ratingCount` in the request** (changed with #67) — a new
   doctor starts at `rating: 0.0`, `ratingCount: 0` server-side; both only
   ever change as a side effect of `POST /appointments/{id}/rating` (#67),
@@ -1346,6 +1453,56 @@ The client warns that existing appointments will be preserved. If the backend
 soft-deletes instead, that's fine — just ensure the customer `/doctors` list
 stops returning them. `404 doctor_not_found` if missing; `409 doctor_in_use`
 if the backend refuses to delete a doctor with upcoming appointments.
+
+---
+
+### Admin — Lab Tests — **not yet implemented, 2026-09-23 (backlog #24)**
+
+Full CRUD over the lab-test catalog, admin-only — **brand new**, there was
+no admin-side management of the sellable test definitions before this
+(distinct from #68–70, which only manage customer *bookings* of
+already-existing tests). Mirrors the Admin — Inventory pattern (#30–34)
+almost exactly. Reads mirror the customer `LabTest` shape (§9) — same
+fields, so the client shares its `LabTest` domain model.
+
+#### 82. `GET /v1/admin/lab-tests` → `200` — `LabTest[]`
+Full catalog, admin view. `403 forbidden_admin_only` if not admin.
+
+#### 83. `GET /v1/admin/lab-tests/{id}` → `200` — `LabTest`
+Single lab test for the edit form. `404 lab_test_not_found` if missing.
+
+#### 84. `POST /v1/admin/lab-tests` → `201` — created `LabTest`
+Request:
+```json
+{
+  "name": "Complete Blood Count (CBC)",
+  "description": "Screens overall blood health and helps detect infections and anemia.",
+  "labName": "Sunil Diagnostics",
+  "price": 450,
+  "mrp": 600,
+  "sampleType": "Blood",
+  "reportTime": "Within 24 hours",
+  "fastingRequired": false,
+  "parameters": ["Hemoglobin", "WBC count", "RBC count", "Platelet count", "Hematocrit"],
+  "tags": ["diabetes", "sugar", "blood health"]
+}
+```
+- Client-mandatory: `name`, `description`, `labName`, `price`, `sampleType`,
+  `reportTime`, `fastingRequired`, `parameters` (non-empty list — at least
+  one parameter).
+- Optional: `mrp`, `tags` (may be `[]`).
+- Server assigns the id.
+- Errors: `400 validation_error`, `403 forbidden_admin_only`.
+
+#### 85. `PUT /v1/admin/lab-tests/{id}` → `200` — updated `LabTest`
+Same request/response shape as #84. Full replace. `404 lab_test_not_found`
+if missing.
+
+#### 86. `DELETE /v1/admin/lab-tests/{id}` → `204`
+Hard delete. `404 lab_test_not_found` if missing. Backend may want to
+prevent deletion if the test is referenced by an active (non-terminal)
+booking — flag with `409 lab_test_in_use` if so, same pattern as
+`product_in_use`/`doctor_in_use`; the client will surface the message.
 
 ---
 
@@ -1966,7 +2123,7 @@ Common codes: `validation_error`, `invalid_promo_code`, `invalid_upi_id`, `empty
 `address_required`, `not_found`, `user_not_found`, `product_not_found`, `lab_test_not_found`,
 `order_not_found`, `lab_test_booking_not_found`, `address_not_found`, `payment_method_not_found`,
 `doctor_not_found`, `full_name_required`, `internal_error`, `forbidden_admin_only`,
-`invalid_category`, `product_in_use`, `doctor_in_use`, `appointment_not_found`,
+`invalid_category`, `product_in_use`, `doctor_in_use`, `lab_test_in_use`, `appointment_not_found`,
 `slot_unavailable`, `order_not_cancellable` (proposed, with #45),
 `promo_code_exists` (proposed, with #51), `prescription_required` (proposed,
 with #15), `prescription_not_found` (proposed, with #54–59),
