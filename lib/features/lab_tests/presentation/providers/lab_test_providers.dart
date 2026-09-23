@@ -18,3 +18,9 @@ final labTestCatalogProvider = FutureProvider<List<LabTest>>((ref) {
 final labTestByIdProvider = FutureProvider.family<LabTest, String>((ref, id) {
   return ref.watch(labTestRepositoryProvider).testById(id);
 });
+
+/// Free-text lab-test search results for the given query — the Pathology
+/// tab of the search screen. Empty query isn't meant to be watched.
+final searchLabTestsProvider = FutureProvider.family<List<LabTest>, String>((ref, query) {
+  return ref.watch(labTestRepositoryProvider).searchTests(query);
+});

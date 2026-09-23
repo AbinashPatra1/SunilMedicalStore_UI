@@ -16,6 +16,12 @@ final weeklyDoctorsProvider = FutureProvider<List<Doctor>>((ref) {
   return ref.watch(doctorRepositoryProvider).doctorsAvailableThisWeek();
 });
 
+/// Free-text doctor search results for the given query — the Doctors tab
+/// of the search screen. Empty query isn't meant to be watched.
+final searchDoctorsProvider = FutureProvider.family<List<Doctor>, String>((ref, query) {
+  return ref.watch(doctorRepositoryProvider).searchDoctors(query);
+});
+
 /// Provides the [AppointmentRepository] implementation.
 final appointmentRepositoryProvider = Provider<AppointmentRepository>((ref) {
   return ApiAppointmentRepository(ref.watch(dioProvider));
