@@ -7,6 +7,7 @@ import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/admin/banners/domain/home_banner.dart';
 import 'package:sunil_medical_store/features/admin/banners/presentation/providers/banner_providers.dart';
 import 'package:sunil_medical_store/features/admin/banners/presentation/widgets/banner_illustration.dart';
+import 'package:sunil_medical_store/core/widgets/refresh_on_focus.dart';
 
 /// Admin > More > Home Banners: the fixed 12-slot catalog of dashboard promo
 /// banners. Each row can be quick-toggled active/inactive inline, or tapped
@@ -19,7 +20,9 @@ class AdminBannersListScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final bannersAsync = ref.watch(adminBannersProvider);
 
-    return Scaffold(
+    return RefreshOnFocus(
+      onRefresh: () { refreshIfIdle(ref, adminBannersProvider); },
+      child: Scaffold(
       appBar: AppBar(title: const Text('Home Banners')),
       body: bannersAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -49,6 +52,7 @@ class AdminBannersListScreen extends ConsumerWidget {
           ],
         ),
       ),
+    ),
     );
   }
 }

@@ -68,6 +68,8 @@ class _AdminDeliverySettingsScreenState extends ConsumerState<AdminDeliverySetti
     _seeded = true;
     _latitude = settings.storeLatitude;
     _longitude = settings.storeLongitude;
+    _locationPreview = settings.storeAddress;
+    if (_locationPreview == null) _resolvePlaceName();
     _radiusController.text = settings.radiusKm.toString();
     _deliveryFeeWaived = settings.deliveryFeeWaived;
     _platformFeeController.text = settings.platformFee.toString();
@@ -87,6 +89,26 @@ class _AdminDeliverySettingsScreenState extends ConsumerState<AdminDeliverySetti
     _tierRows[index].dispose();
     _tierRows.removeAt(index);
   });
+
+  /// Looks up the place name for the already-saved coordinates so the card
+  /// shows a name, not just numbers. Best effort — some devices have no
+  /// geocoder, in which case the coordinates line stands on its own.
+  Future<void> _resolvePlaceName() async {
+    final lat = _latitude;
+    final lng = _longitude;
+    if (lat == null || lng == null) return;
+    try {
+      final geocoded = await reverseGeocode(lat, lng);
+      final name = [geocoded.area, geocoded.city, geocoded.state]
+          .where((s) => s != null && s.isNotEmpty)
+          .join(', ');
+      if (mounted && name.isNotEmpty && _latitude == lat && _longitude == lng) {
+        setState(() => _locationPreview = name);
+      }
+    } catch (_) {
+      // Nice-to-have only.
+    }
+  }
 
   Future<void> _captureStoreLocation() async {
     setState(() {
@@ -162,6 +184,7 @@ class _AdminDeliverySettingsScreenState extends ConsumerState<AdminDeliverySetti
             storeLatitude: _latitude!,
             storeLongitude: _longitude!,
             radiusKm: radius,
+            storeAddress: _locationPreview,
             deliveryFeeTiers: tiers,
             deliveryFeeWaived: _deliveryFeeWaived,
             platformFee: platformFee,
@@ -213,13 +236,14 @@ class _AdminDeliverySettingsScreenState extends ConsumerState<AdminDeliverySetti
                     children: [
                       Text('Store location', style: theme.textTheme.titleMedium),
                       const SizedBox(height: AppConstants.spacingSm),
-                      if (_latitude != null && _longitude != null)
+                      if (_latitude != null && _longitude != null) ...[
+                        if (_locationPreview != null)
+                          Text(_locationPreview!, style: theme.textTheme.bodyLarge),
                         Text(
-                          _locationPreview ??
-                              '${_latitude!.toStringAsFixed(5)}, ${_longitude!.toStringAsFixed(5)}',
-                          style: theme.textTheme.bodyMedium,
-                        )
-                      else
+                          '${_latitude!.toStringAsFixed(5)}, ${_longitude!.toStringAsFixed(5)}',
+                          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                        ),
+                      ] else
                         Text(
                           'Not set yet',
                           style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),

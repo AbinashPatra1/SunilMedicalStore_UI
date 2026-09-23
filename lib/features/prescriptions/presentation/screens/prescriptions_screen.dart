@@ -7,6 +7,7 @@ import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/prescriptions/presentation/providers/prescription_providers.dart';
 import 'package:sunil_medical_store/features/prescriptions/presentation/widgets/prescription_tile.dart';
+import 'package:sunil_medical_store/core/widgets/refresh_on_focus.dart';
 
 /// Pharmacy > Prescription: the customer's uploaded prescriptions, with an
 /// upload action (camera or gallery). Reused from checkout when an
@@ -75,7 +76,9 @@ class _PrescriptionsScreenState extends ConsumerState<PrescriptionsScreen> {
     final theme = Theme.of(context);
     final async = ref.watch(prescriptionsProvider);
 
-    return Scaffold(
+    return RefreshOnFocus(
+      onRefresh: () { refreshIfIdle(ref, prescriptionsProvider); },
+      child: Scaffold(
       appBar: AppBar(title: const Text('Prescriptions')),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _uploading ? null : _openSourcePicker,
@@ -137,6 +140,7 @@ class _PrescriptionsScreenState extends ConsumerState<PrescriptionsScreen> {
           );
         },
       ),
+    ),
     );
   }
 }

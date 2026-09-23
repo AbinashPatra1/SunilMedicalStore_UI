@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:sunil_medical_store/features/admin/presentation/widgets/admin_sign_out_button.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
@@ -6,8 +7,9 @@ import 'package:sunil_medical_store/core/routes/app_routes.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/admin/lab_tests/presentation/providers/lab_test_admin_providers.dart';
 import 'package:sunil_medical_store/features/admin/lab_tests/presentation/widgets/lab_test_admin_tile.dart';
+import 'package:sunil_medical_store/core/widgets/refresh_on_focus.dart';
 
-/// Admin > More > Lab Tests: lists the full lab-test catalog. Tapping a row
+/// Admin > Lab Tests (bottom-nav tab): lists the full lab-test catalog. Tapping a row
 /// edits; the FAB adds a new test.
 class LabTestsAdminListScreen extends ConsumerWidget {
   const LabTestsAdminListScreen({super.key});
@@ -17,8 +19,13 @@ class LabTestsAdminListScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final async = ref.watch(adminLabTestsProvider);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Lab Tests')),
+    return RefreshOnFocus(
+      onRefresh: () { refreshIfIdle(ref, adminLabTestsProvider); },
+      child: Scaffold(
+      appBar: AppBar(
+        title: const Text('Lab Tests'),
+        actions: const [AdminSignOutButton()],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push(AppRoutes.adminLabTestAdd),
         icon: const Icon(Icons.add),
@@ -83,6 +90,7 @@ class LabTestsAdminListScreen extends ConsumerWidget {
           );
         },
       ),
+    ),
     );
   }
 }

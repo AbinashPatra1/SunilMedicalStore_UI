@@ -123,6 +123,11 @@ brief see [`API_SPEC.md`](API_SPEC.md); for backend internals see [`claude.md`](
 | 84 | POST | `/v1/admin/lab-tests` | ✔ admin | Create lab test → 201 |
 | 85 | PUT | `/v1/admin/lab-tests/{id}` | ✔ admin | Update lab test → 200 |
 | 86 | DELETE | `/v1/admin/lab-tests/{id}` | ✔ admin | Delete lab test → 204 |
+| 87 | POST | `/v1/orders/{id}/return` | ✔ | Customer requests a return of some/all items of a delivered order → 200 (backlog #25) |
+| 88 | PUT | `/v1/admin/orders/{id}/return` | ✔ admin | Admin approves or rejects a pending return request → 200 (backlog #25) |
+| 89 | GET | `/v1/admin/notifications` | ✔ admin | The admin's notification inbox, newest first (backlog #25) |
+| 90 | PUT | `/v1/admin/notifications/{id}/read` | ✔ admin | Mark one notification read → 204 (backlog #25) |
+| 91 | PUT | `/v1/admin/notifications/read-all` | ✔ admin | Mark all of the admin's notifications read → 204 (backlog #25) |
 
 **45–66 are live** (verified against Azure), including the push-notification
 send side described after §3 — real order placement/cancellation triggered
@@ -474,7 +479,7 @@ Request (all fields optional; `fullName` required on first-ever create):
   `Women Care`, `Elderly Care`, `Pain Relief`, `Supports & Braces`,
   `Gut Care`, `Diabetes`, `Hair Care`, `Oral Care`, `Cold, Cough & Fever`,
   `First Aid`, `Baby Care`, `Respiratory Care`, `Eye Care`,
-  `Prescription Drugs`.
+  `Prescription Drugs`, `Others` (added 2026-09-23 — see backlog #25).
 - **⚠ Breaking change for existing product data** — every seeded/admin-
   created product currently carries one of the *old* 6 category labels
   (`Medicines`, `Wellness`, `Personal Care`, `Devices`, `Baby Care`,
@@ -880,10 +885,144 @@ degrades cleanly (hides the affected section) while they're missing:
   a delivered order now correctly shows "This order can be returned by <date>"
   using the configured window. `deliveredOn` **is** set correctly when an
   order is marked delivered (#48).
-- **Cancellation rule change (#45)**: the customer can now cancel **only
-  while `status` is `created`** (previously `created` or `processing`). Reject
-  `processing`/`shipped`/`delivered`/`cancelled` with `409
-  order_not_cancellable`. (Admin cancel, #48, is unchanged.)
+- **Cancellation rule — superseded 2026-09-23 (backlog #25)**: the customer can
+  cancel while `status` is **`created` or `processing`** (i.e. until the order
+  ships); reject `shipped`/`delivered`/`cancelled`/`returnRequested`/`returned`
+  with `409 order_not_cancellable`. **Admin cancel (#48) is allowed while
+  `created`, `processing` or `shipped`** — i.e. until delivered; reject a
+  cancel on `delivered`/`cancelled`/`returnRequested`/`returned` with `409
+  order_not_cancellable`. The apps now hide the Cancel button outside these
+  states, so a `409` should only ever come from a race.
+
+### Returns, status history & admin notifications — **proposed, 2026-09-23** (backlog #25)
+
+The client is built against all of this and degrades cleanly while it's
+missing (no Return button data, no history block, an error + Retry on the
+admin Notifications screen).
+
+#### Order status values — two new ones
+`order.status` gains **`returnRequested`** and **`returned`** (wire values,
+lowerCamelCase like the rest; see §5). Lifecycle:
+`created → processing → shipped → delivered`, then optionally
+`delivered → returnRequested → returned` (admin approved) or
+`returnRequested → delivered` (admin rejected; `returnRequest.decision` is
+then `rejected`). `cancelled` is reachable only before `delivered`.
+`GET /admin/orders?status=` accepts the new values.
+
+#### Status history — on **every order response** (customer #15–17/#45, admin #46–48)
+```json
+"statusHistory": [
+  { "status": "created",    "at": "2026-09-01T09:30:00Z" },
+  { "status": "processing", "at": "2026-09-01T11:02:10Z" },
+  { "status": "shipped",    "at": "2026-09-02T08:15:00Z" },
+  { "status": "delivered",  "at": "2026-09-03T17:40:22Z" }
+]
+```
+- One entry each time the order **enters** a status (append-only), including
+  `cancelled`, `returnRequested` and `returned`. Oldest first. `at` is
+  ISO-8601 UTC.
+- Shown in the admin order detail's last card ("Status history", with date
+  **and time** per status). No backfill: for older orders return `[]` (or
+  omit); the client then falls back to `placedOn` (Created) and `deliveredOn`
+  (Delivered).
+
+#### 87. `POST /v1/orders/{id}/return` → `200` — `Order`
+Customer asks to return some or all **medicine** lines of their own order.
+Request:
+```json
+{
+  "items": [ { "productId": "p1", "quantity": 1 }, { "productId": "p7", "quantity": 2 } ],
+  "reason": "Damaged or defective — box was crushed"
+}
+```
+- `items[].productId` must match a medicine line on the order;
+  `1 ≤ quantity ≤` the quantity ordered. Lab-test lines can't be returned.
+  At least one item; `reason` required (free text, ≤ 500 chars — the client
+  sends a picked reason optionally followed by " — <customer's note>").
+- Allowed only when **all** hold, else `409 order_not_returnable`:
+  `status == delivered`; delivery settings `returnsEnabled == true`; today ≤
+  `deliveredOn` + `returnWindowDays` (calendar days, same rule the client uses);
+  no earlier return request that was approved. (A previously **rejected**
+  request may be retried.)
+- Effect: `status → returnRequested` (adds a `statusHistory` entry); stores the
+  request; notifies the admins (push + inbox #89, `type: "order"`,
+  `entityId: <order id>`, e.g. title "Return requested", body "PHSMS-0926-0012 —
+  2 items"). No refund yet.
+- Response: the updated `Order`, now with a **`returnRequest`** object (also
+  present on every later response of that order and on the admin DTOs):
+```json
+"returnRequest": {
+  "items": [ { "productId": "p1", "name": "Paracetamol 500mg Tablets", "quantity": 1 } ],
+  "reason": "Damaged or defective — box was crushed",
+  "requestedOn": "2026-09-04T10:00:00Z",
+  "decision": null,
+  "decisionNote": null
+}
+```
+  `decision` is `null` while pending, then `"approved"` or `"rejected"`;
+  `decisionNote` is the admin's optional note on a rejection.
+
+#### 88. `PUT /v1/admin/orders/{id}/return` → `200` — `AdminOrder`
+Request: `{ "action": "approve" | "reject", "note": "optional, ≤ 500 chars" }`.
+- Only valid while `status == returnRequested`, else `409
+  order_not_returnable`.
+- **approve** → `status: returned`, `returnRequest.decision: "approved"`.
+  For an order paid via Razorpay, start a Razorpay refund for **the value of
+  the returned items** (unit price × quantity per line — not the whole order;
+  delivery/platform fees aren't refunded) and set `refundStatus: pending`,
+  finishing via the existing webhook (#81) exactly like a cancel refund. COD
+  orders: no refund, `refundStatus` stays `null`.
+- **reject** → `status: delivered` again, `returnRequest.decision:
+  "rejected"`, `decisionNote: note`. The customer may request again inside the
+  window.
+- Either way notify the customer (push `type: "order"`, `id: <order id>`;
+  wording e.g. "Return approved" / "Return request rejected").
+- Stats (#61): `orders.byStatus` includes the new statuses.
+
+#### Admin notification inbox — 89–91
+Everything pushed to an admin device should also be **stored** so the admin
+can review it in Admin → More → Notifications. Write one row per admin
+per event when you send the push (new order placed, order delivered, new
+appointment, new lab-test booking, and the new "return requested" event).
+
+##### 89. `GET /v1/admin/notifications` → `200` — `AdminNotification[]`
+Newest first, scoped to the calling admin. Optional `?limit=` (default 100).
+```json
+[
+  {
+    "id": "n123",
+    "title": "New order",
+    "body": "PHSMS-0926-0016 — ₹360",
+    "type": "order",
+    "entityId": "o10",
+    "createdAt": "2026-09-23T08:41:00Z",
+    "isRead": false
+  }
+]
+```
+- `type` uses the same values as the push `data.type`: `order | appointment |
+  labTest`; `entityId` is the same `data.id`. The app opens **order** →
+  Admin order detail (#47), **appointment** → Admin appointment edit, **labTest**
+  → Admin lab-test-booking detail (#69 — so for `labTest` the `entityId` must
+  be the **lab-test-booking id**).
+- Retain at least 30 days / the last 100 rows.
+
+##### 90. `PUT /v1/admin/notifications/{id}/read` → `204`
+##### 91. `PUT /v1/admin/notifications/read-all` → `204`
+Idempotent. `404` for an id that isn't the caller's.
+
+#### `Others` product category
+`Product.category` gains a 23rd value, **`Others`** — accept it on every
+write endpoint that validates the category (#32/#33/#78 bulk import) and
+return it as-is. (Prescription Drugs is now listed first in the apps' category
+lists, but the wire values are unchanged.)
+
+#### Store location place name — on #71/#72
+`DeliverySettings` gains an optional **`storeAddress`** string (e.g. `"Chhaka
+Bazar, Kamarda, Odisha"`) — the human-readable name of the store location the
+admin captured. The admin app sends it on #72 (`"storeAddress": "…"`,
+optional, ≤ 200 chars) and reads it from #71/#72; it falls back to
+reverse-geocoding the coordinates on-device when it's absent.
 
 ### Payments — Razorpay — **live, verified 2026-09-21** (backlog #20)
 
@@ -1679,7 +1818,7 @@ Newest first. All query parameters are optional; combine as needed.
 
 Filter query params:
 - `search` — free-text match against order number, user name **and** phone.
-- `status` — `created | processing | shipped | delivered | cancelled` (single value).
+- `status` — `created | processing | shipped | delivered | cancelled | returnRequested | returned` (single value).
 - `dateFrom`, `dateTo` — `yyyy-MM-dd`, inclusive range on `placedOn`'s date.
 
 **AdminOrder object:**
@@ -2139,7 +2278,7 @@ values also reuse `invalid_category`/`validation_error` from above).
 | `role` | `customer`, `admin` |
 | `gender` | `male`, `female`, `other` |
 | address `type` | `home`, `work`, `other` |
-| order `status` | `created`, `processing`, `shipped`, `delivered`, `cancelled` |
+| order `status` | `created`, `processing`, `shipped`, `delivered`, `cancelled`, `returnRequested`, `returned` |
 | lab-booking `status` | `scheduled`, `inSession`, `completed`, `cancelled` |
 | appointment `status` | `upcoming`, `inSession`, `completed`, `cancelled` |
 | order item `kind` | `medicine`, `labTest` |
@@ -2150,6 +2289,7 @@ values also reuse `invalid_category`/`validation_error` from above).
 | prescription `status` | `pending`, `approved`, `rejected` |
 | push `platform` | `android`, `ios` (proposed, with #60) |
 | push `data.type` | `order`, `appointment`, `labTest` (proposed, with #60) |
+| return `decision` | `null` (pending), `approved`, `rejected` (proposed, #87–88) |
 | banner `id` | `generalDiscount1`, `generalDiscount2`, `generalDiscount3`, `kaliPuja`, `durgaPuja`, `newYear`, `holi`, `independenceDay`, `ganeshPuja`, `doctorVisit1`, `doctorVisit2`, `doctorVisit3` (fixed 12-slot catalog, live with #73–75) |
 
 Deserialize with Dart's `Enum.values.byName(json)` — values match member names 1:1.

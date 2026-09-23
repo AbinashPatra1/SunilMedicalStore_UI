@@ -238,6 +238,8 @@ class AdminStatisticsScreen extends ConsumerWidget {
           OrderStatus.shipped => Colors.indigo,
           OrderStatus.delivered => Colors.green,
           OrderStatus.cancelled => Colors.red,
+          OrderStatus.returnRequested => Colors.orange,
+          OrderStatus.returned => Colors.purple,
         },
       ),
   ];

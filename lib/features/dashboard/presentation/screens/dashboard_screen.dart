@@ -11,6 +11,8 @@ import 'package:sunil_medical_store/features/dashboard/presentation/widgets/sugg
 import 'package:sunil_medical_store/features/medicines/domain/product_category.dart';
 import 'package:sunil_medical_store/features/profile/domain/address.dart';
 import 'package:sunil_medical_store/features/profile/presentation/providers/address_controller.dart';
+import 'package:sunil_medical_store/core/widgets/refresh_on_focus.dart';
+import 'package:sunil_medical_store/features/medicines/presentation/providers/medicine_providers.dart';
 
 /// Customer landing page (Pharmacy tab) shown after a non-admin signs in.
 ///
@@ -41,7 +43,9 @@ class DashboardScreen extends ConsumerWidget {
     defaultAddress ??= addresses.isNotEmpty ? addresses.first : null;
     final deliveringToArea = defaultAddress?.area ?? defaultAddress?.city;
 
-    return Scaffold(
+    return RefreshOnFocus(
+      onRefresh: () { refreshIfIdle(ref, suggestedProductsProvider); },
+      child: Scaffold(
       body: SafeArea(
         bottom: false,
         child: ListView(
@@ -116,6 +120,7 @@ class DashboardScreen extends ConsumerWidget {
           ],
         ),
       ),
+    ),
     );
   }
 }

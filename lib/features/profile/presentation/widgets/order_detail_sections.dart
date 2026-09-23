@@ -103,7 +103,9 @@ class OrderProgressBar extends StatelessWidget {
     OrderStatus.created || OrderStatus.cancelled => 0.0,
     OrderStatus.processing => 0.5,
     OrderStatus.shipped => 0.75,
-    OrderStatus.delivered => 1.0,
+    OrderStatus.delivered ||
+    OrderStatus.returnRequested ||
+    OrderStatus.returned => 1.0,
   };
 
   /// Amber at the start, teal in the middle, green at the end.
@@ -408,8 +410,9 @@ class OrderPolicySection extends StatelessWidget {
       ReturnState.closed =>
         'The return window closed on ${_dateFormat.format(returnInfo.date!)}.',
     };
-    if (cancelNote == null && returnNote == null && !showHelp)
+    if (cancelNote == null && returnNote == null && !showHelp) {
       return const SizedBox.shrink();
+    }
 
     return AppCard(
       padding: EdgeInsets.zero,
@@ -504,11 +507,16 @@ class OrderInfoCard extends StatelessWidget {
     required this.address,
     required this.orderNumber,
     required this.placedOn,
+    this.timeline = const [],
   });
 
   final String? address;
   final String orderNumber;
   final DateTime placedOn;
+
+  /// Date and time of each status the order reached (see [orderTimeline]);
+  /// shown as a "Status history" block when non-empty.
+  final List<OrderStatusEvent> timeline;
 
   @override
   Widget build(BuildContext context) {
@@ -550,6 +558,87 @@ class OrderInfoCard extends StatelessWidget {
               'Order date',
               DateFormat('d MMM yyyy, h:mm a').format(placedOn.toLocal()),
             ),
+            if (timeline.isNotEmpty) ...[
+              Text('Status history', style: theme.textTheme.titleSmall),
+              const SizedBox(height: AppConstants.spacingSm),
+              for (final e in timeline)
+                block(_timelineLabel(e.status), DateFormat('d MMM yyyy, h:mm a').format(e.at.toLocal())),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+String _timelineLabel(OrderStatus s) => switch (s) {
+  OrderStatus.processing => 'Processed',
+  _ => s.label,
+};
+
+/// The moments an order reached each status, oldest first. Uses the
+/// backend's `statusHistory` when it has one; otherwise falls back to what
+/// the order itself carries (placed date, delivered date), so the block
+/// degrades to "Created" / "Delivered" rather than disappearing.
+List<OrderStatusEvent> orderTimeline({
+  required List<OrderStatusEvent> history,
+  required OrderStatus status,
+  required DateTime placedOn,
+  required DateTime? deliveredOn,
+}) {
+  if (history.isNotEmpty) return history;
+  return [
+    OrderStatusEvent(OrderStatus.created, placedOn),
+    if (deliveredOn != null) OrderStatusEvent(OrderStatus.delivered, deliveredOn),
+  ];
+}
+
+/// Card summarising a customer's return request: what was returned, why,
+/// and where it stands.
+class OrderReturnCard extends StatelessWidget {
+  const OrderReturnCard({super.key, required this.request, required this.status});
+
+  final OrderReturn request;
+  final OrderStatus status;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final headline = switch ((status, request.isRejected)) {
+      (_, true) => 'Return request rejected',
+      (OrderStatus.returned, _) => 'Return approved',
+      _ => 'Return requested — awaiting approval',
+    };
+    return AppCard(
+      padding: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(AppConstants.spacingLg),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.assignment_return_outlined, size: 20, color: theme.colorScheme.primary),
+                const SizedBox(width: AppConstants.spacingSm),
+                Expanded(child: Text(headline, style: theme.textTheme.titleSmall)),
+              ],
+            ),
+            const SizedBox(height: AppConstants.spacingSm),
+            for (final l in request.lines)
+              Text('${l.quantity} × ${l.name}', style: theme.textTheme.bodyMedium),
+            if (request.reason.isNotEmpty) ...[
+              const SizedBox(height: AppConstants.spacingSm),
+              Text('Reason: ${request.reason}', style: theme.textTheme.bodySmall),
+            ],
+            if (request.requestedOn != null)
+              Text(
+                'Requested ${DateFormat('d MMM yyyy, h:mm a').format(request.requestedOn!.toLocal())}',
+                style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+              ),
+            if (request.isRejected && (request.decisionNote ?? '').isNotEmpty) ...[
+              const SizedBox(height: AppConstants.spacingSm),
+              Text('Note from the store: ${request.decisionNote}', style: theme.textTheme.bodySmall),
+            ],
           ],
         ),
       ),

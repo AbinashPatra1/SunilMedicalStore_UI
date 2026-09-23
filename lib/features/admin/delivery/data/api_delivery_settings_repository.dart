@@ -27,6 +27,7 @@ class ApiDeliverySettingsRepository implements DeliverySettingsRepository {
     required double storeLatitude,
     required double storeLongitude,
     required double radiusKm,
+    String? storeAddress,
     required List<DeliveryFeeTier> deliveryFeeTiers,
     required bool deliveryFeeWaived,
     required int platformFee,
@@ -41,6 +42,7 @@ class ApiDeliverySettingsRepository implements DeliverySettingsRepository {
           'storeLatitude': storeLatitude,
           'storeLongitude': storeLongitude,
           'radiusKm': radiusKm,
+          if (storeAddress != null && storeAddress.isNotEmpty) 'storeAddress': storeAddress,
           'deliveryFeeTiers': [
             for (final tier in deliveryFeeTiers) {'maxDistanceKm': tier.maxDistanceKm, 'fee': tier.fee},
           ],
@@ -61,6 +63,7 @@ class ApiDeliverySettingsRepository implements DeliverySettingsRepository {
     storeLatitude: (json['storeLatitude'] as num).toDouble(),
     storeLongitude: (json['storeLongitude'] as num).toDouble(),
     radiusKm: (json['radiusKm'] as num).toDouble(),
+    storeAddress: json['storeAddress'] as String?,
     deliveryFeeTiers: ((json['deliveryFeeTiers'] as List?) ?? const [])
         .cast<Map<String, dynamic>>()
         .map(

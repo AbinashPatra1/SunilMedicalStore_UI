@@ -8,6 +8,7 @@ import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/core/models/order.dart';
 import 'package:sunil_medical_store/features/profile/presentation/providers/profile_providers.dart';
 import 'package:sunil_medical_store/features/profile/presentation/widgets/status_chip.dart';
+import 'package:sunil_medical_store/core/widgets/refresh_on_focus.dart';
 
 /// Profile > Orders: the customer's order history. Tapping an order opens its
 /// detail screen.
@@ -18,8 +19,10 @@ class OrdersScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final ordersAsync = ref.watch(pastOrdersProvider);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Orders')),
+    return RefreshOnFocus(
+      onRefresh: () { refreshIfIdle(ref, pastOrdersProvider); },
+      child: Scaffold(
+      appBar: AppBar(title: const Text('My Orders')),
       body: ordersAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(
@@ -56,6 +59,7 @@ class OrdersScreen extends ConsumerWidget {
           );
         },
       ),
+    ),
     );
   }
 }

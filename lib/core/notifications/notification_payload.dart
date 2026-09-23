@@ -30,9 +30,7 @@ class NotificationPayload {
   }
 
   /// The route to open for this notification, given whether the current
-  /// signed-in user is an admin. `null` means "just open the app" — used
-  /// where no matching detail screen exists yet (admin lab-test bookings
-  /// have no dedicated review screen).
+  /// signed-in user is an admin.
   String? resolveRoute({required bool isAdmin}) {
     switch (type) {
       case NotificationEntityType.order:
@@ -40,9 +38,7 @@ class NotificationPayload {
       case NotificationEntityType.appointment:
         return isAdmin ? '${AppRoutes.adminAppointmentEdit}/$id' : AppRoutes.profileAppointments;
       case NotificationEntityType.labTest:
-        // No admin lab-test-booking screen exists yet — land on Orders,
-        // the closest related admin surface, rather than nothing.
-        return isAdmin ? AppRoutes.adminOrders : AppRoutes.profileLabTests;
+        return isAdmin ? '${AppRoutes.adminPathologyEdit}/$id' : AppRoutes.profileLabTests;
     }
   }
 }

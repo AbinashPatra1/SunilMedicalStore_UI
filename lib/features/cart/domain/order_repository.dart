@@ -59,4 +59,9 @@ abstract interface class OrderRepository {
   /// order has shipped. Automatically refunds a captured Razorpay payment,
   /// if there was one (see `docs/API_ENDPOINTS.md` #45).
   Future<Order> cancelOrder(String id);
+
+  /// Asks to return [lines] (product id + quantity) of a delivered order,
+  /// for [reason]. The order moves to `returnRequested` until the admin
+  /// decides — see `docs/API_ENDPOINTS.md` #87.
+  Future<Order> requestReturn(String id, {required List<ReturnLine> lines, required String reason});
 }

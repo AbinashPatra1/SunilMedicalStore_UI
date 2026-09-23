@@ -48,13 +48,39 @@ void main() {
 
   test('cancel note only applies before delivery', () {
     expect(cancelPolicyMessage(OrderStatus.created), contains('can cancel'));
-    expect(cancelPolicyMessage(OrderStatus.processing), contains('no longer'));
+    expect(cancelPolicyMessage(OrderStatus.processing), contains('can cancel'));
+    expect(cancelPolicyMessage(OrderStatus.shipped), contains('no longer'));
     expect(cancelPolicyMessage(OrderStatus.delivered), isNull);
     expect(cancelPolicyMessage(OrderStatus.cancelled), isNull);
   });
 
-  test('only Created orders are customer-cancellable', () {
+  test('customers can cancel Created and Processing orders only', () {
     expect(OrderStatus.created.isCustomerCancellable, isTrue);
-    expect(OrderStatus.processing.isCustomerCancellable, isFalse);
+    expect(OrderStatus.processing.isCustomerCancellable, isTrue);
+    expect(OrderStatus.shipped.isCustomerCancellable, isFalse);
+    expect(OrderStatus.delivered.isCustomerCancellable, isFalse);
+  });
+
+  test('admins can cancel until the order is delivered', () {
+    expect(OrderStatus.shipped.isAdminCancellable, isTrue);
+    expect(OrderStatus.delivered.isAdminCancellable, isFalse);
+    expect(OrderStatus.cancelled.isAdminCancellable, isFalse);
+    expect(OrderStatus.returned.isAdminCancellable, isFalse);
+  });
+
+  test('no return window once a return is requested or done', () {
+    expect(eval(status: OrderStatus.returnRequested, now: delivered).state, ReturnState.hidden);
+    expect(eval(status: OrderStatus.returned, now: delivered).state, ReturnState.hidden);
+  });
+
+  test('status history parses, sorts and tolerates junk', () {
+    final events = OrderStatusEvent.listFromJson([
+      {'status': 'delivered', 'at': '2026-09-05T10:00:00Z'},
+      {'status': 'created', 'at': '2026-09-01T09:30:00Z'},
+      {'status': 'processing'},
+      'junk',
+    ]);
+    expect(events.map((e) => e.status), [OrderStatus.created, OrderStatus.delivered]);
+    expect(OrderStatus.fromWire('nope'), OrderStatus.created);
   });
 }

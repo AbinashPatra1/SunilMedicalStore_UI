@@ -4,7 +4,18 @@ enum OrderStatus {
   processing,
   shipped,
   delivered,
-  cancelled;
+  cancelled,
+  returnRequested,
+  returned;
+
+  /// Parses the wire value; unknown values fall back to [created] so a new
+  /// backend status never crashes an order list.
+  static OrderStatus fromWire(String? value) {
+    for (final s in values) {
+      if (s.name == value) return s;
+    }
+    return OrderStatus.created;
+  }
 
   String get label => switch (this) {
     OrderStatus.created => 'Created',
@@ -12,11 +23,16 @@ enum OrderStatus {
     OrderStatus.shipped => 'Shipped',
     OrderStatus.delivered => 'Delivered',
     OrderStatus.cancelled => 'Cancelled',
+    OrderStatus.returnRequested => 'Return requested',
+    OrderStatus.returned => 'Returned',
   };
 
-  /// The customer can self-cancel only while the order hasn't been processed
-  /// yet (i.e. still `created`).
-  bool get isCustomerCancellable => this == created;
+  /// The customer can self-cancel until the order ships (`created` or
+  /// `processing`).
+  bool get isCustomerCancellable => this == created || this == processing;
+
+  /// Admin can cancel at any point until the order is delivered.
+  bool get isAdminCancellable => this == created || this == processing || this == shipped;
 
   /// The next status in the linear pharmacy fulfilment flow — admin can
   /// only ever advance one step at a time (via a swipe action), never jump
@@ -26,8 +42,7 @@ enum OrderStatus {
     OrderStatus.created => OrderStatus.processing,
     OrderStatus.processing => OrderStatus.shipped,
     OrderStatus.shipped => OrderStatus.delivered,
-    OrderStatus.delivered => null,
-    OrderStatus.cancelled => null,
+    _ => null,
   };
 
   /// Swipe-bar label for advancing from this status to [next]. `null` when
@@ -36,8 +51,7 @@ enum OrderStatus {
     OrderStatus.created => 'Process Order',
     OrderStatus.processing => 'Mark as Shipped',
     OrderStatus.shipped => 'Mark as Delivered',
-    OrderStatus.delivered => null,
-    OrderStatus.cancelled => null,
+    _ => null,
   };
 }
 
@@ -63,6 +77,77 @@ enum RefundStatus {
     RefundStatus.processed => 'Refunded',
     RefundStatus.failed => 'Refund failed — contact support',
   };
+}
+
+/// One entry of an order's status history: it moved to [status] at [at].
+class OrderStatusEvent {
+  const OrderStatusEvent(this.status, this.at);
+
+  final OrderStatus status;
+  final DateTime at;
+
+  /// Parses `[{status, at}]`; malformed entries are skipped.
+  static List<OrderStatusEvent> listFromJson(Object? raw) {
+    final events = <OrderStatusEvent>[];
+    for (final e in (raw as List?) ?? const []) {
+      if (e is! Map) continue;
+      final at = DateTime.tryParse(e['at'] as String? ?? '');
+      if (at == null) continue;
+      events.add(OrderStatusEvent(OrderStatus.fromWire(e['status'] as String?), at));
+    }
+    events.sort((a, b) => a.at.compareTo(b.at));
+    return events;
+  }
+}
+
+/// A product line the customer asked to return, and how many units.
+class ReturnLine {
+  const ReturnLine({required this.productId, required this.name, required this.quantity});
+
+  final String productId;
+  final String name;
+  final int quantity;
+}
+
+/// A customer's return request on an order (backlog #25).
+class OrderReturn {
+  const OrderReturn({
+    required this.lines,
+    required this.reason,
+    this.requestedOn,
+    this.decision,
+    this.decisionNote,
+  });
+
+  final List<ReturnLine> lines;
+  final String reason;
+  final DateTime? requestedOn;
+
+  /// `null` while pending, else `approved` / `rejected`.
+  final String? decision;
+  final String? decisionNote;
+
+  bool get isRejected => decision == 'rejected';
+
+  static OrderReturn? tryParse(Object? raw) {
+    if (raw is! Map) return null;
+    final lines = <ReturnLine>[
+      for (final l in (raw['items'] as List?) ?? const [])
+        if (l is Map && l['productId'] is String)
+          ReturnLine(
+            productId: l['productId'] as String,
+            name: (l['name'] as String?) ?? '',
+            quantity: (l['quantity'] as int?) ?? 1,
+          ),
+    ];
+    return OrderReturn(
+      lines: lines,
+      reason: (raw['reason'] as String?) ?? '',
+      requestedOn: DateTime.tryParse(raw['requestedOn'] as String? ?? ''),
+      decision: raw['decision'] as String?,
+      decisionNote: raw['decisionNote'] as String?,
+    );
+  }
 }
 
 /// A single line item within an [Order].
@@ -154,6 +239,8 @@ class Order {
     this.platformFee = 0,
     this.deliveredOn,
     this.deliveryAddress,
+    this.statusHistory = const [],
+    this.returnRequest,
   });
 
   final String id;
@@ -180,6 +267,13 @@ class Order {
   /// Delivery address snapshot from when the order was placed, if the backend
   /// returns one.
   final OrderAddress? deliveryAddress;
+
+  /// When each status was reached, oldest first (empty until the backend
+  /// returns it).
+  final List<OrderStatusEvent> statusHistory;
+
+  /// The customer's return request, once one exists.
+  final OrderReturn? returnRequest;
 
   /// Wire value of the payment method chosen at checkout (e.g. `googlePay`,
   /// `upi`, `cod`), when known.

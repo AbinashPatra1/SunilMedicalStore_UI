@@ -17,11 +17,11 @@ class StatusChip extends StatelessWidget {
   final bool positive;
 
   AppAccent get _accent => switch (label.toLowerCase()) {
-    'created' || 'scheduled' || 'upcoming' || 'pending' || 'pending review' || 'exhausted' => AppAccent.amber,
+    'created' || 'return requested' || 'scheduled' || 'upcoming' || 'pending' || 'pending review' || 'exhausted' => AppAccent.amber,
     'processing' || 'in session' => AppAccent.sky,
     'shipped' => AppAccent.lavender,
     'delivered' || 'completed' || 'approved' || 'active' => AppAccent.mint,
-    'cancelled' || 'rejected' || 'expired' || 'inactive' => AppAccent.pink,
+    'cancelled' || 'returned' || 'rejected' || 'expired' || 'inactive' => AppAccent.pink,
     _ => positive ? AppAccent.mint : AppAccent.pink,
   };
 

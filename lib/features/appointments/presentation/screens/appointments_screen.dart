@@ -6,6 +6,7 @@ import 'package:sunil_medical_store/core/utils/week_range.dart';
 import 'package:sunil_medical_store/features/appointments/presentation/providers/appointment_providers.dart';
 import 'package:sunil_medical_store/features/appointments/presentation/utils/book_appointment.dart';
 import 'package:sunil_medical_store/features/appointments/presentation/widgets/doctor_card.dart';
+import 'package:sunil_medical_store/core/widgets/refresh_on_focus.dart';
 
 /// Appointments tab: doctors available in the current week.
 class AppointmentsScreen extends ConsumerWidget {
@@ -20,7 +21,9 @@ class AppointmentsScreen extends ConsumerWidget {
     final range =
         '${DateFormat('d MMM').format(week.start)} – ${DateFormat('d MMM').format(week.end)}';
 
-    return Scaffold(
+    return RefreshOnFocus(
+      onRefresh: () { refreshIfIdle(ref, weeklyDoctorsProvider); },
+      child: Scaffold(
       appBar: AppBar(title: const Text('Appointments')),
       body: doctorsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -56,6 +59,7 @@ class AppointmentsScreen extends ConsumerWidget {
           },
         ),
       ),
+    ),
     );
   }
 }

@@ -10,6 +10,7 @@ import 'package:sunil_medical_store/features/admin/inventory/presentation/widget
 import 'package:sunil_medical_store/features/admin/presentation/widgets/admin_sign_out_button.dart';
 import 'package:sunil_medical_store/features/medicines/domain/product.dart';
 import 'package:sunil_medical_store/features/medicines/domain/product_category.dart';
+import 'package:sunil_medical_store/core/widgets/refresh_on_focus.dart';
 
 /// Admin > Inventory: lists all products (in and out of stock). The top bar
 /// shows the first 5 categories as quick-filter chips plus a fixed filter
@@ -41,7 +42,15 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
   Future<void> _scanBarcode() async {
     final code = await context.push<String>(AppRoutes.adminInventoryScan);
     if (code == null || !mounted) return;
-    final products = ref.read(adminInventoryListProvider).value ?? const [];
+    // Match against the whole catalog, not the list on screen — that one is
+    // scoped to whatever category filter is active, and a scanned product
+    // outside it would wrongly look "new".
+    List<Product> products;
+    try {
+      products = await ref.read(inventoryRepositoryProvider).list();
+    } catch (_) {
+      products = ref.read(adminInventoryListProvider).value ?? const [];
+    }
     Product? match;
     for (final p in products) {
       if (p.barcode == code) {
@@ -63,7 +72,9 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
     final filters = ref.watch(adminInventoryFiltersProvider);
     final productsAsync = ref.watch(adminInventoryListProvider);
 
-    return Scaffold(
+    return RefreshOnFocus(
+      onRefresh: () { refreshIfIdle(ref, adminInventoryListProvider); },
+      child: Scaffold(
       appBar: AppBar(
         title: const Text('Inventory'),
         actions: const [AdminSignOutButton()],
@@ -210,6 +221,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
           ),
         ],
       ),
+    ),
     );
   }
 }

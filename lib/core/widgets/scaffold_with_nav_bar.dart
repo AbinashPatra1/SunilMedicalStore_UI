@@ -2,6 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sunil_medical_store/core/widgets/app_bottom_nav_bar.dart';
+import 'package:sunil_medical_store/core/widgets/refresh_on_focus.dart';
+import 'package:sunil_medical_store/features/appointments/presentation/providers/appointment_providers.dart';
+import 'package:sunil_medical_store/features/lab_tests/presentation/providers/lab_test_providers.dart';
+import 'package:sunil_medical_store/features/medicines/presentation/providers/medicine_providers.dart';
+import 'package:sunil_medical_store/features/profile/presentation/providers/profile_providers.dart';
 import 'package:sunil_medical_store/features/cart/presentation/providers/cart_providers.dart';
 
 /// App shell for the customer area: hosts the four bottom-navigation tabs.
@@ -13,12 +18,23 @@ class ScaffoldWithNavBar extends ConsumerWidget {
 
   final StatefulNavigationShell navigationShell;
 
-  void _onTap(int index) {
+  void _onTap(WidgetRef ref, int index) {
+    final switching = index != navigationShell.currentIndex;
     // Navigate to the branch. Re-tapping the active tab pops it to its root.
-    navigationShell.goBranch(
-      index,
-      initialLocation: index == navigationShell.currentIndex,
-    );
+    navigationShell.goBranch(index, initialLocation: !switching);
+    // Tabs stay alive in the background, so refetch the one being shown.
+    if (switching) {
+      switch (index) {
+        case 0:
+          refreshIfIdle(ref, suggestedProductsProvider);
+        case 1:
+          refreshIfIdle(ref, labTestCatalogProvider);
+        case 2:
+          refreshIfIdle(ref, weeklyDoctorsProvider);
+        case 4:
+          refreshIfIdle(ref, customerProfileProvider);
+      }
+    }
   }
 
   @override
@@ -29,7 +45,7 @@ class ScaffoldWithNavBar extends ConsumerWidget {
       body: navigationShell,
       bottomNavigationBar: AppBottomNavBar(
         selectedIndex: navigationShell.currentIndex,
-        onDestinationSelected: _onTap,
+        onDestinationSelected: (i) => _onTap(ref, i),
         destinations: [
           const AppNavDestination(
             icon: Icon(Icons.local_pharmacy_outlined),

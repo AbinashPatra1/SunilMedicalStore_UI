@@ -6,7 +6,7 @@ import 'package:sunil_medical_store/core/routes/app_routes.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/admin/discounts/presentation/providers/discount_providers.dart';
 import 'package:sunil_medical_store/features/admin/discounts/presentation/widgets/promo_code_tile.dart';
-import 'package:sunil_medical_store/features/admin/presentation/widgets/admin_sign_out_button.dart';
+import 'package:sunil_medical_store/core/widgets/refresh_on_focus.dart';
 
 /// Admin > Discounts: lists all promo codes. Tapping a row edits; the FAB
 /// adds a new code.
@@ -18,10 +18,11 @@ class DiscountsListScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final async = ref.watch(adminPromoCodesProvider);
 
-    return Scaffold(
+    return RefreshOnFocus(
+      onRefresh: () { refreshIfIdle(ref, adminPromoCodesProvider); },
+      child: Scaffold(
       appBar: AppBar(
         title: const Text('Discounts'),
-        actions: const [AdminSignOutButton()],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push(AppRoutes.adminDiscountAdd),
@@ -87,6 +88,7 @@ class DiscountsListScreen extends ConsumerWidget {
           );
         },
       ),
+    ),
     );
   }
 }

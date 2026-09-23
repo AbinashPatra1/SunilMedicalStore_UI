@@ -5,6 +5,9 @@
 /// `label` is the display string and the exact value sent as `Product`'s
 /// `category` field on the wire.
 enum ProductCategory {
+  // Prescription Drugs is deliberately first: every list/grid of categories
+  // iterates `values`, and it should always lead. `others` stays last.
+  prescriptionDrugs,
   vitaminsSupplements,
   monitoringDevices,
   proteinSupplements,
@@ -26,9 +29,10 @@ enum ProductCategory {
   babyCare,
   respiratoryCare,
   eyeCare,
-  prescriptionDrugs;
+  others;
 
   String get label => switch (this) {
+    ProductCategory.prescriptionDrugs => 'Prescription Drugs',
     ProductCategory.vitaminsSupplements => 'Vitamins & Supplements',
     ProductCategory.monitoringDevices => 'Monitoring Devices',
     ProductCategory.proteinSupplements => 'Protein Supplements',
@@ -50,7 +54,7 @@ enum ProductCategory {
     ProductCategory.babyCare => 'Baby Care',
     ProductCategory.respiratoryCare => 'Respiratory Care',
     ProductCategory.eyeCare => 'Eye Care',
-    ProductCategory.prescriptionDrugs => 'Prescription Drugs',
+    ProductCategory.others => 'Others',
   };
 
   /// Looks up a category by its exact [label] (as returned by the backend

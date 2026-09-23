@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
+import 'package:sunil_medical_store/core/utils/scan_beep.dart';
 
 /// Full-screen camera barcode/QR scanner. Pops with the scanned code as a
 /// `String`, or `null` if the admin backs out without scanning.
@@ -39,6 +40,7 @@ class _BarcodeScannerScreenState extends State<BarcodeScannerScreen> {
     final code = capture.barcodes.first.rawValue;
     if (code == null || code.isEmpty) return;
     _handled = true;
+    playScanBeep();
     context.pop(code);
   }
 

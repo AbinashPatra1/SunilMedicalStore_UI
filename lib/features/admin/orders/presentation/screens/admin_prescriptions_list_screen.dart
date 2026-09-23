@@ -7,6 +7,7 @@ import 'package:sunil_medical_store/core/routes/app_routes.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/admin/orders/presentation/providers/admin_prescription_providers.dart';
 import 'package:sunil_medical_store/features/admin/orders/presentation/widgets/admin_prescription_tile.dart';
+import 'package:sunil_medical_store/core/widgets/refresh_on_focus.dart';
 
 /// Admin > Orders > Prescriptions sub-tab: every uploaded prescription
 /// across every user, filterable by review status. Tap a row to approve or
@@ -20,7 +21,9 @@ class AdminPrescriptionsListScreen extends ConsumerWidget {
     final statusFilter = ref.watch(adminPrescriptionStatusFilterProvider);
     final async = ref.watch(adminPrescriptionsProvider);
 
-    return Scaffold(
+    return RefreshOnFocus(
+      onRefresh: () { refreshIfIdle(ref, adminPrescriptionsProvider); },
+      child: Scaffold(
       body: Column(
         children: [
           Padding(
@@ -110,6 +113,7 @@ class AdminPrescriptionsListScreen extends ConsumerWidget {
           ),
         ],
       ),
+    ),
     );
   }
 }

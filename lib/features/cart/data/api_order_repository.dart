@@ -94,11 +94,29 @@ class ApiOrderRepository implements OrderRepository {
     }
   }
 
+  @override
+  Future<Order> requestReturn(String id, {required List<ReturnLine> lines, required String reason}) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/orders/$id/return',
+        data: {
+          'items': [
+            for (final l in lines) {'productId': l.productId, 'quantity': l.quantity},
+          ],
+          'reason': reason,
+        },
+      );
+      return _fromJson(response.data!);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
   Order _fromJson(Map<String, dynamic> json) => Order(
     id: json['id'] as String,
     orderNumber: json['orderNumber'] as String,
     placedOn: DateTime.parse(json['placedOn'] as String),
-    status: OrderStatus.values.byName(json['status'] as String),
+    status: OrderStatus.fromWire(json['status'] as String?),
     items: OrderItem.listFromJson(json['items']),
     subtotal: json['subtotal'] as int,
     discount: json['discount'] as int,
@@ -110,5 +128,7 @@ class ApiOrderRepository implements OrderRepository {
     platformFee: json['platformFee'] as int? ?? 0,
     deliveredOn: DateTime.tryParse(json['deliveredOn'] as String? ?? ''),
     deliveryAddress: OrderAddress.tryParse(json['deliveryAddress']),
+    statusHistory: OrderStatusEvent.listFromJson(json['statusHistory']),
+    returnRequest: OrderReturn.tryParse(json['returnRequest']),
   );
 }

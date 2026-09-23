@@ -31,7 +31,10 @@ ReturnInfo evaluateReturn({
   required int windowDays,
   DateTime? now,
 }) {
-  if (!returnsEnabled || status == OrderStatus.cancelled) {
+  if (!returnsEnabled ||
+      status == OrderStatus.cancelled ||
+      status == OrderStatus.returned ||
+      status == OrderStatus.returnRequested) {
     return const ReturnInfo(ReturnState.hidden);
   }
   if (status != OrderStatus.delivered || deliveredOn == null) {
@@ -51,7 +54,7 @@ ReturnInfo evaluateReturn({
 /// One-line cancellation note for [status], or `null` when it doesn't apply
 /// (delivered/cancelled orders).
 String? cancelPolicyMessage(OrderStatus status) => switch (status) {
-  OrderStatus.created => 'You can cancel this order until it is processed.',
-  OrderStatus.processing || OrderStatus.shipped => 'This order can no longer be cancelled.',
-  OrderStatus.delivered || OrderStatus.cancelled => null,
+  OrderStatus.created || OrderStatus.processing => 'You can cancel this order until it is shipped.',
+  OrderStatus.shipped => 'This order can no longer be cancelled.',
+  _ => null,
 };

@@ -23,9 +23,9 @@ abstract final class AppRoutes {
   static const adminOrderEdit = '/admin/orders/edit'; // + /<id>
   static const adminOrderPrescriptionEdit = '/admin/orders/prescriptions/edit'; // + /<id>
   static const adminPathologyEdit = '/admin/orders/pathology/edit'; // + /<id>
-  static const adminDiscounts = '/admin/discounts';
-  static const adminDiscountEdit = '/admin/discounts/edit'; // + /<id>
-  static const adminDiscountAdd = '/admin/discounts/new';
+  static const adminDiscounts = '/admin/more/discounts';
+  static const adminDiscountEdit = '/admin/more/discounts/edit'; // + /<id>
+  static const adminDiscountAdd = '/admin/more/discounts/new';
   static const adminMore = '/admin/more';
   static const adminStatistics = '/admin/more/statistics';
   static const adminDeliverySettings = '/admin/more/delivery-settings';
@@ -34,9 +34,10 @@ abstract final class AppRoutes {
   static const adminUsers = '/admin/more/users';
   static const adminUserAdd = '/admin/more/users/new';
   static const adminUserEdit = '/admin/more/users/edit'; // + /<id>
-  static const adminLabTests = '/admin/more/lab-tests';
-  static const adminLabTestAdd = '/admin/more/lab-tests/new';
-  static const adminLabTestEdit = '/admin/more/lab-tests/edit'; // + /<id>
+  static const adminNotifications = '/admin/more/notifications';
+  static const adminLabTests = '/admin/lab-tests';
+  static const adminLabTestAdd = '/admin/lab-tests/new';
+  static const adminLabTestEdit = '/admin/lab-tests/edit'; // + /<id>
 
   // Customer bottom-navigation tabs.
   static const pharmacy = '/pharmacy';
@@ -58,6 +59,7 @@ abstract final class AppRoutes {
   static const profileAppointments = '/profile/appointments';
   static const profileOrders = '/profile/orders';
   static const profileOrderDetail = '/profile/orders/detail';
+  static const profileOrderReturn = '/profile/orders/return'; // order passed via extra
   static const profileOrderView = '/profile/orders/view'; // + /<id> — for notification deep links
   static const profileLabTests = '/profile/lab-tests';
   static const profileLabTestDetail = '/profile/lab-tests/detail';

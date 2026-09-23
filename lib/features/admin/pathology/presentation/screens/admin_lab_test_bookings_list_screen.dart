@@ -8,6 +8,7 @@ import 'package:sunil_medical_store/features/admin/pathology/domain/admin_lab_te
 import 'package:sunil_medical_store/features/admin/pathology/presentation/providers/admin_lab_test_providers.dart';
 import 'package:sunil_medical_store/features/admin/pathology/presentation/widgets/admin_lab_test_tile.dart';
 import 'package:sunil_medical_store/features/admin/pathology/presentation/widgets/lab_test_booking_filter_sheet.dart';
+import 'package:sunil_medical_store/core/widgets/refresh_on_focus.dart';
 
 /// Admin > Orders > Pathology sub-tab: every lab-test booking across every
 /// user, with search + filter sheet. Tap a row to view/advance status.
@@ -65,7 +66,9 @@ class _AdminLabTestBookingsListScreenState extends ConsumerState<AdminLabTestBoo
     final async = ref.watch(adminLabTestBookingsProvider);
     final hasFilters = !filters.isEmpty;
 
-    return Scaffold(
+    return RefreshOnFocus(
+      onRefresh: () { refreshIfIdle(ref, adminLabTestBookingsProvider); },
+      child: Scaffold(
       body: Column(
         children: [
           Padding(
@@ -166,6 +169,7 @@ class _AdminLabTestBookingsListScreenState extends ConsumerState<AdminLabTestBoo
           ),
         ],
       ),
+    ),
     );
   }
 }

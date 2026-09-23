@@ -93,7 +93,7 @@ void main() {
     testWidgets('policy section: cancel note for a created order, help only when asked', (tester) async {
       const created = OrderPolicyInput(status: OrderStatus.created, deliveredOn: null, orderNumber: 'PHSMS-1');
       await tester.pumpWidget(wrap(OrderPolicySection(order: created, settings: null, showHelp: true)));
-      expect(find.textContaining('can cancel this order until it is processed'), findsOneWidget);
+      expect(find.textContaining('can cancel this order until it is shipped'), findsOneWidget);
       expect(find.text('Contact us'), findsOneWidget);
 
       await tester.pumpWidget(wrap(OrderPolicySection(order: created, settings: null)));

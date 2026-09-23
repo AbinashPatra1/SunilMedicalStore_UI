@@ -9,6 +9,7 @@ import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/profile/domain/lab_test.dart';
 import 'package:sunil_medical_store/features/profile/presentation/providers/profile_providers.dart';
 import 'package:sunil_medical_store/features/profile/presentation/widgets/status_chip.dart';
+import 'package:sunil_medical_store/core/widgets/refresh_on_focus.dart';
 
 /// Profile > Lab Tests: the customer's lab test history. Tapping a test opens
 /// its detail screen.
@@ -19,8 +20,10 @@ class LabTestsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final testsAsync = ref.watch(labTestsProvider);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Lab Tests')),
+    return RefreshOnFocus(
+      onRefresh: () { refreshIfIdle(ref, labTestsProvider); },
+      child: Scaffold(
+      appBar: AppBar(title: const Text('My Lab Tests')),
       body: testsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => Center(
@@ -73,6 +76,7 @@ class LabTestsScreen extends ConsumerWidget {
           );
         },
       ),
+    ),
     );
   }
 }

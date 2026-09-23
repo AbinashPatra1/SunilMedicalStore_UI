@@ -17,6 +17,7 @@ class DeliverySettings {
     required this.storeLatitude,
     required this.storeLongitude,
     required this.radiusKm,
+    this.storeAddress,
     this.deliveryFeeTiers = const [],
     this.deliveryFeeWaived = false,
     this.platformFee = 0,
@@ -31,6 +32,11 @@ class DeliverySettings {
   final double storeLatitude;
   final double storeLongitude;
   final double radiusKm;
+
+  /// Human-readable place name for the store location (e.g. "Chhaka Bazar,
+  /// Kamarda"), when the backend stores one. The admin screen falls back to
+  /// reverse-geocoding the coordinates on-device when this is `null`.
+  final String? storeAddress;
 
   /// Distance-tiered delivery fee. Empty means "not configured yet" —
   /// checkout falls back to the legacy flat ₹40/free-over-₹500 rule.

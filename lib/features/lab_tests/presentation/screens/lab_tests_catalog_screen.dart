@@ -5,6 +5,7 @@ import 'package:sunil_medical_store/core/routes/app_routes.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/lab_tests/presentation/providers/lab_test_providers.dart';
 import 'package:sunil_medical_store/features/lab_tests/presentation/widgets/lab_test_card.dart';
+import 'package:sunil_medical_store/core/widgets/refresh_on_focus.dart';
 
 /// Lab Tests tab: browse the catalog of bookable tests.
 class LabTestsCatalogScreen extends ConsumerWidget {
@@ -15,7 +16,9 @@ class LabTestsCatalogScreen extends ConsumerWidget {
     final theme = Theme.of(context);
     final catalogAsync = ref.watch(labTestCatalogProvider);
 
-    return Scaffold(
+    return RefreshOnFocus(
+      onRefresh: () { refreshIfIdle(ref, labTestCatalogProvider); },
+      child: Scaffold(
       appBar: AppBar(title: const Text('Lab Tests')),
       body: catalogAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -46,6 +49,7 @@ class LabTestsCatalogScreen extends ConsumerWidget {
           },
         ),
       ),
+    ),
     );
   }
 }

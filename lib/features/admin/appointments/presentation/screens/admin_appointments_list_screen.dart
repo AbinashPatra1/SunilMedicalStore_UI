@@ -8,6 +8,7 @@ import 'package:sunil_medical_store/features/admin/appointments/domain/admin_app
 import 'package:sunil_medical_store/features/admin/appointments/presentation/providers/admin_appointment_providers.dart';
 import 'package:sunil_medical_store/features/admin/appointments/presentation/widgets/admin_appointment_tile.dart';
 import 'package:sunil_medical_store/features/admin/appointments/presentation/widgets/appointment_filter_sheet.dart';
+import 'package:sunil_medical_store/core/widgets/refresh_on_focus.dart';
 
 /// Admin > Appointments > Appointments sub-tab: list of every appointment
 /// across every user, with search + filter sheet + create-on-behalf FAB.
@@ -69,7 +70,9 @@ class _AdminAppointmentsListScreenState
     final async = ref.watch(adminAppointmentsProvider);
     final hasFilters = !filters.isEmpty;
 
-    return Scaffold(
+    return RefreshOnFocus(
+      onRefresh: () { refreshIfIdle(ref, adminAppointmentsProvider); },
+      child: Scaffold(
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push(AppRoutes.adminAppointmentNew),
         icon: const Icon(Icons.add),
@@ -177,6 +180,7 @@ class _AdminAppointmentsListScreenState
           ),
         ],
       ),
+    ),
     );
   }
 }

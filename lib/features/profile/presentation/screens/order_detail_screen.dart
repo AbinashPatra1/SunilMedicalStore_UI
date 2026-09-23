@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:sunil_medical_store/core/routes/app_routes.dart';
+import 'package:sunil_medical_store/core/utils/order_policy.dart';
 import 'package:sunil_medical_store/core/theme/app_palette.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/core/widgets/refund_status_banner.dart';
 import 'package:sunil_medical_store/core/models/order.dart';
+import 'package:sunil_medical_store/features/admin/delivery/domain/delivery_settings.dart';
 import 'package:sunil_medical_store/features/admin/delivery/presentation/providers/delivery_settings_providers.dart';
 import 'package:sunil_medical_store/features/cart/presentation/providers/cart_providers.dart';
 import 'package:sunil_medical_store/features/cart/presentation/providers/reorder.dart';
@@ -22,6 +26,20 @@ class OrderDetailScreen extends ConsumerStatefulWidget {
 
   @override
   ConsumerState<OrderDetailScreen> createState() => _OrderDetailScreenState();
+}
+
+/// A delivered order can be returned while the store's return window is
+/// still open — and only if it has medicine lines the backend identified.
+bool _canReturn(Order order, DeliverySettings? settings) {
+  if (order.status != OrderStatus.delivered) return false;
+  if (!order.items.any((i) => !i.isLabTest && i.productId != null)) return false;
+  return evaluateReturn(
+        status: order.status,
+        deliveredOn: order.deliveredOn,
+        returnsEnabled: settings?.returnsEnabled ?? false,
+        windowDays: settings?.returnWindowDays ?? DeliverySettings.defaultReturnWindowDays,
+      ).state ==
+      ReturnState.open;
 }
 
 class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
@@ -80,6 +98,13 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
     } finally {
       if (mounted) setState(() => _reordering = false);
     }
+  }
+
+  Future<void> _return() async {
+    final order = _order;
+    if (order == null) return;
+    final updated = await context.push<Order>(AppRoutes.profileOrderReturn, extra: order);
+    if (updated != null && mounted) setState(() => _order = updated);
   }
 
   Future<void> _cancel() async {
@@ -235,6 +260,18 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
                   : const Icon(Icons.cancel_outlined),
               label: const Text('Cancel order'),
             ),
+          ],
+          if (_canReturn(order, settings)) ...[
+            const SizedBox(height: AppConstants.spacingSm),
+            OutlinedButton.icon(
+              onPressed: _return,
+              icon: const Icon(Icons.assignment_return_outlined),
+              label: const Text('Return items'),
+            ),
+          ],
+          if (order.returnRequest != null) ...[
+            const SizedBox(height: AppConstants.spacingLg),
+            OrderReturnCard(request: order.returnRequest!, status: order.status),
           ],
           const SizedBox(height: AppConstants.spacingLg),
           OrderPolicySection(

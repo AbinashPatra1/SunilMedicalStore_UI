@@ -75,6 +75,51 @@ class _DetailFormState extends ConsumerState<_DetailForm> {
     }
   }
 
+  Future<void> _decideReturn({required bool approve}) async {
+    String? note;
+    if (!approve) {
+      final controller = TextEditingController();
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Reject return?'),
+          content: TextField(
+            controller: controller,
+            maxLines: 2,
+            decoration: const InputDecoration(labelText: 'Note for the customer (optional)'),
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('Back')),
+            FilledButton(onPressed: () => Navigator.of(dialogContext).pop(true), child: const Text('Reject return')),
+          ],
+        ),
+      );
+      note = controller.text.trim();
+      controller.dispose();
+      if (ok != true || !mounted) return;
+    }
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      final updated = await ref
+          .read(adminOrderRepositoryProvider)
+          .decideReturn(_order.id, approve: approve, note: note);
+      ref.invalidate(adminOrdersProvider);
+      if (mounted) {
+        setState(() => _order = updated);
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(content: Text(approve ? 'Return approved' : 'Return rejected')));
+      }
+    } on ApiException catch (e) {
+      if (mounted) setState(() => _error = e.message);
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
   Future<void> _cancel() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -185,16 +230,42 @@ class _DetailFormState extends ConsumerState<_DetailForm> {
             ),
           ],
           const SizedBox(height: AppConstants.spacingSm),
-          OutlinedButton.icon(
-            onPressed: (_busy || o.status == OrderStatus.cancelled)
-                ? null
-                : _cancel,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: theme.colorScheme.error,
+          if (o.status.isAdminCancellable)
+            OutlinedButton.icon(
+              onPressed: _busy ? null : _cancel,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: theme.colorScheme.error,
+              ),
+              icon: const Icon(Icons.cancel_outlined),
+              label: const Text('Cancel order'),
             ),
-            icon: const Icon(Icons.cancel_outlined),
-            label: const Text('Cancel order'),
-          ),
+          if (o.returnRequest != null) ...[
+            const SizedBox(height: AppConstants.spacingMd),
+            OrderReturnCard(request: o.returnRequest!, status: o.status),
+          ],
+          if (o.status == OrderStatus.returnRequested) ...[
+            const SizedBox(height: AppConstants.spacingSm),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: _busy ? null : () => _decideReturn(approve: false),
+                    style: OutlinedButton.styleFrom(foregroundColor: theme.colorScheme.error),
+                    child: const Text('Reject return'),
+                  ),
+                ),
+                const SizedBox(width: AppConstants.spacingMd),
+                Expanded(
+                  child: FilledButton(
+                    onPressed: _busy ? null : () => _decideReturn(approve: true),
+                    child: _busy
+                        ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Text('Approve return'),
+                  ),
+                ),
+              ],
+            ),
+          ],
           const SizedBox(height: AppConstants.spacingLg),
           OrderPolicySection(
             order: OrderPolicyInput(
@@ -210,6 +281,12 @@ class _DetailFormState extends ConsumerState<_DetailForm> {
             address: o.deliveryAddress?.formatted,
             orderNumber: o.orderNumber,
             placedOn: o.placedOn,
+            timeline: orderTimeline(
+              history: o.statusHistory,
+              status: o.status,
+              placedOn: o.placedOn,
+              deliveredOn: o.deliveredOn,
+            ),
           ),
         ],
       ),

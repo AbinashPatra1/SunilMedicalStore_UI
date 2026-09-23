@@ -54,6 +54,22 @@ class ApiAdminOrderRepository implements AdminOrderRepository {
     }
   }
 
+  @override
+  Future<AdminOrder> decideReturn(String id, {required bool approve, String? note}) async {
+    try {
+      final response = await _dio.put<Map<String, dynamic>>(
+        '/admin/orders/$id/return',
+        data: {
+          'action': approve ? 'approve' : 'reject',
+          if (note != null && note.isNotEmpty) 'note': note,
+        },
+      );
+      return _fromJson(response.data!);
+    } on DioException catch (e) {
+      throw ApiException.fromDioException(e);
+    }
+  }
+
   AdminOrder _fromJson(Map<String, dynamic> json) => AdminOrder(
     id: json['id'] as String,
     orderNumber: json['orderNumber'] as String,
@@ -61,7 +77,7 @@ class ApiAdminOrderRepository implements AdminOrderRepository {
     userName: json['userName'] as String,
     userPhone: json['userPhone'] as String,
     placedOn: DateTime.parse(json['placedOn'] as String),
-    status: OrderStatus.values.byName(json['status'] as String),
+    status: OrderStatus.fromWire(json['status'] as String?),
     items: OrderItem.listFromJson(json['items']),
     subtotal: json['subtotal'] as int,
     discount: json['discount'] as int,
@@ -73,5 +89,7 @@ class ApiAdminOrderRepository implements AdminOrderRepository {
     platformFee: json['platformFee'] as int? ?? 0,
     deliveredOn: DateTime.tryParse(json['deliveredOn'] as String? ?? ''),
     deliveryAddress: OrderAddress.tryParse(json['deliveryAddress']),
+    statusHistory: OrderStatusEvent.listFromJson(json['statusHistory']),
+    returnRequest: OrderReturn.tryParse(json['returnRequest']),
   );
 }

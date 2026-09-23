@@ -12,6 +12,7 @@ import 'package:sunil_medical_store/features/profile/domain/past_appointment.dar
 import 'package:sunil_medical_store/features/profile/presentation/providers/profile_providers.dart';
 import 'package:sunil_medical_store/features/profile/presentation/widgets/star_rating.dart';
 import 'package:sunil_medical_store/features/profile/presentation/widgets/status_chip.dart';
+import 'package:sunil_medical_store/core/widgets/refresh_on_focus.dart';
 
 /// Profile > Appointments: the customer's past appointments plus a button to
 /// book a new one (switches to the Appointments tab).
@@ -22,8 +23,10 @@ class ProfileAppointmentsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final appointmentsAsync = ref.watch(pastAppointmentsProvider);
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Appointments')),
+    return RefreshOnFocus(
+      onRefresh: () { refreshIfIdle(ref, pastAppointmentsProvider); },
+      child: Scaffold(
+      appBar: AppBar(title: const Text('My Appointments')),
       body: Column(
         children: [
           Expanded(
@@ -90,6 +93,7 @@ class ProfileAppointmentsScreen extends ConsumerWidget {
           ),
         ],
       ),
+    ),
     );
   }
 }

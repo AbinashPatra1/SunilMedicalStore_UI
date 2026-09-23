@@ -28,4 +28,8 @@ abstract interface class AdminOrderRepository {
   /// cancel). Admin can set any status, including `cancelled`, regardless of
   /// the customer-cancellable window that applies to self-service cancels.
   Future<AdminOrder> updateStatus(String id, OrderStatus status);
+
+  /// Approves (`returned`, refund kicks off for paid orders) or rejects (back
+  /// to `delivered`) a pending return request — `docs/API_ENDPOINTS.md` #88.
+  Future<AdminOrder> decideReturn(String id, {required bool approve, String? note});
 }

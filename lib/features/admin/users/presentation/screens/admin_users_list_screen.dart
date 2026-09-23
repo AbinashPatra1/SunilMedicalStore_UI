@@ -6,6 +6,7 @@ import 'package:sunil_medical_store/core/routes/app_routes.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/admin/users/presentation/providers/admin_users_providers.dart';
 import 'package:sunil_medical_store/features/admin/users/presentation/widgets/admin_user_tile.dart';
+import 'package:sunil_medical_store/core/widgets/refresh_on_focus.dart';
 
 /// Admin > More > Users: browse/search every customer. Tap a row to edit;
 /// the FAB pre-registers a walk-in customer.
@@ -31,7 +32,9 @@ class _AdminUsersListScreenState extends ConsumerState<AdminUsersListScreen> {
     final theme = Theme.of(context);
     final async = ref.watch(adminUsersProvider(_query));
 
-    return Scaffold(
+    return RefreshOnFocus(
+      onRefresh: () { refreshIfIdle(ref, adminUsersProvider(_query)); },
+      child: Scaffold(
       appBar: AppBar(title: const Text('Users')),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push(AppRoutes.adminUserAdd),
@@ -133,6 +136,7 @@ class _AdminUsersListScreenState extends ConsumerState<AdminUsersListScreen> {
           ),
         ],
       ),
+    ),
     );
   }
 }

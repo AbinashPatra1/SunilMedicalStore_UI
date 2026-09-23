@@ -24,6 +24,8 @@ class AdminOrder {
     this.platformFee = 0,
     this.deliveredOn,
     this.deliveryAddress,
+    this.statusHistory = const [],
+    this.returnRequest,
   });
 
   final String id;
@@ -50,6 +52,12 @@ class AdminOrder {
 
   /// Delivery address snapshot from when the order was placed, if returned.
   final OrderAddress? deliveryAddress;
+
+  /// When each status was reached, oldest first (empty until the backend returns it).
+  final List<OrderStatusEvent> statusHistory;
+
+  /// The customer's return request, once one exists.
+  final OrderReturn? returnRequest;
 
   final String? paymentMethod;
   final String? addressId;

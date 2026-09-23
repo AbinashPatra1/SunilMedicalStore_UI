@@ -28,3 +28,19 @@ Future<Position> getCurrentPosition() async {
     locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
   );
 }
+
+/// Asks for location permission up front (called right after sign-in) so the
+/// system prompt shows once, early, rather than the first time a location
+/// feature is used. Never throws and never asks again after a refusal —
+/// features that need a fix still go through [getCurrentPosition], which
+/// explains what to do.
+Future<void> requestLocationPermissionIfNeeded() async {
+  try {
+    final permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      await Geolocator.requestPermission();
+    }
+  } catch (_) {
+    // No location plugin (tests) or a platform hiccup — nothing to do.
+  }
+}

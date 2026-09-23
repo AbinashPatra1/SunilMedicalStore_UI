@@ -6,6 +6,7 @@ import 'package:sunil_medical_store/core/notifications/domain/fcm_token_reposito
 import 'package:sunil_medical_store/core/notifications/in_app_notification_banner.dart';
 import 'package:sunil_medical_store/core/notifications/notification_payload.dart';
 import 'package:sunil_medical_store/core/routes/app_router.dart';
+import 'package:sunil_medical_store/features/admin/notifications/presentation/providers/admin_notification_providers.dart';
 import 'package:sunil_medical_store/features/auth/presentation/providers/auth_controller.dart';
 import 'package:sunil_medical_store/features/profile/presentation/providers/profile_providers.dart';
 
@@ -66,6 +67,10 @@ class NotificationService {
     if (notification == null) return;
     final payload = NotificationPayload.fromData(message.data);
     if (payload != null) _invalidateForPayload(payload);
+    // Keeps the admin's Notifications inbox current while it is open.
+    if (_ref.read(authControllerProvider).user?.role.isAdmin ?? false) {
+      _ref.invalidate(adminNotificationsProvider);
+    }
     showInAppNotificationBanner(
       title: notification.title ?? '',
       body: notification.body ?? '',

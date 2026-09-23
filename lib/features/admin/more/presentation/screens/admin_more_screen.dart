@@ -22,6 +22,12 @@ class AdminMoreScreen extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: AppConstants.spacingSm),
         children: [
           _MoreMenuTile(
+            icon: Icons.notifications_none,
+            title: 'Notifications',
+            subtitle: 'New orders, bookings and appointments',
+            onTap: () => context.push(AppRoutes.adminNotifications),
+          ),
+          _MoreMenuTile(
             icon: Icons.bar_chart_outlined,
             title: 'Statistics',
             subtitle: 'Revenue, orders, appointments, lab tests',
@@ -46,10 +52,10 @@ class AdminMoreScreen extends StatelessWidget {
             onTap: () => context.push(AppRoutes.adminBanners),
           ),
           _MoreMenuTile(
-            icon: Icons.biotech_outlined,
-            title: 'Lab Tests',
-            subtitle: 'Manage the bookable lab test catalog',
-            onTap: () => context.push(AppRoutes.adminLabTests),
+            icon: Icons.local_offer_outlined,
+            title: 'Discounts',
+            subtitle: 'Promo codes and offers',
+            onTap: () => context.push(AppRoutes.adminDiscounts),
           ),
         ],
       ),

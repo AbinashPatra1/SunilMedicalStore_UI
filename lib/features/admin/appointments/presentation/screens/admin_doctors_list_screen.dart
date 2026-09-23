@@ -6,6 +6,7 @@ import 'package:sunil_medical_store/core/routes/app_routes.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/admin/appointments/presentation/providers/doctor_admin_providers.dart';
 import 'package:sunil_medical_store/features/admin/appointments/presentation/widgets/admin_doctor_tile.dart';
+import 'package:sunil_medical_store/core/widgets/refresh_on_focus.dart';
 
 /// Admin > Appointments > Doctors sub-tab: list all doctors, tap to edit,
 /// FAB to add. Rendered inside the shared AdminAppointmentsShell.
@@ -16,7 +17,9 @@ class AdminDoctorsListScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final async = ref.watch(adminDoctorsProvider);
 
-    return Scaffold(
+    return RefreshOnFocus(
+      onRefresh: () { refreshIfIdle(ref, adminDoctorsProvider); },
+      child: Scaffold(
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push(AppRoutes.adminDoctorAdd),
         icon: const Icon(Icons.person_add_alt_outlined),
@@ -65,6 +68,7 @@ class AdminDoctorsListScreen extends ConsumerWidget {
           );
         },
       ),
+    ),
     );
   }
 }

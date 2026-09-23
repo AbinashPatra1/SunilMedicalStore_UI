@@ -11,6 +11,7 @@ abstract interface class DeliverySettingsRepository {
     required double storeLatitude,
     required double storeLongitude,
     required double radiusKm,
+    String? storeAddress,
     required List<DeliveryFeeTier> deliveryFeeTiers,
     required bool deliveryFeeWaived,
     required int platformFee,

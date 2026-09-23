@@ -140,7 +140,7 @@ class ApiProfileRepository implements ProfileRepository {
     id: json['id'] as String,
     orderNumber: json['orderNumber'] as String,
     placedOn: DateTime.parse(json['placedOn'] as String),
-    status: OrderStatus.values.byName(json['status'] as String),
+    status: OrderStatus.fromWire(json['status'] as String?),
     items: OrderItem.listFromJson(json['items']),
     subtotal: json['subtotal'] as int,
     discount: json['discount'] as int,
@@ -152,6 +152,8 @@ class ApiProfileRepository implements ProfileRepository {
     platformFee: json['platformFee'] as int? ?? 0,
     deliveredOn: DateTime.tryParse(json['deliveredOn'] as String? ?? ''),
     deliveryAddress: OrderAddress.tryParse(json['deliveryAddress']),
+    statusHistory: OrderStatusEvent.listFromJson(json['statusHistory']),
+    returnRequest: OrderReturn.tryParse(json['returnRequest']),
   );
 
   LabTest _labTestFromJson(Map<String, dynamic> json) => LabTest(

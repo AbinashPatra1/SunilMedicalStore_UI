@@ -7,6 +7,7 @@ import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/cart/presentation/providers/cart_providers.dart';
 import 'package:sunil_medical_store/features/medicines/presentation/providers/medicine_providers.dart';
 import 'package:sunil_medical_store/features/medicines/presentation/widgets/product_card.dart';
+import 'package:sunil_medical_store/core/widgets/refresh_on_focus.dart';
 
 /// Product catalog for a category (or all products when [category] is null).
 ///
@@ -21,7 +22,9 @@ class MedicinesScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final productsAsync = ref.watch(productsByCategoryProvider(category ?? ''));
 
-    return Scaffold(
+    return RefreshOnFocus(
+      onRefresh: () { refreshIfIdle(ref, productsByCategoryProvider(category ?? '')); },
+      child: Scaffold(
       appBar: AppBar(title: Text(category ?? 'Medicines')),
       body: productsAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -70,6 +73,7 @@ class MedicinesScreen extends ConsumerWidget {
           );
         },
       ),
+    ),
     );
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sunil_medical_store/core/location/current_position.dart';
 import 'package:sunil_medical_store/core/models/app_user.dart';
 import 'package:sunil_medical_store/core/notifications/notification_service.dart';
 import 'package:sunil_medical_store/features/auth/data/firebase_auth_repository.dart';
@@ -49,7 +50,7 @@ class AuthController extends Notifier<AuthState> {
     } else {
       state = AuthState.authenticated(_toAppUser(account));
       unawaited(_bootstrapProfile(account.displayName));
-      unawaited(_registerForPushNotifications());
+      unawaited(_registerForPushNotifications().whenComplete(requestLocationPermissionIfNeeded));
     }
   }
 
@@ -101,7 +102,7 @@ class AuthController extends Notifier<AuthState> {
       final account = await _repository.completeProfile(fullName: fullName.trim());
       state = AuthState.authenticated(_toAppUser(account));
       unawaited(_bootstrapProfile(account.displayName));
-      unawaited(_registerForPushNotifications());
+      unawaited(_registerForPushNotifications().whenComplete(requestLocationPermissionIfNeeded));
     } on AuthException catch (e) {
       state = AuthState.onboarding(errorMessage: e.message);
     }

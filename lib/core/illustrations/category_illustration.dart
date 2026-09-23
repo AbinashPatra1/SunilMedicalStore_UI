@@ -143,6 +143,11 @@ _CategorySpec _specFor(ProductCategory category) => switch (category) {
     badgeColor: Color(0xFF2E8B6F),
     icon: Icons.local_pharmacy_outlined,
   ),
+  ProductCategory.others => const _CategorySpec(
+    cardColor: Color(0xFFEDEFF2),
+    badgeColor: Color(0xFF6B7280),
+    icon: Icons.category_outlined,
+  ),
 };
 
 class _CategoryPainter extends CustomPainter {

@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sunil_medical_store/core/routes/app_route_observer.dart';
 import 'package:sunil_medical_store/core/routes/app_routes.dart';
 import 'package:sunil_medical_store/core/widgets/admin_scaffold_with_nav_bar.dart';
 import 'package:sunil_medical_store/core/widgets/scaffold_with_nav_bar.dart';
@@ -22,6 +23,7 @@ import 'package:sunil_medical_store/features/admin/banners/presentation/screens/
 import 'package:sunil_medical_store/features/admin/banners/presentation/screens/edit_banner_screen.dart';
 import 'package:sunil_medical_store/features/admin/delivery/presentation/screens/admin_delivery_settings_screen.dart';
 import 'package:sunil_medical_store/features/admin/more/presentation/screens/admin_more_screen.dart';
+import 'package:sunil_medical_store/features/admin/notifications/presentation/screens/admin_notifications_screen.dart';
 import 'package:sunil_medical_store/features/admin/orders/presentation/screens/admin_order_detail_screen.dart';
 import 'package:sunil_medical_store/features/admin/orders/presentation/screens/admin_orders_screen.dart';
 import 'package:sunil_medical_store/features/admin/orders/presentation/screens/admin_prescription_detail_screen.dart';
@@ -59,6 +61,7 @@ import 'package:sunil_medical_store/features/profile/presentation/screens/orders
 import 'package:sunil_medical_store/features/profile/presentation/screens/payment_methods_screen.dart';
 import 'package:sunil_medical_store/features/profile/presentation/screens/profile_appointments_screen.dart';
 import 'package:sunil_medical_store/features/profile/presentation/screens/profile_screen.dart';
+import 'package:sunil_medical_store/features/profile/presentation/screens/return_order_screen.dart';
 import 'package:sunil_medical_store/features/profile/presentation/screens/settings_screen.dart';
 import 'package:sunil_medical_store/features/splash/presentation/screens/splash_screen.dart';
 
@@ -92,6 +95,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
   return GoRouter(
     navigatorKey: rootNavigatorKey,
+    observers: [appRouteObservers[0]],
     initialLocation: AppRoutes.splash,
     debugLogDiagnostics: true,
     refreshListenable: refreshSignal,
@@ -154,6 +158,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             AdminScaffoldWithNavBar(navigationShell: navigationShell),
         branches: [
           StatefulShellBranch(
+            observers: [appRouteObservers[1]],
             routes: [
               GoRoute(
                 path: AppRoutes.adminInventory,
@@ -188,6 +193,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
           StatefulShellBranch(
+            observers: [appRouteObservers[2]],
             routes: [
               GoRoute(
                 path: AppRoutes.adminAppointments,
@@ -218,6 +224,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
           StatefulShellBranch(
+            observers: [appRouteObservers[3]],
             routes: [
               GoRoute(
                 path: AppRoutes.adminOrders,
@@ -246,19 +253,20 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
           StatefulShellBranch(
+            observers: [appRouteObservers[4]],
             routes: [
               GoRoute(
-                path: AppRoutes.adminDiscounts,
-                builder: (context, state) => const DiscountsListScreen(),
+                path: AppRoutes.adminLabTests,
+                builder: (context, state) => const LabTestsAdminListScreen(),
                 routes: [
                   GoRoute(
                     path: 'new',
-                    builder: (context, state) => const AddOrEditPromoCodeScreen(),
+                    builder: (context, state) => const AddOrEditLabTestScreen(),
                   ),
                   GoRoute(
                     path: 'edit/:id',
-                    builder: (context, state) => AddOrEditPromoCodeScreen(
-                      promoCodeId: state.pathParameters['id'],
+                    builder: (context, state) => AddOrEditLabTestScreen(
+                      testId: state.pathParameters['id'],
                     ),
                   ),
                 ],
@@ -266,6 +274,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
           StatefulShellBranch(
+            observers: [appRouteObservers[5]],
             routes: [
               GoRoute(
                 path: AppRoutes.adminMore,
@@ -292,6 +301,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                     ],
                   ),
                   GoRoute(
+                    path: 'notifications',
+                    builder: (context, state) => const AdminNotificationsScreen(),
+                  ),
+                  GoRoute(
                     path: 'delivery-settings',
                     builder: (context, state) => const AdminDeliverySettingsScreen(),
                   ),
@@ -306,17 +319,17 @@ final routerProvider = Provider<GoRouter>((ref) {
                     ],
                   ),
                   GoRoute(
-                    path: 'lab-tests',
-                    builder: (context, state) => const LabTestsAdminListScreen(),
+                    path: 'discounts',
+                    builder: (context, state) => const DiscountsListScreen(),
                     routes: [
                       GoRoute(
                         path: 'new',
-                        builder: (context, state) => const AddOrEditLabTestScreen(),
+                        builder: (context, state) => const AddOrEditPromoCodeScreen(),
                       ),
                       GoRoute(
                         path: 'edit/:id',
-                        builder: (context, state) => AddOrEditLabTestScreen(
-                          testId: state.pathParameters['id'],
+                        builder: (context, state) => AddOrEditPromoCodeScreen(
+                          promoCodeId: state.pathParameters['id'],
                         ),
                       ),
                     ],
@@ -333,6 +346,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             ScaffoldWithNavBar(navigationShell: navigationShell),
         branches: [
           StatefulShellBranch(
+            observers: [appRouteObservers[6]],
             routes: [
               GoRoute(
                 path: AppRoutes.pharmacy,
@@ -371,6 +385,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
           StatefulShellBranch(
+            observers: [appRouteObservers[7]],
             routes: [
               GoRoute(
                 path: AppRoutes.labTests,
@@ -387,6 +402,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
           StatefulShellBranch(
+            observers: [appRouteObservers[8]],
             routes: [
               GoRoute(
                 path: AppRoutes.appointments,
@@ -395,6 +411,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
           StatefulShellBranch(
+            observers: [appRouteObservers[9]],
             routes: [
               GoRoute(
                 path: AppRoutes.cart,
@@ -409,6 +426,7 @@ final routerProvider = Provider<GoRouter>((ref) {
             ],
           ),
           StatefulShellBranch(
+            observers: [appRouteObservers[10]],
             routes: [
               GoRoute(
                 path: AppRoutes.profile,
@@ -423,6 +441,10 @@ final routerProvider = Provider<GoRouter>((ref) {
                       GoRoute(
                         path: 'detail',
                         builder: (context, state) => OrderDetailScreen(order: state.extra as Order?),
+                      ),
+                      GoRoute(
+                        path: 'return',
+                        builder: (context, state) => ReturnOrderScreen(order: state.extra as Order?),
                       ),
                       GoRoute(
                         path: 'view/:id',
