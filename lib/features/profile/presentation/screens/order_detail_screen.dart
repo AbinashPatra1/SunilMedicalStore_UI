@@ -271,7 +271,7 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
           ],
           if (order.returnRequest != null) ...[
             const SizedBox(height: AppConstants.spacingLg),
-            OrderReturnCard(request: order.returnRequest!, status: order.status),
+            OrderReturnCard(request: order.returnRequest!, status: order.status, items: order.items),
           ],
           const SizedBox(height: AppConstants.spacingLg),
           OrderPolicySection(

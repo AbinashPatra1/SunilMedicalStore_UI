@@ -241,7 +241,7 @@ class _DetailFormState extends ConsumerState<_DetailForm> {
             ),
           if (o.returnRequest != null) ...[
             const SizedBox(height: AppConstants.spacingMd),
-            OrderReturnCard(request: o.returnRequest!, status: o.status),
+            OrderReturnCard(request: o.returnRequest!, status: o.status, items: o.items),
           ],
           if (o.status == OrderStatus.returnRequested) ...[
             const SizedBox(height: AppConstants.spacingSm),

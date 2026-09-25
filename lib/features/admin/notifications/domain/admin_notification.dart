@@ -35,10 +35,7 @@ class AdminNotification {
   }
 
   static AdminNotification fromJson(Map<String, dynamic> json) {
-    NotificationEntityType? type;
-    for (final t in NotificationEntityType.values) {
-      if (t.name == json['type']) type = t;
-    }
+    final type = parseNotificationType(json['type'] as String?);
     return AdminNotification(
       id: json['id'].toString(),
       title: (json['title'] as String?) ?? '',
@@ -49,4 +46,21 @@ class AdminNotification {
       isRead: json['isRead'] as bool? ?? false,
     );
   }
+}
+
+/// Maps a notification's wire `type` to the screen family it opens. Exact
+/// values (`order`, `appointment`, `labTest`) are the contract, but the
+/// backend also sends event-specific names such as `return_requested`, so
+/// anything order/return-like opens an order, and so on. `null` = unknown
+/// (the row is shown but isn't tappable).
+NotificationEntityType? parseNotificationType(String? raw) {
+  if (raw == null) return null;
+  for (final t in NotificationEntityType.values) {
+    if (t.name == raw) return t;
+  }
+  final v = raw.toLowerCase().replaceAll(RegExp(r'[^a-z]'), '');
+  if (v.contains('lab')) return NotificationEntityType.labTest;
+  if (v.contains('appointment')) return NotificationEntityType.appointment;
+  if (v.contains('order') || v.contains('return')) return NotificationEntityType.order;
+  return null;
 }

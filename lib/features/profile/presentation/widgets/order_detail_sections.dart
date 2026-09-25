@@ -586,20 +586,35 @@ List<OrderStatusEvent> orderTimeline({
   required DateTime placedOn,
   required DateTime? deliveredOn,
 }) {
-  if (history.isNotEmpty) return history;
+  // Orders that predate status history come back with only the newest
+  // entries (no backfill), so fill in the steps the order itself proves.
+  bool has(OrderStatus s) => history.any((e) => e.status == s);
   return [
-    OrderStatusEvent(OrderStatus.created, placedOn),
-    if (deliveredOn != null) OrderStatusEvent(OrderStatus.delivered, deliveredOn),
-  ];
+    if (!has(OrderStatus.created)) OrderStatusEvent(OrderStatus.created, placedOn),
+    if (!has(OrderStatus.delivered) && deliveredOn != null) OrderStatusEvent(OrderStatus.delivered, deliveredOn),
+    ...history,
+  ]..sort((a, b) => a.at.compareTo(b.at));
 }
 
 /// Card summarising a customer's return request: what was returned, why,
 /// and where it stands.
 class OrderReturnCard extends StatelessWidget {
-  const OrderReturnCard({super.key, required this.request, required this.status});
+  const OrderReturnCard({super.key, required this.request, required this.status, this.items = const []});
 
   final OrderReturn request;
   final OrderStatus status;
+
+  /// The order's lines, used to name returned products when the backend
+  /// sends only their ids.
+  final List<OrderItem> items;
+
+  String _nameOf(ReturnLine l) {
+    if (l.name.isNotEmpty) return l.name;
+    for (final i in items) {
+      if (i.productId == l.productId) return i.name;
+    }
+    return 'Item';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -625,7 +640,7 @@ class OrderReturnCard extends StatelessWidget {
             ),
             const SizedBox(height: AppConstants.spacingSm),
             for (final l in request.lines)
-              Text('${l.quantity} × ${l.name}', style: theme.textTheme.bodyMedium),
+              Text('${l.quantity} × ${_nameOf(l)}', style: theme.textTheme.bodyMedium),
             if (request.reason.isNotEmpty) ...[
               const SizedBox(height: AppConstants.spacingSm),
               Text('Reason: ${request.reason}', style: theme.textTheme.bodySmall),
