@@ -1,4 +1,5 @@
 import 'package:sunil_medical_store/features/lab_tests/domain/lab_test.dart';
+import 'package:sunil_medical_store/core/paging/paged.dart';
 
 /// Admin-side CRUD over the lab-test catalog: list-all, read-one, create,
 /// update, and delete. Brand new — distinct from the admin Pathology
@@ -10,6 +11,9 @@ import 'package:sunil_medical_store/features/lab_tests/domain/lab_test.dart';
 /// matching the Inventory/Product split.
 abstract interface class LabTestAdminRepository {
   Future<List<LabTest>> list();
+
+  /// One page of the catalog.
+  Future<PageResult<LabTest>> listPage({required int page, int pageSize = kAdminPageSize});
 
   /// Single test by id.
   Future<LabTest> getById(String id);

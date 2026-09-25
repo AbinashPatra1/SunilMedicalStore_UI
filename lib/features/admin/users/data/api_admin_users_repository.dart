@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/features/admin/users/domain/admin_user.dart';
 import 'package:sunil_medical_store/features/admin/users/domain/admin_users_repository.dart';
+import 'package:sunil_medical_store/core/paging/paged.dart';
 
 /// [AdminUsersRepository] backed by `/v1/admin/users`.
 class ApiAdminUsersRepository implements AdminUsersRepository {
@@ -26,6 +27,19 @@ class ApiAdminUsersRepository implements AdminUsersRepository {
   }
 
   @override
+  Future<PageResult<AdminUser>> listPage({String? query, required int page, int pageSize = kAdminPageSize}) {
+    final trimmed = query?.trim();
+    return fetchPageOf(
+      _dio,
+      '/admin/users',
+      query: {if (trimmed != null && trimmed.isNotEmpty) 'search': trimmed},
+      page: page,
+      pageSize: pageSize,
+      fromJson: _fromJson,
+    );
+  }
+
+    @override
   Future<AdminUser> getById(String id) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>('/admin/users/$id');

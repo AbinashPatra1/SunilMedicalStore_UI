@@ -9,6 +9,7 @@ import 'package:sunil_medical_store/features/admin/pathology/presentation/provid
 import 'package:sunil_medical_store/features/admin/pathology/presentation/widgets/admin_lab_test_tile.dart';
 import 'package:sunil_medical_store/features/admin/pathology/presentation/widgets/lab_test_booking_filter_sheet.dart';
 import 'package:sunil_medical_store/core/widgets/refresh_on_focus.dart';
+import 'package:sunil_medical_store/core/paging/paged_widgets.dart';
 
 /// Admin > Orders > Pathology sub-tab: every lab-test booking across every
 /// user, with search + filter sheet. Tap a row to view/advance status.
@@ -69,6 +70,12 @@ class _AdminLabTestBookingsListScreenState extends ConsumerState<AdminLabTestBoo
     return RefreshOnFocus(
       onRefresh: () { refreshIfIdle(ref, adminLabTestBookingsProvider); },
       child: Scaffold(
+      bottomNavigationBar: async.value == null
+          ? null
+          : PageNumberBar(
+              state: async.requireValue,
+              onSelect: (page) => ref.read(adminLabTestBookingsProvider.notifier).goToPage(page),
+            ),
       body: Column(
         children: [
           Padding(
@@ -125,7 +132,8 @@ class _AdminLabTestBookingsListScreenState extends ConsumerState<AdminLabTestBoo
                   ],
                 ),
               ),
-              data: (bookings) {
+              data: (paged) {
+                final bookings = paged.items;
                 if (bookings.isEmpty) {
                   return Center(
                     child: Padding(
@@ -147,6 +155,7 @@ class _AdminLabTestBookingsListScreenState extends ConsumerState<AdminLabTestBoo
                 return RefreshIndicator(
                   onRefresh: () async => ref.invalidate(adminLabTestBookingsProvider),
                   child: ListView.separated(
+                    key: ValueKey(paged.page),
                     padding: const EdgeInsets.fromLTRB(
                       AppConstants.spacingLg,
                       AppConstants.spacingSm,

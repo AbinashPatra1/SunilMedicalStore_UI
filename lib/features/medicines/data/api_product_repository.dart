@@ -3,6 +3,7 @@ import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/features/medicines/domain/product.dart';
 import 'package:sunil_medical_store/features/medicines/domain/product_repository.dart';
 import 'package:sunil_medical_store/features/medicines/domain/product_type.dart';
+import 'package:sunil_medical_store/core/paging/paged.dart';
 
 /// [ProductRepository] backed by the real catalog API.
 class ApiProductRepository implements ProductRepository {
@@ -25,6 +26,20 @@ class ApiProductRepository implements ProductRepository {
       _getList('/catalog/products', queryParameters: {'search': query});
 
   @override
+  Future<PageResult<Product>> productsPage({String? category, String? search, required int page, int pageSize = kPageSize}) =>
+      fetchPageOf(
+        _dio,
+        '/catalog/products',
+        query: {
+          if (category != null && category.isNotEmpty) 'category': category,
+          if (search != null && search.isNotEmpty) 'search': search,
+        },
+        page: page,
+        pageSize: pageSize,
+        fromJson: _fromJson,
+      );
+
+    @override
   Future<Product> productById(String id) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>('/catalog/products/$id');

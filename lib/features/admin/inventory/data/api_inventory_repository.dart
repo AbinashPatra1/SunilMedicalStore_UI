@@ -4,6 +4,7 @@ import 'package:sunil_medical_store/features/admin/inventory/domain/bulk_import.
 import 'package:sunil_medical_store/features/admin/inventory/domain/inventory_repository.dart';
 import 'package:sunil_medical_store/features/medicines/domain/product.dart';
 import 'package:sunil_medical_store/features/medicines/domain/product_type.dart';
+import 'package:sunil_medical_store/core/paging/paged.dart';
 
 /// [InventoryRepository] backed by the admin catalog API
 /// (`/v1/admin/products`). See `docs/API_ENDPOINTS.md` §Admin.
@@ -26,6 +27,28 @@ class ApiInventoryRepository implements InventoryRepository {
   }
 
   @override
+  Future<PageResult<Product>> listPage({
+    String? category,
+    ProductType? type,
+    String? search,
+    bool inStockOnly = false,
+    required int page,
+    int pageSize = kAdminPageSize,
+  }) => fetchPageOf(
+    _dio,
+    '/admin/products',
+    query: {
+      'category': ?category,
+      'type': ?type?.name,
+      if (search != null && search.isNotEmpty) 'search': search,
+      if (inStockOnly) 'inStock': true,
+    },
+    page: page,
+    pageSize: pageSize,
+    fromJson: _fromJson,
+  );
+
+    @override
   Future<Product> getById(String id) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>('/admin/products/$id');

@@ -4,6 +4,7 @@ import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/features/admin/appointments/domain/admin_appointment.dart';
 import 'package:sunil_medical_store/features/admin/appointments/domain/admin_appointment_repository.dart';
 import 'package:sunil_medical_store/features/profile/domain/past_appointment.dart';
+import 'package:sunil_medical_store/core/paging/paged.dart';
 
 /// [AdminAppointmentRepository] backed by `/v1/admin/appointments`.
 class ApiAdminAppointmentRepository implements AdminAppointmentRepository {
@@ -34,6 +35,26 @@ class ApiAdminAppointmentRepository implements AdminAppointmentRepository {
   }
 
   @override
+  Future<PageResult<AdminAppointment>> listPage(AppointmentFilters filters, {required int page, int pageSize = kAdminPageSize}) {
+    final search = filters.search?.trim();
+    return fetchPageOf(
+      _dio,
+      '/admin/appointments',
+      query: {
+        if (search != null && search.isNotEmpty) 'search': search,
+        if (filters.status != null) 'status': filters.status!.name,
+        if (filters.doctorId != null) 'doctorId': filters.doctorId!,
+        if (filters.dateFrom != null) 'dateFrom': _dateFormat.format(filters.dateFrom!),
+        if (filters.dateTo != null) 'dateTo': _dateFormat.format(filters.dateTo!),
+        if (filters.weekday != null) 'weekday': filters.weekday!,
+      },
+      page: page,
+      pageSize: pageSize,
+      fromJson: _fromJson,
+    );
+  }
+
+    @override
   Future<AdminAppointment> getById(String id) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>('/admin/appointments/$id');

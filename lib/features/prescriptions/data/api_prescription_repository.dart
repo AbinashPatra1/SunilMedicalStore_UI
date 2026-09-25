@@ -7,6 +7,7 @@ import 'package:sunil_medical_store/core/models/prescription.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/features/prescriptions/domain/prescription_repository.dart';
 import 'package:uuid/uuid.dart';
+import 'package:sunil_medical_store/core/paging/paged.dart';
 
 /// [PrescriptionRepository] backed by Firebase Storage (for the image
 /// bytes) + `/v1/prescriptions` (for the metadata: status, review note,
@@ -33,6 +34,10 @@ class ApiPrescriptionRepository implements PrescriptionRepository {
   }
 
   @override
+  Future<PageResult<Prescription>> listPage({required int page, int pageSize = kPageSize}) =>
+      fetchPageOf(_dio, '/prescriptions', page: page, pageSize: pageSize, fromJson: _fromJson);
+
+    @override
   Future<Prescription> upload(File imageFile) async {
     final uid = FirebaseAuth.instance.currentUser?.uid;
     if (uid == null) {

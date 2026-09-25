@@ -131,6 +131,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           .read(prescriptionRepositoryProvider)
           .upload(File(picked.path));
       ref.invalidate(prescriptionsProvider);
+      ref.invalidate(pagedPrescriptionsProvider);
       if (mounted) setState(() => _selectedPrescriptionId = prescription.id);
     } on ApiException catch (e) {
       if (mounted) _snack(e.message);

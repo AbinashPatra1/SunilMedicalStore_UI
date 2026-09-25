@@ -10,6 +10,7 @@ import 'package:sunil_medical_store/features/profile/domain/lab_test.dart';
 import 'package:sunil_medical_store/features/profile/presentation/providers/profile_providers.dart';
 import 'package:sunil_medical_store/features/profile/presentation/widgets/status_chip.dart';
 import 'package:sunil_medical_store/core/widgets/refresh_on_focus.dart';
+import 'package:sunil_medical_store/core/paging/paged_widgets.dart';
 
 /// Profile > Lab Tests: the customer's lab test history. Tapping a test opens
 /// its detail screen.
@@ -39,7 +40,8 @@ class LabTestsScreen extends ConsumerWidget {
             ],
           ),
         ),
-        data: (tests) {
+        data: (paged) {
+          final tests = paged.items;
           if (tests.isEmpty) {
             final theme = Theme.of(context);
             return Center(
@@ -61,12 +63,10 @@ class LabTestsScreen extends ConsumerWidget {
           }
           return RefreshIndicator(
             onRefresh: () async => ref.invalidate(labTestsProvider),
-            child: ListView.separated(
-              padding: const EdgeInsets.all(AppConstants.spacingLg),
-              itemCount: tests.length,
-              separatorBuilder: (_, _) => const SizedBox(height: AppConstants.spacingMd),
-              itemBuilder: (context, index) {
-                final test = tests[index];
+            child: InfiniteListView(
+              state: paged,
+              onLoadMore: () => ref.read(labTestsProvider.notifier).loadMore(),
+              itemBuilder: (context, test) {
                 return _LabTestCard(
                   test: test,
                   onTap: () => context.push(AppRoutes.profileLabTestDetail, extra: test),

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/features/admin/lab_tests/domain/lab_test_admin_repository.dart';
 import 'package:sunil_medical_store/features/lab_tests/domain/lab_test.dart';
+import 'package:sunil_medical_store/core/paging/paged.dart';
 
 /// [LabTestAdminRepository] backed by `/v1/admin/lab-tests`. See
 /// `docs/API_ENDPOINTS.md` §Admin — Lab Tests.
@@ -21,6 +22,10 @@ class ApiLabTestAdminRepository implements LabTestAdminRepository {
   }
 
   @override
+  Future<PageResult<LabTest>> listPage({required int page, int pageSize = kAdminPageSize}) =>
+      fetchPageOf(_dio, '/admin/lab-tests', page: page, pageSize: pageSize, fromJson: _fromJson);
+
+    @override
   Future<LabTest> getById(String id) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>('/admin/lab-tests/$id');

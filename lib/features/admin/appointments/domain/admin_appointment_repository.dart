@@ -1,5 +1,6 @@
 import 'package:sunil_medical_store/features/admin/appointments/domain/admin_appointment.dart';
 import 'package:sunil_medical_store/features/profile/domain/past_appointment.dart';
+import 'package:sunil_medical_store/core/paging/paged.dart';
 
 /// Query filters for [AdminAppointmentRepository.list]. Any field left null
 /// means "don't filter on this dimension".
@@ -36,6 +37,9 @@ class AppointmentFilters {
 abstract interface class AdminAppointmentRepository {
   /// All appointments matching [filters], newest first.
   Future<List<AdminAppointment>> list(AppointmentFilters filters);
+
+  /// One page of appointments matching [filters].
+  Future<PageResult<AdminAppointment>> listPage(AppointmentFilters filters, {required int page, int pageSize = kAdminPageSize});
 
   /// Single appointment by id.
   Future<AdminAppointment> getById(String id);

@@ -1,5 +1,6 @@
 import 'package:sunil_medical_store/features/admin/pathology/domain/admin_lab_test_booking.dart';
 import 'package:sunil_medical_store/features/profile/domain/lab_test.dart';
+import 'package:sunil_medical_store/core/paging/paged.dart';
 
 /// Query filters for [AdminLabTestRepository.list]. Any field left null
 /// means "don't filter on this dimension".
@@ -20,6 +21,9 @@ class LabTestBookingFilters {
 abstract interface class AdminLabTestRepository {
   /// All bookings matching [filters], newest first.
   Future<List<AdminLabTestBooking>> list(LabTestBookingFilters filters);
+
+  /// One page of bookings matching [filters].
+  Future<PageResult<AdminLabTestBooking>> listPage(LabTestBookingFilters filters, {required int page, int pageSize = kAdminPageSize});
 
   /// Single booking by id.
   Future<AdminLabTestBooking> getById(String id);

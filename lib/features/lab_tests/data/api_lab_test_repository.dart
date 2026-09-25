@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/features/lab_tests/domain/lab_test.dart';
 import 'package:sunil_medical_store/features/lab_tests/domain/lab_test_repository.dart';
+import 'package:sunil_medical_store/core/paging/paged.dart';
 
 /// [LabTestRepository] backed by the real catalog API.
 class ApiLabTestRepository implements LabTestRepository {
@@ -20,6 +21,16 @@ class ApiLabTestRepository implements LabTestRepository {
   }
 
   @override
+  Future<PageResult<LabTest>> testsPage({String? search, required int page, int pageSize = kPageSize}) => fetchPageOf(
+    _dio,
+    '/catalog/lab-tests',
+    query: {if (search != null && search.isNotEmpty) 'search': search},
+    page: page,
+    pageSize: pageSize,
+    fromJson: _fromJson,
+  );
+
+    @override
   Future<LabTest> testById(String id) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>('/catalog/lab-tests/$id');

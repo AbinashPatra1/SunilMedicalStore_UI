@@ -1,4 +1,5 @@
 import 'package:sunil_medical_store/features/lab_tests/domain/lab_test.dart';
+import 'package:sunil_medical_store/core/paging/paged.dart';
 
 /// Reads the lab test catalog, implemented by the data layer.
 abstract interface class LabTestRepository {
@@ -10,4 +11,7 @@ abstract interface class LabTestRepository {
   /// Free-text search against name/description/parameters/tags — the
   /// Pathology tab of the search screen.
   Future<List<LabTest>> searchTests(String query);
+
+  /// One page of the catalog, optionally narrowed by a free-text [search].
+  Future<PageResult<LabTest>> testsPage({String? search, required int page, int pageSize = kPageSize});
 }

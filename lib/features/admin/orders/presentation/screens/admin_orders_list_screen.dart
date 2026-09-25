@@ -9,6 +9,7 @@ import 'package:sunil_medical_store/features/admin/orders/presentation/providers
 import 'package:sunil_medical_store/features/admin/orders/presentation/widgets/admin_order_tile.dart';
 import 'package:sunil_medical_store/features/admin/orders/presentation/widgets/order_filter_sheet.dart';
 import 'package:sunil_medical_store/core/widgets/refresh_on_focus.dart';
+import 'package:sunil_medical_store/core/paging/paged_widgets.dart';
 
 /// Admin > Orders > Orders sub-tab: every order across every user, with
 /// search + filter sheet. Tap a row to view/edit status.
@@ -69,6 +70,12 @@ class _AdminOrdersListScreenState extends ConsumerState<AdminOrdersListScreen> {
     return RefreshOnFocus(
       onRefresh: () { refreshIfIdle(ref, adminOrdersProvider); },
       child: Scaffold(
+      bottomNavigationBar: async.value == null
+          ? null
+          : PageNumberBar(
+              state: async.requireValue,
+              onSelect: (page) => ref.read(adminOrdersProvider.notifier).goToPage(page),
+            ),
       body: Column(
         children: [
           Padding(
@@ -125,7 +132,8 @@ class _AdminOrdersListScreenState extends ConsumerState<AdminOrdersListScreen> {
                   ],
                 ),
               ),
-              data: (orders) {
+              data: (paged) {
+                final orders = paged.items;
                 if (orders.isEmpty) {
                   return Center(
                     child: Padding(
@@ -147,6 +155,7 @@ class _AdminOrdersListScreenState extends ConsumerState<AdminOrdersListScreen> {
                 return RefreshIndicator(
                   onRefresh: () async => ref.invalidate(adminOrdersProvider),
                   child: ListView.separated(
+                    key: ValueKey(paged.page),
                     padding: const EdgeInsets.fromLTRB(
                       AppConstants.spacingLg,
                       AppConstants.spacingSm,

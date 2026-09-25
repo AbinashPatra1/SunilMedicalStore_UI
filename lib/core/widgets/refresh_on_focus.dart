@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show ProviderListenable, ProviderOrFamily;
 import 'package:sunil_medical_store/core/routes/app_route_observer.dart';
 
 /// Runs [onRefresh] whenever the screen it wraps is (re)shown by
@@ -67,7 +68,7 @@ class _RefreshOnFocusState extends State<RefreshOnFocus> with RouteAware {
 /// Invalidates [provider] unless it is already mid-fetch — so opening a
 /// screen for the first time (fetch already in flight) doesn't request the
 /// same data twice, while a screen with cached data gets a fresh fetch.
-void refreshIfIdle<T>(WidgetRef ref, FutureProvider<T> provider) {
+void refreshIfIdle(WidgetRef ref, ProviderListenable<AsyncValue<Object?>> provider) {
   if (ref.read(provider).isLoading) return;
-  ref.invalidate(provider);
+  ref.invalidate(provider as ProviderOrFamily);
 }

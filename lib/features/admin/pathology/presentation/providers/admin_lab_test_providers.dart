@@ -3,6 +3,7 @@ import 'package:sunil_medical_store/core/network/api_client.dart';
 import 'package:sunil_medical_store/features/admin/pathology/data/api_admin_lab_test_repository.dart';
 import 'package:sunil_medical_store/features/admin/pathology/domain/admin_lab_test_booking.dart';
 import 'package:sunil_medical_store/features/admin/pathology/domain/admin_lab_test_repository.dart';
+import 'package:sunil_medical_store/core/paging/paged.dart';
 
 final adminLabTestRepositoryProvider = Provider<AdminLabTestRepository>((ref) {
   return ApiAdminLabTestRepository(ref.watch(dioProvider));
@@ -21,11 +22,29 @@ class AdminLabTestFiltersNotifier extends Notifier<LabTestBookingFilters> {
   void set(LabTestBookingFilters next) => state = next;
 }
 
-/// Admin lab-test bookings matching the current filters.
-final adminLabTestBookingsProvider = FutureProvider<List<AdminLabTestBooking>>((ref) {
-  final filters = ref.watch(adminLabTestFiltersProvider);
-  return ref.watch(adminLabTestRepositoryProvider).list(filters);
-});
+/// Admin lab-test bookings matching the current filters, paged (numbered pages).
+final adminLabTestBookingsProvider =
+    AsyncNotifierProvider<AdminLabTestBookingsNotifier, PagedState<AdminLabTestBooking>>(AdminLabTestBookingsNotifier.new);
+
+class AdminLabTestBookingsNotifier extends PagedNotifier<AdminLabTestBooking> {
+  late LabTestBookingFilters _filters;
+
+  @override
+  int get pageSize => kAdminPageSize;
+
+  @override
+  Future<PagedState<AdminLabTestBooking>> build() {
+    _filters = ref.watch(adminLabTestFiltersProvider);
+    return loadFirst();
+  }
+
+  @override
+  Future<PageResult<AdminLabTestBooking>> fetch(int page) =>
+      ref.read(adminLabTestRepositoryProvider).listPage(_filters, page: page, pageSize: pageSize);
+
+  @override
+  Object keyOf(AdminLabTestBooking item) => item.id;
+}
 
 /// A single admin lab-test booking for the detail screen.
 final adminLabTestBookingByIdProvider = FutureProvider.autoDispose.family<AdminLabTestBooking, String>((ref, id) {

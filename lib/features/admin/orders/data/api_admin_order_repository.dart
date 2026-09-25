@@ -4,6 +4,7 @@ import 'package:sunil_medical_store/core/models/order.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/features/admin/orders/domain/admin_order.dart';
 import 'package:sunil_medical_store/features/admin/orders/domain/admin_order_repository.dart';
+import 'package:sunil_medical_store/core/paging/paged.dart';
 
 /// [AdminOrderRepository] backed by `/v1/admin/orders`.
 class ApiAdminOrderRepository implements AdminOrderRepository {
@@ -31,7 +32,21 @@ class ApiAdminOrderRepository implements AdminOrderRepository {
     }
   }
 
+  Map<String, dynamic> _query(OrderFilters filters) {
+    final search = filters.search?.trim();
+    return {
+      if (search != null && search.isNotEmpty) 'search': search,
+      if (filters.status != null) 'status': filters.status!.name,
+      if (filters.dateFrom != null) 'dateFrom': _dateFormat.format(filters.dateFrom!),
+      if (filters.dateTo != null) 'dateTo': _dateFormat.format(filters.dateTo!),
+    };
+  }
+
   @override
+  Future<PageResult<AdminOrder>> listPage(OrderFilters filters, {required int page, int pageSize = kAdminPageSize}) =>
+      fetchPageOf(_dio, '/admin/orders', query: _query(filters), page: page, pageSize: pageSize, fromJson: _fromJson);
+
+    @override
   Future<AdminOrder> getById(String id) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>('/admin/orders/$id');

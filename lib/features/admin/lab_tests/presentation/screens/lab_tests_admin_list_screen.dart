@@ -8,6 +8,7 @@ import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/admin/lab_tests/presentation/providers/lab_test_admin_providers.dart';
 import 'package:sunil_medical_store/features/admin/lab_tests/presentation/widgets/lab_test_admin_tile.dart';
 import 'package:sunil_medical_store/core/widgets/refresh_on_focus.dart';
+import 'package:sunil_medical_store/core/paging/paged_widgets.dart';
 
 /// Admin > Lab Tests (bottom-nav tab): lists the full lab-test catalog. Tapping a row
 /// edits; the FAB adds a new test.
@@ -22,6 +23,12 @@ class LabTestsAdminListScreen extends ConsumerWidget {
     return RefreshOnFocus(
       onRefresh: () { refreshIfIdle(ref, adminLabTestsProvider); },
       child: Scaffold(
+      bottomNavigationBar: async.value == null
+          ? null
+          : PageNumberBar(
+              state: async.requireValue,
+              onSelect: (page) => ref.read(adminLabTestsProvider.notifier).goToPage(page),
+            ),
       appBar: AppBar(
         title: const Text('Lab Tests'),
         actions: const [AdminSignOutButton()],
@@ -46,7 +53,8 @@ class LabTestsAdminListScreen extends ConsumerWidget {
             ],
           ),
         ),
-        data: (tests) {
+        data: (paged) {
+                final tests = paged.items;
           if (tests.isEmpty) {
             return Center(
               child: Padding(
@@ -71,6 +79,7 @@ class LabTestsAdminListScreen extends ConsumerWidget {
           return RefreshIndicator(
             onRefresh: () async => ref.invalidate(adminLabTestsProvider),
             child: ListView.separated(
+                    key: ValueKey(paged.page),
               padding: const EdgeInsets.fromLTRB(
                 AppConstants.spacingLg,
                 AppConstants.spacingSm,

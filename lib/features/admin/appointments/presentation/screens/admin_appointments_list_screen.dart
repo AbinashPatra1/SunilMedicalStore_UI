@@ -9,6 +9,7 @@ import 'package:sunil_medical_store/features/admin/appointments/presentation/pro
 import 'package:sunil_medical_store/features/admin/appointments/presentation/widgets/admin_appointment_tile.dart';
 import 'package:sunil_medical_store/features/admin/appointments/presentation/widgets/appointment_filter_sheet.dart';
 import 'package:sunil_medical_store/core/widgets/refresh_on_focus.dart';
+import 'package:sunil_medical_store/core/paging/paged_widgets.dart';
 
 /// Admin > Appointments > Appointments sub-tab: list of every appointment
 /// across every user, with search + filter sheet + create-on-behalf FAB.
@@ -73,6 +74,12 @@ class _AdminAppointmentsListScreenState
     return RefreshOnFocus(
       onRefresh: () { refreshIfIdle(ref, adminAppointmentsProvider); },
       child: Scaffold(
+      bottomNavigationBar: async.value == null
+          ? null
+          : PageNumberBar(
+              state: async.requireValue,
+              onSelect: (page) => ref.read(adminAppointmentsProvider.notifier).goToPage(page),
+            ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push(AppRoutes.adminAppointmentNew),
         icon: const Icon(Icons.add),
@@ -134,7 +141,8 @@ class _AdminAppointmentsListScreenState
                   ],
                 ),
               ),
-              data: (appointments) {
+              data: (paged) {
+                final appointments = paged.items;
                 if (appointments.isEmpty) {
                   return Center(
                     child: Padding(
@@ -156,6 +164,7 @@ class _AdminAppointmentsListScreenState
                 return RefreshIndicator(
                   onRefresh: () async => ref.invalidate(adminAppointmentsProvider),
                   child: ListView.separated(
+                    key: ValueKey(paged.page),
                     padding: const EdgeInsets.fromLTRB(
                       AppConstants.spacingLg,
                       AppConstants.spacingSm,

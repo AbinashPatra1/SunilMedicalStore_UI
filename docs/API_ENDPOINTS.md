@@ -416,6 +416,79 @@ client-side. Non-admins hitting these should get **403** with
 
 ## 3. Endpoints in detail
 
+### Pagination — **proposed, 2026-09-26** (backlog #26)
+
+The apps page every growing list: **infinite scroll** for the customer app,
+**numbered pages** for the admin console. The client is built against this
+and works **with or without** backend support — while an endpoint ignores
+the params the list simply loads in one go (see "Compatibility" below).
+
+**Request** — two optional query params on the list endpoints below,
+combinable with each endpoint's existing filters (`search`, `status`,
+`category`, `dateFrom`…):
+
+| Param | Meaning |
+|---|---|
+| `page` | 1-based page number. Omitted → return the **whole list as today** (no paging), so older clients keep working. |
+| `pageSize` | Rows per page. The apps send **20** (customer) or **15** (admin). Cap at 100. Default 20 when `page` is given without it. |
+
+**Response** — unchanged: a plain JSON **array** of the same objects (no
+envelope), plus one header:
+
+```
+X-Total-Count: 137     ← total rows matching the filters, across all pages
+```
+
+(Expose it to browsers/proxies if any sit in front; the mobile app reads it
+directly.) The admin pager uses it to draw page numbers; without it the
+admin pager falls back to Prev / Next and the customer lists to "a full page
+means there may be more".
+
+**Ordering must be stable** across pages — keep each list's existing order
+(newest first, etc.) and add a unique tiebreaker (e.g. `id`) so rows never
+repeat or vanish between pages.
+
+**Endpoints** (all `GET`):
+
+| Screen | Endpoint | Extra filters already supported |
+|---|---|---|
+| Medicines / Search → Pharmacy | `/v1/catalog/products` | `category`, `search` |
+| Lab Tests / Search → Pathology | `/v1/catalog/lab-tests` | `search` |
+| Search → Doctors | `/v1/doctors` | `search` |
+| My Orders | `/v1/orders` | — |
+| My Appointments | `/v1/appointments/me` | — |
+| My Lab Tests | `/v1/lab-test-bookings` | — |
+| Prescriptions | `/v1/prescriptions` | — |
+| Admin Inventory | `/v1/admin/products` | `category` **+ new: `type`, `search`, `inStock=true`** |
+| Admin Orders | `/v1/admin/orders` | `search`, `status`, `dateFrom`, `dateTo` |
+| Admin Prescriptions | `/v1/admin/prescriptions` | `status` |
+| Admin Pathology | `/v1/admin/lab-test-bookings` | `search`, `status`, `dateFrom`, `dateTo` |
+| Admin Appointments | `/v1/admin/appointments` | `search`, `status`, `doctorId`, `dateFrom`, `dateTo`, `weekday` |
+| Admin Users | `/v1/admin/users` | `search` |
+| Admin Lab Tests | `/v1/admin/lab-tests` | — |
+
+Not paged (small, fixed lists): banners, promo codes, addresses, payment
+methods, the admin doctors list, the customer "doctors this week" list, and
+the admin notifications inbox (#89 already takes `limit`).
+
+**New filters on `GET /admin/products`** — until now the admin inventory
+screen filtered `type`, the free-text search and "in stock only"
+client-side over the whole list, which can't work once the list is paged.
+The client now also sends them (and still applies them locally, so an
+older backend keeps giving correct — if per-page — results):
+- `type` — `tabletDrug | liquidDrug | injection | nonOralDrug | others`
+- `search` — case-insensitive substring over name, brand, category,
+  composition and ingredients
+- `inStock=true` — only products with `stock > 0`
+
+**Compatibility rules the client relies on**
+- A response with **more rows than `pageSize`** is treated as "the backend
+  ignored paging and sent everything": the client shows it all and asks for
+  no further pages.
+- A later page that repeats rows already loaded is dropped and ends the
+  list, so a backend that ignores `page` can't produce duplicates.
+
+
 ### Users / Profile
 
 #### 1. `GET /v1/users/me` → `200`

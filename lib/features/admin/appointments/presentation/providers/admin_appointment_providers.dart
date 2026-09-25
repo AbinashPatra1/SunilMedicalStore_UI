@@ -3,6 +3,7 @@ import 'package:sunil_medical_store/core/network/api_client.dart';
 import 'package:sunil_medical_store/features/admin/appointments/data/api_admin_appointment_repository.dart';
 import 'package:sunil_medical_store/features/admin/appointments/domain/admin_appointment.dart';
 import 'package:sunil_medical_store/features/admin/appointments/domain/admin_appointment_repository.dart';
+import 'package:sunil_medical_store/core/paging/paged.dart';
 
 final adminAppointmentRepositoryProvider = Provider<AdminAppointmentRepository>((ref) {
   return ApiAdminAppointmentRepository(ref.watch(dioProvider));
@@ -23,11 +24,29 @@ class AdminAppointmentFiltersNotifier extends Notifier<AppointmentFilters> {
   void set(AppointmentFilters next) => state = next;
 }
 
-/// Admin appointments matching the current filters.
-final adminAppointmentsProvider = FutureProvider<List<AdminAppointment>>((ref) {
-  final filters = ref.watch(adminAppointmentFiltersProvider);
-  return ref.watch(adminAppointmentRepositoryProvider).list(filters);
-});
+/// Admin appointments matching the current filters, paged (numbered pages).
+final adminAppointmentsProvider =
+    AsyncNotifierProvider<AdminAppointmentsNotifier, PagedState<AdminAppointment>>(AdminAppointmentsNotifier.new);
+
+class AdminAppointmentsNotifier extends PagedNotifier<AdminAppointment> {
+  late AppointmentFilters _filters;
+
+  @override
+  int get pageSize => kAdminPageSize;
+
+  @override
+  Future<PagedState<AdminAppointment>> build() {
+    _filters = ref.watch(adminAppointmentFiltersProvider);
+    return loadFirst();
+  }
+
+  @override
+  Future<PageResult<AdminAppointment>> fetch(int page) =>
+      ref.read(adminAppointmentRepositoryProvider).listPage(_filters, page: page, pageSize: pageSize);
+
+  @override
+  Object keyOf(AdminAppointment item) => item.id;
+}
 
 /// A single admin appointment for the edit sheet.
 final adminAppointmentByIdProvider =

@@ -2,6 +2,7 @@ import 'package:sunil_medical_store/core/models/order.dart';
 import 'package:sunil_medical_store/features/profile/domain/customer_profile.dart';
 import 'package:sunil_medical_store/features/profile/domain/lab_test.dart';
 import 'package:sunil_medical_store/features/profile/domain/past_appointment.dart';
+import 'package:sunil_medical_store/core/paging/paged.dart';
 
 /// Contract for profile data (account details and history), implemented by
 /// the data layer.
@@ -25,6 +26,11 @@ abstract interface class ProfileRepository {
   Future<List<PastAppointment>> pastAppointments();
   Future<List<Order>> pastOrders();
   Future<List<LabTest>> labTests();
+
+  /// Paged history lists (newest first).
+  Future<PageResult<PastAppointment>> pastAppointmentsPage({required int page, int pageSize = kPageSize});
+  Future<PageResult<Order>> pastOrdersPage({required int page, int pageSize = kPageSize});
+  Future<PageResult<LabTest>> labTestsPage({required int page, int pageSize = kPageSize});
 
   /// A single order by id — used to open Profile → Orders → detail from a
   /// push-notification tap, where only the id is known (not the full

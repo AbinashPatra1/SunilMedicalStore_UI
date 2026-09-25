@@ -39,8 +39,9 @@ class _AdminInventoryFilterScreenState extends ConsumerState<AdminInventoryFilte
   }
 
   void _apply() {
+    final inStockOnly = ref.read(adminInventoryFiltersProvider).inStockOnly;
     ref.read(adminInventoryFiltersProvider.notifier).apply(
-      AdminInventoryFilters(category: _category, type: _type, search: _search.text.trim()),
+      AdminInventoryFilters(category: _category, type: _type, search: _search.text.trim(), inStockOnly: inStockOnly),
     );
     context.pop();
   }

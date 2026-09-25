@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/features/appointments/domain/doctor.dart';
 import 'package:sunil_medical_store/features/appointments/domain/doctor_repository.dart';
+import 'package:sunil_medical_store/core/paging/paged.dart';
 
 /// [DoctorRepository] backed by the real API.
 ///
@@ -24,6 +25,16 @@ class ApiDoctorRepository implements DoctorRepository {
   }
 
   @override
+  Future<PageResult<Doctor>> doctorsPage({String? search, required int page, int pageSize = kPageSize}) => fetchPageOf(
+    _dio,
+    '/doctors',
+    query: {if (search != null && search.isNotEmpty) 'search': search},
+    page: page,
+    pageSize: pageSize,
+    fromJson: _fromJson,
+  );
+
+    @override
   Future<List<Doctor>> searchDoctors(String query) async {
     try {
       final response = await _dio.get<List<dynamic>>(

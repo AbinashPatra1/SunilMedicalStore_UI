@@ -9,6 +9,7 @@ import 'package:sunil_medical_store/core/models/order.dart';
 import 'package:sunil_medical_store/features/profile/presentation/providers/profile_providers.dart';
 import 'package:sunil_medical_store/features/profile/presentation/widgets/status_chip.dart';
 import 'package:sunil_medical_store/core/widgets/refresh_on_focus.dart';
+import 'package:sunil_medical_store/core/paging/paged_widgets.dart';
 
 /// Profile > Orders: the customer's order history. Tapping an order opens its
 /// detail screen.
@@ -38,18 +39,17 @@ class OrdersScreen extends ConsumerWidget {
             ],
           ),
         ),
-        data: (orders) {
+        data: (paged) {
+          final orders = paged.items;
           if (orders.isEmpty) {
             return const Center(child: Text('No orders yet.'));
           }
           return RefreshIndicator(
             onRefresh: () async => ref.invalidate(pastOrdersProvider),
-            child: ListView.separated(
-              padding: const EdgeInsets.all(AppConstants.spacingLg),
-              itemCount: orders.length,
-              separatorBuilder: (_, _) => const SizedBox(height: AppConstants.spacingMd),
-              itemBuilder: (context, index) {
-                final order = orders[index];
+            child: InfiniteListView(
+              state: paged,
+              onLoadMore: () => ref.read(pastOrdersProvider.notifier).loadMore(),
+              itemBuilder: (context, order) {
                 return _OrderCard(
                   order: order,
                   onTap: () => context.push(AppRoutes.profileOrderDetail, extra: order),

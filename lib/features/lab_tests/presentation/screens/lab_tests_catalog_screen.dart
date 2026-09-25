@@ -6,6 +6,7 @@ import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/lab_tests/presentation/providers/lab_test_providers.dart';
 import 'package:sunil_medical_store/features/lab_tests/presentation/widgets/lab_test_card.dart';
 import 'package:sunil_medical_store/core/widgets/refresh_on_focus.dart';
+import 'package:sunil_medical_store/core/paging/paged_widgets.dart';
 
 /// Lab Tests tab: browse the catalog of bookable tests.
 class LabTestsCatalogScreen extends ConsumerWidget {
@@ -23,30 +24,26 @@ class LabTestsCatalogScreen extends ConsumerWidget {
       body: catalogAsync.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (_, _) => _ErrorView(onRetry: () => ref.invalidate(labTestCatalogProvider)),
-        data: (tests) => ListView.separated(
-          padding: const EdgeInsets.all(AppConstants.spacingLg),
-          itemCount: tests.length + 1,
-          separatorBuilder: (_, _) => const SizedBox(height: AppConstants.spacingMd),
-          itemBuilder: (context, index) {
-            if (index == 0) {
-              return Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Book a lab test', style: theme.textTheme.titleMedium),
-                  const SizedBox(height: AppConstants.spacingXs),
-                  Text(
-                    'Home sample collection • accurate reports',
-                    style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                  ),
-                ],
-              );
-            }
-            final test = tests[index - 1];
-            return LabTestCard(
-              test: test,
-              onTap: () => context.push('${AppRoutes.labTests}/${test.id}'),
-            );
-          },
+        data: (paged) => InfiniteListView(
+          state: paged,
+          onLoadMore: () => ref.read(labTestCatalogProvider.notifier).loadMore(),
+          header: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Book a lab test', style: theme.textTheme.titleMedium),
+                const SizedBox(height: AppConstants.spacingXs),
+                Text(
+                  'Home sample collection • accurate reports',
+                  style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                ),
+              ],
+            ),
+          ],
+          itemBuilder: (context, test) => LabTestCard(
+            test: test,
+            onTap: () => context.push('${AppRoutes.labTests}/${test.id}'),
+          ),
         ),
       ),
     ),

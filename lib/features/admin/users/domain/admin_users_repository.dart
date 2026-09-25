@@ -1,4 +1,5 @@
 import 'package:sunil_medical_store/features/admin/users/domain/admin_user.dart';
+import 'package:sunil_medical_store/core/paging/paged.dart';
 
 /// Directory of all users, admin-only. Used by "book on behalf" pickers and
 /// the standalone Admin → More → Users screen (full CRUD).
@@ -7,6 +8,9 @@ abstract interface class AdminUsersRepository {
   /// phone). Server decides pagination if it needs to; the client currently
   /// doesn't page.
   Future<List<AdminUser>> list({String? query});
+
+  /// One page of users, optionally narrowed by [query] (name or phone).
+  Future<PageResult<AdminUser>> listPage({String? query, required int page, int pageSize = kAdminPageSize});
 
   /// Single user by id, for the edit form.
   Future<AdminUser> getById(String id);

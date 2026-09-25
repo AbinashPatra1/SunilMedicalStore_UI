@@ -1,6 +1,7 @@
 import 'package:sunil_medical_store/features/admin/inventory/domain/bulk_import.dart';
 import 'package:sunil_medical_store/features/medicines/domain/product.dart';
 import 'package:sunil_medical_store/features/medicines/domain/product_type.dart';
+import 'package:sunil_medical_store/core/paging/paged.dart';
 
 /// Admin-side view of the product catalog: list-all (including out of stock),
 /// read-one, create, update, and delete.
@@ -12,6 +13,19 @@ abstract interface class InventoryRepository {
   /// All products in the catalog, optionally filtered to a category label.
   /// Out-of-stock items are included so admins can restock them.
   Future<List<Product>> list({String? category});
+
+  /// One page of the catalog. Only [category] was supported server-side
+  /// originally; [type], [search] and [inStockOnly] are sent too (see
+  /// `docs/API_ENDPOINTS.md` §Pagination) and the screen also applies them
+  /// client-side, so a backend that ignores them still gives right results.
+  Future<PageResult<Product>> listPage({
+    String? category,
+    ProductType? type,
+    String? search,
+    bool inStockOnly = false,
+    required int page,
+    int pageSize = kAdminPageSize,
+  });
 
   /// Single product by id.
   Future<Product> getById(String id);

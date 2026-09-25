@@ -5,6 +5,7 @@ import 'package:sunil_medical_store/features/appointments/data/api_doctor_reposi
 import 'package:sunil_medical_store/features/appointments/domain/appointment_repository.dart';
 import 'package:sunil_medical_store/features/appointments/domain/doctor.dart';
 import 'package:sunil_medical_store/features/appointments/domain/doctor_repository.dart';
+import 'package:sunil_medical_store/core/paging/paged.dart';
 
 /// Provides the [DoctorRepository] implementation.
 final doctorRepositoryProvider = Provider<DoctorRepository>((ref) {
@@ -16,11 +17,26 @@ final weeklyDoctorsProvider = FutureProvider<List<Doctor>>((ref) {
   return ref.watch(doctorRepositoryProvider).doctorsAvailableThisWeek();
 });
 
-/// Free-text doctor search results for the given query — the Doctors tab
-/// of the search screen. Empty query isn't meant to be watched.
-final searchDoctorsProvider = FutureProvider.family<List<Doctor>, String>((ref, query) {
-  return ref.watch(doctorRepositoryProvider).searchDoctors(query);
-});
+/// Free-text doctor search results for the given query (paged) — the
+/// Doctors tab of the search screen. Empty query isn't meant to be watched.
+final searchDoctorsProvider =
+    AsyncNotifierProvider.family<DoctorSearchNotifier, PagedState<Doctor>, String>(DoctorSearchNotifier.new);
+
+class DoctorSearchNotifier extends PagedNotifier<Doctor> {
+  DoctorSearchNotifier(this.query);
+
+  final String query;
+
+  @override
+  Future<PagedState<Doctor>> build() => loadFirst();
+
+  @override
+  Future<PageResult<Doctor>> fetch(int page) =>
+      ref.read(doctorRepositoryProvider).doctorsPage(search: query, page: page);
+
+  @override
+  Object keyOf(Doctor item) => item.id;
+}
 
 /// Provides the [AppointmentRepository] implementation.
 final appointmentRepositoryProvider = Provider<AppointmentRepository>((ref) {

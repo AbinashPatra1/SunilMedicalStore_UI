@@ -4,6 +4,7 @@ import 'package:sunil_medical_store/core/network/api_client.dart';
 import 'package:sunil_medical_store/features/admin/orders/data/api_admin_prescription_repository.dart';
 import 'package:sunil_medical_store/features/admin/orders/domain/admin_prescription.dart';
 import 'package:sunil_medical_store/features/admin/orders/domain/admin_prescription_repository.dart';
+import 'package:sunil_medical_store/core/paging/paged.dart';
 
 final adminPrescriptionRepositoryProvider = Provider<AdminPrescriptionRepository>((ref) {
   return ApiAdminPrescriptionRepository(ref.watch(dioProvider));
@@ -22,11 +23,29 @@ class AdminPrescriptionStatusFilterNotifier extends Notifier<PrescriptionStatus?
   void set(PrescriptionStatus? next) => state = next;
 }
 
-/// Admin prescriptions matching the current status filter.
-final adminPrescriptionsProvider = FutureProvider<List<AdminPrescription>>((ref) {
-  final status = ref.watch(adminPrescriptionStatusFilterProvider);
-  return ref.watch(adminPrescriptionRepositoryProvider).list(status: status);
-});
+/// Admin prescriptions matching the current status filter, paged (numbered pages).
+final adminPrescriptionsProvider =
+    AsyncNotifierProvider<AdminPrescriptionsNotifier, PagedState<AdminPrescription>>(AdminPrescriptionsNotifier.new);
+
+class AdminPrescriptionsNotifier extends PagedNotifier<AdminPrescription> {
+  PrescriptionStatus? _status;
+
+  @override
+  int get pageSize => kAdminPageSize;
+
+  @override
+  Future<PagedState<AdminPrescription>> build() {
+    _status = ref.watch(adminPrescriptionStatusFilterProvider);
+    return loadFirst();
+  }
+
+  @override
+  Future<PageResult<AdminPrescription>> fetch(int page) =>
+      ref.read(adminPrescriptionRepositoryProvider).listPage(status: _status, page: page, pageSize: pageSize);
+
+  @override
+  Object keyOf(AdminPrescription item) => item.id;
+}
 
 /// A single admin prescription for the review screen.
 final adminPrescriptionByIdProvider = FutureProvider.family<AdminPrescription, String>((ref, id) {

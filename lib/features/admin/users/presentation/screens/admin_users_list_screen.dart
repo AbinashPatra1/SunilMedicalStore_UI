@@ -7,6 +7,7 @@ import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/admin/users/presentation/providers/admin_users_providers.dart';
 import 'package:sunil_medical_store/features/admin/users/presentation/widgets/admin_user_tile.dart';
 import 'package:sunil_medical_store/core/widgets/refresh_on_focus.dart';
+import 'package:sunil_medical_store/core/paging/paged_widgets.dart';
 
 /// Admin > More > Users: browse/search every customer. Tap a row to edit;
 /// the FAB pre-registers a walk-in customer.
@@ -30,11 +31,17 @@ class _AdminUsersListScreenState extends ConsumerState<AdminUsersListScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final async = ref.watch(adminUsersProvider(_query));
+    final async = ref.watch(adminUsersPagedProvider(_query));
 
     return RefreshOnFocus(
-      onRefresh: () { refreshIfIdle(ref, adminUsersProvider(_query)); },
+      onRefresh: () { refreshIfIdle(ref, adminUsersPagedProvider(_query)); },
       child: Scaffold(
+      bottomNavigationBar: async.value == null
+          ? null
+          : PageNumberBar(
+              state: async.requireValue,
+              onSelect: (page) => ref.read(adminUsersPagedProvider(_query).notifier).goToPage(page),
+            ),
       appBar: AppBar(title: const Text('Users')),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => context.push(AppRoutes.adminUserAdd),
@@ -78,13 +85,14 @@ class _AdminUsersListScreenState extends ConsumerState<AdminUsersListScreen> {
                     Text(error is ApiException ? error.message : 'Could not load users.'),
                     const SizedBox(height: AppConstants.spacingSm),
                     TextButton(
-                      onPressed: () => ref.invalidate(adminUsersProvider(_query)),
+                      onPressed: () => ref.invalidate(adminUsersPagedProvider(_query)),
                       child: const Text('Retry'),
                     ),
                   ],
                 ),
               ),
-              data: (users) {
+              data: (paged) {
+                final users = paged.items;
                 if (users.isEmpty) {
                   return Center(
                     child: Padding(
@@ -112,8 +120,9 @@ class _AdminUsersListScreenState extends ConsumerState<AdminUsersListScreen> {
                   );
                 }
                 return RefreshIndicator(
-                  onRefresh: () async => ref.invalidate(adminUsersProvider(_query)),
+                  onRefresh: () async => ref.invalidate(adminUsersPagedProvider(_query)),
                   child: ListView.separated(
+                    key: ValueKey(paged.page),
                     padding: const EdgeInsets.fromLTRB(
                       AppConstants.spacingLg,
                       0,

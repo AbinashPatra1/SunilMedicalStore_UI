@@ -4,6 +4,7 @@ import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/features/admin/pathology/domain/admin_lab_test_booking.dart';
 import 'package:sunil_medical_store/features/admin/pathology/domain/admin_lab_test_repository.dart';
 import 'package:sunil_medical_store/features/profile/domain/lab_test.dart';
+import 'package:sunil_medical_store/core/paging/paged.dart';
 
 /// [AdminLabTestRepository] backed by `/v1/admin/lab-test-bookings`.
 class ApiAdminLabTestRepository implements AdminLabTestRepository {
@@ -32,6 +33,24 @@ class ApiAdminLabTestRepository implements AdminLabTestRepository {
   }
 
   @override
+  Future<PageResult<AdminLabTestBooking>> listPage(LabTestBookingFilters filters, {required int page, int pageSize = kAdminPageSize}) {
+    final search = filters.search?.trim();
+    return fetchPageOf(
+      _dio,
+      '/admin/lab-test-bookings',
+      query: {
+        if (search != null && search.isNotEmpty) 'search': search,
+        if (filters.status != null) 'status': filters.status!.name,
+        if (filters.dateFrom != null) 'dateFrom': _dateFormat.format(filters.dateFrom!),
+        if (filters.dateTo != null) 'dateTo': _dateFormat.format(filters.dateTo!),
+      },
+      page: page,
+      pageSize: pageSize,
+      fromJson: _fromJson,
+    );
+  }
+
+    @override
   Future<AdminLabTestBooking> getById(String id) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>('/admin/lab-test-bookings/$id');

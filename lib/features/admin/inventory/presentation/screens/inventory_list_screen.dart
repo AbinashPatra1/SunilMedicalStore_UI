@@ -11,6 +11,7 @@ import 'package:sunil_medical_store/features/admin/presentation/widgets/admin_si
 import 'package:sunil_medical_store/features/medicines/domain/product.dart';
 import 'package:sunil_medical_store/features/medicines/domain/product_category.dart';
 import 'package:sunil_medical_store/core/widgets/refresh_on_focus.dart';
+import 'package:sunil_medical_store/core/paging/paged_widgets.dart';
 
 /// Admin > Inventory: lists all products (in and out of stock). The top bar
 /// shows the first 5 categories as quick-filter chips plus a fixed filter
@@ -24,7 +25,6 @@ class InventoryListScreen extends ConsumerStatefulWidget {
 }
 
 class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
-  bool _inStockOnly = false;
 
   bool _matchesSearch(Product product, String query) {
     final q = query.toLowerCase();
@@ -49,7 +49,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
     try {
       products = await ref.read(inventoryRepositoryProvider).list();
     } catch (_) {
-      products = ref.read(adminInventoryListProvider).value ?? const [];
+      products = ref.read(adminInventoryListProvider).value?.items ?? const [];
     }
     Product? match;
     for (final p in products) {
@@ -75,6 +75,12 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
     return RefreshOnFocus(
       onRefresh: () { refreshIfIdle(ref, adminInventoryListProvider); },
       child: Scaffold(
+      bottomNavigationBar: productsAsync.value == null
+          ? null
+          : PageNumberBar(
+              state: productsAsync.requireValue,
+              onSelect: (page) => ref.read(adminInventoryListProvider.notifier).goToPage(page),
+            ),
       appBar: AppBar(
         title: const Text('Inventory'),
         actions: const [AdminSignOutButton()],
@@ -170,8 +176,10 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                 Text('In stock only', style: theme.textTheme.bodyMedium),
                 const Spacer(),
                 Switch(
-                  value: _inStockOnly,
-                  onChanged: (v) => setState(() => _inStockOnly = v),
+                  value: filters.inStockOnly,
+                  onChanged: (v) => ref
+                      .read(adminInventoryFiltersProvider.notifier)
+                      .apply(filters.withInStockOnly(v)),
                 ),
               ],
             ),
@@ -183,8 +191,9 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                 message: error is ApiException ? error.message : 'Could not load inventory.',
                 onRetry: () => ref.invalidate(adminInventoryListProvider),
               ),
-              data: (products) {
-                var visible = _inStockOnly ? products.where((p) => p.stock > 0).toList() : products;
+              data: (paged) {
+                final products = paged.items;
+                var visible = filters.inStockOnly ? products.where((p) => p.stock > 0).toList() : products;
                 if (filters.type != null) {
                   visible = visible.where((p) => p.type == filters.type).toList();
                 }
@@ -197,6 +206,7 @@ class _InventoryListScreenState extends ConsumerState<InventoryListScreen> {
                 return RefreshIndicator(
                   onRefresh: () async => ref.invalidate(adminInventoryListProvider),
                   child: ListView.separated(
+                    key: ValueKey(paged.page),
                     padding: const EdgeInsets.fromLTRB(
                       AppConstants.spacingLg,
                       AppConstants.spacingSm,

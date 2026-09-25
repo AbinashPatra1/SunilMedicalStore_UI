@@ -3,6 +3,7 @@ import 'package:sunil_medical_store/core/models/prescription.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/features/admin/orders/domain/admin_prescription.dart';
 import 'package:sunil_medical_store/features/admin/orders/domain/admin_prescription_repository.dart';
+import 'package:sunil_medical_store/core/paging/paged.dart';
 
 /// [AdminPrescriptionRepository] backed by `/v1/admin/prescriptions`.
 class ApiAdminPrescriptionRepository implements AdminPrescriptionRepository {
@@ -24,6 +25,17 @@ class ApiAdminPrescriptionRepository implements AdminPrescriptionRepository {
   }
 
   @override
+  Future<PageResult<AdminPrescription>> listPage({PrescriptionStatus? status, required int page, int pageSize = kAdminPageSize}) =>
+      fetchPageOf(
+        _dio,
+        '/admin/prescriptions',
+        query: {if (status != null) 'status': status.name},
+        page: page,
+        pageSize: pageSize,
+        fromJson: _fromJson,
+      );
+
+    @override
   Future<AdminPrescription> getById(String id) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>('/admin/prescriptions/$id');

@@ -13,6 +13,7 @@ import 'package:sunil_medical_store/features/profile/presentation/providers/prof
 import 'package:sunil_medical_store/features/profile/presentation/widgets/star_rating.dart';
 import 'package:sunil_medical_store/features/profile/presentation/widgets/status_chip.dart';
 import 'package:sunil_medical_store/core/widgets/refresh_on_focus.dart';
+import 'package:sunil_medical_store/core/paging/paged_widgets.dart';
 
 /// Profile > Appointments: the customer's past appointments plus a button to
 /// book a new one (switches to the Appointments tab).
@@ -45,7 +46,8 @@ class ProfileAppointmentsScreen extends ConsumerWidget {
                   ],
                 ),
               ),
-              data: (appointments) {
+              data: (paged) {
+                final appointments = paged.items;
                 if (appointments.isEmpty) {
                   final theme = Theme.of(context);
                   return Center(
@@ -67,11 +69,10 @@ class ProfileAppointmentsScreen extends ConsumerWidget {
                 }
                 return RefreshIndicator(
                   onRefresh: () async => ref.invalidate(pastAppointmentsProvider),
-                  child: ListView.separated(
-                    padding: const EdgeInsets.all(AppConstants.spacingLg),
-                    itemCount: appointments.length,
-                    separatorBuilder: (_, _) => const SizedBox(height: AppConstants.spacingMd),
-                    itemBuilder: (context, index) => _AppointmentCard(appointment: appointments[index]),
+                  child: InfiniteListView(
+                    state: paged,
+                    onLoadMore: () => ref.read(pastAppointmentsProvider.notifier).loadMore(),
+                    itemBuilder: (context, appointment) => _AppointmentCard(appointment: appointment),
                   ),
                 );
               },

@@ -8,6 +8,7 @@ import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/prescriptions/presentation/providers/prescription_providers.dart';
 import 'package:sunil_medical_store/features/prescriptions/presentation/widgets/prescription_tile.dart';
 import 'package:sunil_medical_store/core/widgets/refresh_on_focus.dart';
+import 'package:sunil_medical_store/core/paging/paged_widgets.dart';
 
 /// Pharmacy > Prescription: the customer's uploaded prescriptions, with an
 /// upload action (camera or gallery). Reused from checkout when an
@@ -30,6 +31,7 @@ class _PrescriptionsScreenState extends ConsumerState<PrescriptionsScreen> {
     try {
       await ref.read(prescriptionRepositoryProvider).upload(File(picked.path));
       ref.invalidate(prescriptionsProvider);
+      ref.invalidate(pagedPrescriptionsProvider);
       if (mounted) {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
@@ -74,10 +76,10 @@ class _PrescriptionsScreenState extends ConsumerState<PrescriptionsScreen> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final async = ref.watch(prescriptionsProvider);
+    final async = ref.watch(pagedPrescriptionsProvider);
 
     return RefreshOnFocus(
-      onRefresh: () { refreshIfIdle(ref, prescriptionsProvider); },
+      onRefresh: () { refreshIfIdle(ref, pagedPrescriptionsProvider); },
       child: Scaffold(
       appBar: AppBar(title: const Text('Prescriptions')),
       floatingActionButton: FloatingActionButton.extended(
@@ -96,13 +98,14 @@ class _PrescriptionsScreenState extends ConsumerState<PrescriptionsScreen> {
               Text(error is ApiException ? error.message : 'Could not load prescriptions.'),
               const SizedBox(height: AppConstants.spacingSm),
               TextButton(
-                onPressed: () => ref.invalidate(prescriptionsProvider),
+                onPressed: () => ref.invalidate(pagedPrescriptionsProvider),
                 child: const Text('Retry'),
               ),
             ],
           ),
         ),
-        data: (prescriptions) {
+        data: (paged) {
+          final prescriptions = paged.items;
           if (prescriptions.isEmpty) {
             return Center(
               child: Padding(
@@ -125,17 +128,18 @@ class _PrescriptionsScreenState extends ConsumerState<PrescriptionsScreen> {
             );
           }
           return RefreshIndicator(
-            onRefresh: () async => ref.invalidate(prescriptionsProvider),
-            child: ListView.separated(
+            onRefresh: () async => ref.invalidate(pagedPrescriptionsProvider),
+            child: InfiniteListView(
+              state: paged,
+              onLoadMore: () => ref.read(pagedPrescriptionsProvider.notifier).loadMore(),
               padding: const EdgeInsets.fromLTRB(
                 AppConstants.spacingLg,
                 AppConstants.spacingSm,
                 AppConstants.spacingLg,
                 AppConstants.spacingXxl + AppConstants.spacingLg,
               ),
-              itemCount: prescriptions.length,
-              separatorBuilder: (_, _) => const SizedBox(height: AppConstants.spacingSm),
-              itemBuilder: (context, index) => PrescriptionTile(prescription: prescriptions[index]),
+              separatorHeight: AppConstants.spacingSm,
+              itemBuilder: (context, prescription) => PrescriptionTile(prescription: prescription),
             ),
           );
         },

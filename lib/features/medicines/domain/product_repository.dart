@@ -1,4 +1,5 @@
 import 'package:sunil_medical_store/features/medicines/domain/product.dart';
+import 'package:sunil_medical_store/core/paging/paged.dart';
 
 /// Contract for reading the product catalog, implemented by the data layer.
 ///
@@ -16,6 +17,10 @@ abstract interface class ProductRepository {
 
   /// Free-text search against product name/brand — the dashboard search bar.
   Future<List<Product>> searchProducts(String query);
+
+  /// One page of the catalog, optionally narrowed by [category] and/or a
+  /// free-text [search] (name/description/composition/tags).
+  Future<PageResult<Product>> productsPage({String? category, String? search, required int page, int pageSize = kPageSize});
 
   /// A single product by id, for the detail screen.
   Future<Product> productById(String id);

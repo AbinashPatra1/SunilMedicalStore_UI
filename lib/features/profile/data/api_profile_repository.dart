@@ -7,6 +7,7 @@ import 'package:sunil_medical_store/features/profile/domain/customer_profile.dar
 import 'package:sunil_medical_store/features/profile/domain/lab_test.dart';
 import 'package:sunil_medical_store/features/profile/domain/past_appointment.dart';
 import 'package:sunil_medical_store/features/profile/domain/profile_repository.dart';
+import 'package:sunil_medical_store/core/paging/paged.dart';
 
 /// [ProfileRepository] backed by the real API.
 ///
@@ -70,6 +71,18 @@ class ApiProfileRepository implements ProfileRepository {
   Future<List<LabTest>> labTests() => _getList('/lab-test-bookings', _labTestFromJson);
 
   @override
+  Future<PageResult<PastAppointment>> pastAppointmentsPage({required int page, int pageSize = kPageSize}) =>
+      fetchPageOf(_dio, '/appointments/me', page: page, pageSize: pageSize, fromJson: _appointmentFromJson);
+
+  @override
+  Future<PageResult<Order>> pastOrdersPage({required int page, int pageSize = kPageSize}) =>
+      fetchPageOf(_dio, '/orders', page: page, pageSize: pageSize, fromJson: _orderFromJson);
+
+  @override
+  Future<PageResult<LabTest>> labTestsPage({required int page, int pageSize = kPageSize}) =>
+      fetchPageOf(_dio, '/lab-test-bookings', page: page, pageSize: pageSize, fromJson: _labTestFromJson);
+
+    @override
   Future<Order> orderById(String id) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>('/orders/$id');

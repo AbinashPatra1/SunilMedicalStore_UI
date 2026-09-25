@@ -1,5 +1,6 @@
 import 'package:sunil_medical_store/core/models/order.dart';
 import 'package:sunil_medical_store/features/admin/orders/domain/admin_order.dart';
+import 'package:sunil_medical_store/core/paging/paged.dart';
 
 /// Query filters for [AdminOrderRepository.list]. Any field left null means
 /// "don't filter on this dimension".
@@ -20,6 +21,9 @@ class OrderFilters {
 abstract interface class AdminOrderRepository {
   /// All orders matching [filters], newest first.
   Future<List<AdminOrder>> list(OrderFilters filters);
+
+  /// One page of orders matching [filters].
+  Future<PageResult<AdminOrder>> listPage(OrderFilters filters, {required int page, int pageSize = kAdminPageSize});
 
   /// Single order by id.
   Future<AdminOrder> getById(String id);

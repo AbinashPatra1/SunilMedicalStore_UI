@@ -117,6 +117,7 @@ class _AdminUserFormState extends ConsumerState<_AdminUserForm> {
         );
       }
       ref.invalidate(adminUsersProvider);
+      ref.invalidate(adminUsersPagedProvider);
       if (mounted) {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()
@@ -167,6 +168,7 @@ class _AdminUserFormState extends ConsumerState<_AdminUserForm> {
     try {
       await ref.read(adminUsersRepositoryProvider).delete(widget.existing!.id);
       ref.invalidate(adminUsersProvider);
+      ref.invalidate(adminUsersPagedProvider);
       if (mounted) {
         ScaffoldMessenger.of(context)
           ..hideCurrentSnackBar()

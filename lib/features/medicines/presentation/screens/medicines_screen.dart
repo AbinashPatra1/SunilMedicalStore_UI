@@ -8,6 +8,7 @@ import 'package:sunil_medical_store/features/cart/presentation/providers/cart_pr
 import 'package:sunil_medical_store/features/medicines/presentation/providers/medicine_providers.dart';
 import 'package:sunil_medical_store/features/medicines/presentation/widgets/product_card.dart';
 import 'package:sunil_medical_store/core/widgets/refresh_on_focus.dart';
+import 'package:sunil_medical_store/core/paging/paged_widgets.dart';
 
 /// Product catalog for a category (or all products when [category] is null).
 ///
@@ -31,7 +32,8 @@ class MedicinesScreen extends ConsumerWidget {
         error: (error, _) => _ErrorView(
           onRetry: () => ref.invalidate(productsByCategoryProvider(category ?? '')),
         ),
-        data: (products) {
+        data: (paged) {
+          final products = paged.items;
           if (products.isEmpty) {
             final theme = Theme.of(context);
             return Center(
@@ -51,12 +53,10 @@ class MedicinesScreen extends ConsumerWidget {
               ),
             );
           }
-          return ListView.separated(
-            padding: const EdgeInsets.all(AppConstants.spacingLg),
-            itemCount: products.length,
-            separatorBuilder: (_, _) => const SizedBox(height: AppConstants.spacingMd),
-            itemBuilder: (context, index) {
-              final product = products[index];
+          return InfiniteListView(
+            state: paged,
+            onLoadMore: () => ref.read(productsByCategoryProvider(category ?? '').notifier).loadMore(),
+            itemBuilder: (context, product) {
               return ProductCard(
                 product: product,
                 onTap: () => context.push('${AppRoutes.medicineDetail}/${product.id}'),

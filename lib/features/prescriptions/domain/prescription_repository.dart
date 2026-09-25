@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:sunil_medical_store/core/models/prescription.dart';
+import 'package:sunil_medical_store/core/paging/paged.dart';
 
 /// Uploads and reads back the caller's own prescriptions.
 ///
@@ -10,6 +11,9 @@ import 'package:sunil_medical_store/core/models/prescription.dart';
 abstract interface class PrescriptionRepository {
   /// The caller's prescriptions, newest first.
   Future<List<Prescription>> list();
+
+  /// One page of the caller's prescriptions, newest first.
+  Future<PageResult<Prescription>> listPage({required int page, int pageSize = kPageSize});
 
   /// Uploads [imageFile] and returns the created (pending-review)
   /// [Prescription]. Implementations own how/where the image bytes are

@@ -16,6 +16,7 @@ import 'package:sunil_medical_store/features/lab_tests/presentation/providers/la
 import 'package:sunil_medical_store/features/lab_tests/presentation/widgets/lab_test_card.dart';
 import 'package:sunil_medical_store/features/medicines/presentation/providers/medicine_providers.dart';
 import 'package:sunil_medical_store/features/medicines/presentation/widgets/product_card.dart';
+import 'package:sunil_medical_store/core/paging/paged_widgets.dart';
 
 /// Minimum query length before a search actually fires — matches predictive
 /// search across all three catalogs (Pharmacy/Pathology/Doctors).
@@ -218,14 +219,12 @@ class _ProductResults extends ConsumerWidget {
         error: error,
         onRetry: () => ref.invalidate(searchProductsProvider(query)),
       ),
-      data: (products) {
-        if (products.isEmpty) return _EmptyResults(query: query);
-        return ListView.separated(
-          padding: const EdgeInsets.all(AppConstants.spacingLg),
-          itemCount: products.length,
-          separatorBuilder: (_, _) => const SizedBox(height: AppConstants.spacingMd),
-          itemBuilder: (context, index) {
-            final product = products[index];
+      data: (paged) {
+        if (paged.items.isEmpty) return _EmptyResults(query: query);
+        return InfiniteListView(
+          state: paged,
+          onLoadMore: () => ref.read(searchProductsProvider(query).notifier).loadMore(),
+          itemBuilder: (context, product) {
             return ProductCard(
               product: product,
               onTap: () => context.push('${AppRoutes.medicineDetail}/${product.id}'),
@@ -258,14 +257,12 @@ class _LabTestResults extends ConsumerWidget {
         error: error,
         onRetry: () => ref.invalidate(searchLabTestsProvider(query)),
       ),
-      data: (tests) {
-        if (tests.isEmpty) return _EmptyResults(query: query);
-        return ListView.separated(
-          padding: const EdgeInsets.all(AppConstants.spacingLg),
-          itemCount: tests.length,
-          separatorBuilder: (_, _) => const SizedBox(height: AppConstants.spacingMd),
-          itemBuilder: (context, index) {
-            final test = tests[index];
+      data: (paged) {
+        if (paged.items.isEmpty) return _EmptyResults(query: query);
+        return InfiniteListView(
+          state: paged,
+          onLoadMore: () => ref.read(searchLabTestsProvider(query).notifier).loadMore(),
+          itemBuilder: (context, test) {
             return LabTestCard(
               test: test,
               onTap: () => context.push('${AppRoutes.labTests}/${test.id}'),
@@ -293,14 +290,12 @@ class _DoctorResults extends ConsumerWidget {
         error: error,
         onRetry: () => ref.invalidate(searchDoctorsProvider(query)),
       ),
-      data: (doctors) {
-        if (doctors.isEmpty) return _EmptyResults(query: query);
-        return ListView.separated(
-          padding: const EdgeInsets.all(AppConstants.spacingLg),
-          itemCount: doctors.length,
-          separatorBuilder: (_, _) => const SizedBox(height: AppConstants.spacingMd),
-          itemBuilder: (context, index) {
-            final doctor = doctors[index];
+      data: (paged) {
+        if (paged.items.isEmpty) return _EmptyResults(query: query);
+        return InfiniteListView(
+          state: paged,
+          onLoadMore: () => ref.read(searchDoctorsProvider(query).notifier).loadMore(),
+          itemBuilder: (context, doctor) {
             return DoctorCard(
               doctor: doctor,
               week: week,
