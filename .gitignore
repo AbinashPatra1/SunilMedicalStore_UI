@@ -44,5 +44,10 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# Release signing — never commit the real keystore or passwords
+/android/key.properties
+/android/*.jks
+/android/*.keystore
+
 # Ad-hoc verification screenshots pulled from the emulator during testing
 /scratch_*/
