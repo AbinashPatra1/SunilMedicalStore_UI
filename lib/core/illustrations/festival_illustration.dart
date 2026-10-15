@@ -39,6 +39,13 @@ class _FestivalPainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
     canvas.drawCircle(Offset(w * 0.5, h * 0.5), w * 0.48, Paint()..color = accentColor.withValues(alpha: 0.12));
+    // Ground shadow — matches the one under PersonBadgeIllustration's
+    // figure, so every banner in the catalog reads as one consistent,
+    // grounded little scene rather than a motif floating in its blob.
+    canvas.drawOval(
+      Rect.fromCenter(center: Offset(w * 0.5, h * 0.93), width: w * 0.5, height: h * 0.055),
+      Paint()..color = accentColor.withValues(alpha: 0.18),
+    );
     switch (motif) {
       case FestivalMotif.diya:
         _paintDiya(canvas, w, h);
@@ -174,6 +181,10 @@ class _FestivalPainter extends CustomPainter {
         chakraPaint,
       );
     }
+
+    final sparklePaint = Paint()..color = const Color(0xFFFF9933).withValues(alpha: 0.6);
+    _drawSparkle(canvas, Offset(w * 0.86, h * 0.26), w * 0.045, sparklePaint);
+    _drawSparkle(canvas, Offset(w * 0.82, h * 0.7), w * 0.035, sparklePaint);
   }
 
   void _paintSweet(Canvas canvas, double w, double h) {

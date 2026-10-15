@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:sunil_medical_store/core/theme/app_palette.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sunil_medical_store/core/illustrations/empty_box_illustration.dart';
 import 'package:sunil_medical_store/core/routes/app_routes.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/cart/presentation/providers/cart_providers.dart';
@@ -71,11 +72,7 @@ class _EmptyCart extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.shopping_cart_outlined,
-              size: 64,
-              color: theme.colorScheme.primary,
-            ),
+            const EmptyBoxIllustration(size: 96),
             const SizedBox(height: AppConstants.spacingMd),
             Text('Your cart is empty', style: theme.textTheme.titleMedium),
             const SizedBox(height: AppConstants.spacingXs),

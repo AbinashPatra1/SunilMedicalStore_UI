@@ -11,7 +11,7 @@ class AdminSignOutButton extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return IconButton(
       tooltip: 'Sign out',
-      icon: const Icon(Icons.logout),
+      icon: const Icon(Icons.logout_outlined),
       onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
     );
   }

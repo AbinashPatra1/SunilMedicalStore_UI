@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sunil_medical_store/core/theme/app_palette.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sunil_medical_store/core/illustrations/empty_box_illustration.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/profile/domain/payment_method.dart';
@@ -52,11 +53,7 @@ class PaymentMethodsScreen extends ConsumerWidget {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        Icons.account_balance_wallet_outlined,
-                        size: 56,
-                        color: theme.colorScheme.primary,
-                      ),
+                      const EmptyBoxIllustration(size: 96),
                       const SizedBox(height: AppConstants.spacingMd),
                       Text(
                         'No payment methods yet',

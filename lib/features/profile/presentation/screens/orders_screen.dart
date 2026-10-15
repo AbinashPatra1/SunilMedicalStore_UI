@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
+import 'package:sunil_medical_store/core/illustrations/empty_box_illustration.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/core/routes/app_routes.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
@@ -42,7 +43,21 @@ class OrdersScreen extends ConsumerWidget {
         data: (paged) {
           final orders = paged.items;
           if (orders.isEmpty) {
-            return const Center(child: Text('No orders yet.'));
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const EmptyBoxIllustration(size: 96),
+                  const SizedBox(height: AppConstants.spacingMd),
+                  Text(
+                    'No orders yet.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            );
           }
           return RefreshIndicator(
             onRefresh: () async => ref.invalidate(pastOrdersProvider),

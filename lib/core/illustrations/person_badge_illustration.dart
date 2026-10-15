@@ -2,11 +2,16 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-/// A simple, hand-drawn flat-style character-with-badge illustration —
-/// generalizes this app's original discount-banner character (backlog #14)
-/// so the same shape can be reused, with a different badge icon/shirt
-/// color, across the home-banner catalog (Admin > More > Home Banners)
-/// instead of hand-drawing a near-identical painter per banner.
+/// A hand-drawn flat-style character-with-badge illustration — generalizes
+/// this app's original discount-banner character (backlog #14) so the same
+/// shape can be reused, with a different badge icon/shirt color, across the
+/// home-banner catalog (Admin > More > Home Banners) instead of hand-drawing
+/// a near-identical painter per banner. **Enriched 2026-10-15 (backlog #14's
+/// "exciting life-like illustrations" follow-up, decided with the user)**:
+/// a ground shadow, a two-tone shirt with a collar, a halo ring behind the
+/// head, and sparkle accents (the same motif as [CategoryIllustration]'s)
+/// turn the single waving figure into a fuller little scene — still flat
+/// vector, no photography, matching the earlier decision in backlog #17.
 class PersonBadgeIllustration extends StatelessWidget {
   const PersonBadgeIllustration({
     super.key,
@@ -68,11 +73,39 @@ class _PersonBadgePainter extends CustomPainter {
 
     canvas.drawCircle(Offset(w * 0.48, h * 0.52), w * 0.48, Paint()..color = blobColor);
 
+    // Ground shadow, so the figure reads as standing on something rather
+    // than floating in the blob.
+    canvas.drawOval(
+      Rect.fromCenter(center: Offset(w * 0.46, h * 0.97), width: w * 0.46, height: h * 0.05),
+      Paint()..color = outlineColor.withValues(alpha: 0.5),
+    );
+
+    // Halo ring behind the head for a touch of depth before the hair/face
+    // paints over it.
+    canvas.drawCircle(
+      Offset(w * 0.44, h * 0.42),
+      w * 0.28,
+      Paint()
+        ..color = badgeColor.withValues(alpha: 0.22)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = w * 0.018,
+    );
+
     // Body (shirt/coat), with a hairline outline so a light color (e.g. a
     // doctor's white coat) still reads as a distinct shape.
     final bodyRect = Rect.fromCenter(center: Offset(w * 0.46, h * 0.8), width: w * 0.48, height: h * 0.4);
     final bodyRRect = RRect.fromRectAndRadius(bodyRect, Radius.circular(w * 0.16));
     canvas.drawRRect(bodyRRect, Paint()..color = shirtColor);
+
+    // A darker fold shades the body's near side for a two-tone, less-flat
+    // shirt, clipped to the same rounded shape.
+    canvas.save();
+    canvas.clipRRect(bodyRRect);
+    canvas.drawRect(
+      Rect.fromLTRB(bodyRect.left, bodyRect.top, bodyRect.left + bodyRect.width * 0.34, bodyRect.bottom),
+      Paint()..color = outlineColor.withValues(alpha: 0.4),
+    );
+    canvas.restore();
     canvas.drawRRect(
       bodyRRect,
       Paint()
@@ -80,6 +113,14 @@ class _PersonBadgePainter extends CustomPainter {
         ..style = PaintingStyle.stroke
         ..strokeWidth = w * 0.012,
     );
+
+    // Collar notch at the neckline.
+    final collarPath = Path()
+      ..moveTo(w * 0.38, bodyRect.top)
+      ..lineTo(w * 0.46, bodyRect.top + h * 0.06)
+      ..lineTo(w * 0.54, bodyRect.top)
+      ..close();
+    canvas.drawPath(collarPath, Paint()..color = Colors.white.withValues(alpha: 0.35));
 
     // Waving arm, raised up and out to the right.
     final armPaint = Paint()
@@ -145,6 +186,12 @@ class _PersonBadgePainter extends CustomPainter {
       linePaint..strokeWidth = w * 0.024,
     );
 
+    // Sparkle accents for a bit of life/sheen — the same motif used by
+    // CategoryIllustration, so the illustration set reads as one family.
+    final sparklePaint = Paint()..color = badgeColor.withValues(alpha: 0.65);
+    _sparkle(canvas, Offset(w * 0.1, h * 0.46), w * 0.05, sparklePaint);
+    _sparkle(canvas, Offset(w * 0.2, h * 0.9), w * 0.035, sparklePaint);
+
     // Floating badge near the raised hand, with the requested icon glyph.
     final badgeCenter = Offset(w * 0.84, h * 0.13);
     canvas.drawCircle(badgeCenter, w * 0.135, Paint()..color = badgeColor);
@@ -161,6 +208,20 @@ class _PersonBadgePainter extends CustomPainter {
       textDirection: TextDirection.ltr,
     )..layout();
     tp.paint(canvas, badgeCenter - Offset(tp.width / 2, tp.height / 2));
+  }
+
+  void _sparkle(Canvas canvas, Offset c, double r, Paint paint) {
+    final path = Path()
+      ..moveTo(c.dx, c.dy - r)
+      ..lineTo(c.dx + r * 0.28, c.dy - r * 0.28)
+      ..lineTo(c.dx + r, c.dy)
+      ..lineTo(c.dx + r * 0.28, c.dy + r * 0.28)
+      ..lineTo(c.dx, c.dy + r)
+      ..lineTo(c.dx - r * 0.28, c.dy + r * 0.28)
+      ..lineTo(c.dx - r, c.dy)
+      ..lineTo(c.dx - r * 0.28, c.dy - r * 0.28)
+      ..close();
+    canvas.drawPath(path, paint);
   }
 
   @override

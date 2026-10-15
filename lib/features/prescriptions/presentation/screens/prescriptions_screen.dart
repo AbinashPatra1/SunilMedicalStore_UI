@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:sunil_medical_store/core/illustrations/empty_box_illustration.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
 import 'package:sunil_medical_store/features/prescriptions/presentation/providers/prescription_providers.dart';
@@ -113,7 +114,7 @@ class _PrescriptionsScreenState extends ConsumerState<PrescriptionsScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.description_outlined, size: 56, color: theme.colorScheme.primary),
+                    const EmptyBoxIllustration(size: 96),
                     const SizedBox(height: AppConstants.spacingMd),
                     Text('No prescriptions yet', style: theme.textTheme.titleMedium),
                     const SizedBox(height: AppConstants.spacingXs),

@@ -34,22 +34,28 @@ class BannerIllustration extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     return switch (bannerId) {
+      // Shirt colors here are white, not a theme teal, deliberately — the
+      // banner card itself is now a primary→secondary gradient (backlog
+      // #22's promo-banner treatment, decided 2026-10-15), and a teal shirt
+      // on a teal gradient loses almost all contrast. White reads clearly
+      // against the gradient at every point, matching the doctor-visit set
+      // below, which already used white for the same reason (a coat).
       BannerId.generalDiscount1 => PersonBadgeIllustration(
         size: size,
         badgeIcon: Icons.percent,
-        shirtColor: scheme.primary,
+        shirtColor: Colors.white,
         badgeColor: scheme.tertiary,
       ),
       BannerId.generalDiscount2 => PersonBadgeIllustration(
         size: size,
         badgeIcon: Icons.local_offer,
-        shirtColor: scheme.secondary,
+        shirtColor: Colors.white,
         badgeColor: scheme.primary,
       ),
       BannerId.generalDiscount3 => PersonBadgeIllustration(
         size: size,
         badgeIcon: Icons.card_giftcard,
-        shirtColor: scheme.tertiary,
+        shirtColor: Colors.white,
         badgeColor: scheme.secondary,
       ),
       BannerId.kaliPuja => FestivalIllustration(

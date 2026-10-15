@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:sunil_medical_store/core/theme/app_palette.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sunil_medical_store/core/illustrations/empty_box_illustration.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/core/routes/app_routes.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
@@ -44,7 +45,21 @@ class AddressesScreen extends ConsumerWidget {
           ),
         ),
         data: (addresses) => addresses.isEmpty
-            ? const Center(child: Text('No addresses saved yet.'))
+            ? Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const EmptyBoxIllustration(size: 96),
+                    const SizedBox(height: AppConstants.spacingMd),
+                    Text(
+                      'No addresses saved yet.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              )
             : ListView.separated(
                 padding: const EdgeInsets.fromLTRB(
                   AppConstants.spacingLg,

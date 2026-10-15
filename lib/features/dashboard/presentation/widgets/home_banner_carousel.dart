@@ -104,6 +104,13 @@ class _HomeBannerCarouselState extends ConsumerState<HomeBannerCarousel> {
   }
 }
 
+/// The dashboard promo banner's card — deliberately **not** a flat
+/// `AppCard` like the rest of the app. Decided with the user 2026-10-15
+/// (backlog #22's deferred "discuss the promo banner later"): this is the
+/// one piece of marketing real estate on the dashboard, so it keeps a
+/// vivid brand gradient and a contrasting pill button to stand out from
+/// the ordinary flat content around it, while every other surface in the
+/// app stays flat per backlog #23.
 class _BannerCard extends StatelessWidget {
   const _BannerCard({required this.banner, required this.onTap});
 
@@ -113,42 +120,83 @@ class _BannerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final scheme = theme.colorScheme;
+    // onPrimary/onSecondary are already the correct contrast color for
+    // each theme (white in light mode, dark ink in dark mode — see
+    // AppTheme), so reusing them here keeps this card legible in both
+    // without a separate dark-mode branch.
+    final onGradient = scheme.onPrimary;
 
-    return Card(
-      margin: EdgeInsets.zero,
-      color: theme.colorScheme.primaryContainer,
-      child: Padding(
-        padding: const EdgeInsets.all(AppConstants.spacingLg),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    banner.title,
-                    style: theme.textTheme.titleMedium?.copyWith(color: theme.colorScheme.onPrimaryContainer),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: AppConstants.spacingXs),
-                  Text(
-                    banner.description,
-                    style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onPrimaryContainer),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: AppConstants.spacingMd),
-                  FilledButton(onPressed: onTap, child: const Text('Order now')),
-                ],
-              ),
-            ),
-            BannerIllustration(bannerId: banner.id, size: 88),
-          ],
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppConstants.radiusLg),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [scheme.primary, scheme.secondary],
         ),
+      ),
+      child: Stack(
+        children: [
+          // Soft decorative circles for depth, kept inside the clip.
+          Positioned(
+            right: -24,
+            top: -24,
+            child: _softCircle(onGradient, 110),
+          ),
+          Positioned(
+            left: -30,
+            bottom: -36,
+            child: _softCircle(onGradient, 90),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(AppConstants.spacingLg),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        banner.title,
+                        style: theme.textTheme.titleMedium?.copyWith(color: onGradient),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: AppConstants.spacingXs),
+                      Text(
+                        banner.description,
+                        style: theme.textTheme.bodySmall?.copyWith(color: onGradient.withValues(alpha: 0.85)),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: AppConstants.spacingMd),
+                      FilledButton(
+                        onPressed: onTap,
+                        style: FilledButton.styleFrom(
+                          backgroundColor: onGradient,
+                          foregroundColor: scheme.primary,
+                        ),
+                        child: const Text('Order now'),
+                      ),
+                    ],
+                  ),
+                ),
+                BannerIllustration(bannerId: banner.id, size: 88),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
+
+  Widget _softCircle(Color color, double diameter) => Container(
+    width: diameter,
+    height: diameter,
+    decoration: BoxDecoration(shape: BoxShape.circle, color: color.withValues(alpha: 0.08)),
+  );
 }
