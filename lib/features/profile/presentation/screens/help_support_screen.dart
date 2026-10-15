@@ -55,15 +55,30 @@ class HelpSupportScreen extends StatelessWidget {
         children: [
           AppCard(
             padding: EdgeInsets.zero,
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: AppAccent.mint.pastel,
-                child: Icon(Icons.chat_outlined, color: AppAccent.mint.ink),
-              ),
-              title: const Text('Chat with us on WhatsApp'),
-              subtitle: const Text('Get help from our support team'),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: () => openSupportWhatsApp(context),
+            child: Column(
+              children: [
+                ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: AppAccent.mint.pastel,
+                    child: Icon(Icons.chat_outlined, color: AppAccent.mint.ink),
+                  ),
+                  title: const Text('Chat with us on WhatsApp'),
+                  subtitle: const Text('Get help from our support team'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => openSupportWhatsApp(context),
+                ),
+                const Divider(height: 1),
+                ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: AppAccent.sky.pastel,
+                    child: Icon(Icons.privacy_tip_outlined, color: AppAccent.sky.ink),
+                  ),
+                  title: const Text('Privacy Policy'),
+                  subtitle: const Text('How we collect and use your information'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => openPrivacyPolicy(context),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: AppConstants.spacingXl),

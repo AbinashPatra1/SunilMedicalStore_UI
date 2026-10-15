@@ -14,3 +14,18 @@ Future<void> openSupportWhatsApp(BuildContext context, {String message = 'Hi, I 
       ..showSnackBar(const SnackBar(content: Text('Could not open WhatsApp.')));
   }
 }
+
+/// Published at `docs/privacy-policy.html` in this repo (backlog #29) —
+/// resolves once GitHub Pages is enabled for this repo (Settings > Pages >
+/// Deploy from a branch > `DEV` / `/docs`), serving this exact path.
+const privacyPolicyUrl = 'https://abinashpatra1.github.io/SunilMedicalStore_UI/privacy-policy.html';
+
+/// Opens the privacy policy in the device's browser.
+Future<void> openPrivacyPolicy(BuildContext context) async {
+  final launched = await launchUrl(Uri.parse(privacyPolicyUrl), mode: LaunchMode.externalApplication);
+  if (!launched && context.mounted) {
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(const SnackBar(content: Text('Could not open the privacy policy.')));
+  }
+}
