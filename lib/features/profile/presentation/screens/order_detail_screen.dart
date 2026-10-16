@@ -6,6 +6,7 @@ import 'package:sunil_medical_store/core/theme/app_palette.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:sunil_medical_store/core/network/api_exception.dart';
 import 'package:sunil_medical_store/core/theme/app_constants.dart';
+import 'package:sunil_medical_store/core/utils/invoice_url.dart';
 import 'package:sunil_medical_store/core/widgets/refund_status_banner.dart';
 import 'package:sunil_medical_store/core/models/order.dart';
 import 'package:sunil_medical_store/features/admin/delivery/domain/delivery_settings.dart';
@@ -56,6 +57,16 @@ class _OrderDetailScreenState extends ConsumerState<OrderDetailScreen> {
       final url = await ref
           .read(profileRepositoryProvider)
           .orderInvoiceUrl(order.id);
+      if (isPlaceholderInvoiceUrl(url)) {
+        if (mounted) {
+          ScaffoldMessenger.of(context)
+            ..hideCurrentSnackBar()
+            ..showSnackBar(
+              const SnackBar(content: Text('Invoice isn\'t available yet — please check back later.')),
+            );
+        }
+        return;
+      }
       final launched = await launchUrl(
         Uri.parse(url),
         mode: LaunchMode.externalApplication,
